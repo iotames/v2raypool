@@ -1,0 +1,10 @@
+.env
+go.mod
+go.sum
+v2raypool
+*.exe
+*.log
+*.txt
+bin/
+resource/
+runtime/

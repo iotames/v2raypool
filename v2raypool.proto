@@ -1,0 +1,67 @@
+syntax = "proto3";
+package v2raypool;
+option go_package = "./grpc";
+
+message ProxyNode {
+    uint32 index = 1;
+    string id = 2;
+    uint32 local_port = 3;
+    float speed = 4;
+    string title = 5;
+    string local_addr = 6;
+    string remote_addr = 7;
+    bool is_running = 8;
+    bool is_ok = 9;
+    string test_at = 10;
+}
+
+message OptResult {
+    uint32 status = 1;
+    string msg = 2;
+}
+
+message OptRequest {}
+
+message OptRequestDomain {
+    string domain = 1;
+}
+message OptRequestUrl {
+    string url = 1;
+}
+
+message UpdateSubscribeResult {
+    uint32 status = 1;
+    string msg = 2;
+    uint32 total = 3;
+    uint32 add = 4;
+}
+
+message KillNodesResult {
+    uint32 status = 1;
+    string msg = 2;
+    uint32 total = 3;
+    uint32 runport = 4;
+    uint32 kill = 5;
+    uint32 fail = 6;
+}
+
+message ProxyNodes {
+    message OptResult {
+        uint32 status = 1;
+        string msg = 2;
+    }
+    repeated ProxyNode items = 1;
+}
+
+service ProxyPoolService {
+    rpc GetProxyNodes(ProxyNode) returns(ProxyNodes){};
+    rpc GetProxyNodesByDomain(OptRequestDomain) returns(ProxyNodes){};
+    rpc SetTestUrl(OptRequestUrl) returns(OptResult){};
+    rpc StartProxyPoolAll(OptRequest) returns(OptResult){};
+    rpc StopProxyPoolAll(OptRequest) returns(OptResult){};
+    rpc TestProxyPoolAll(OptRequest) returns(OptResult){};
+    rpc TestProxyPoolAllForce(OptRequest) returns(OptResult){};
+    rpc KillAllNodes(OptRequest) returns(KillNodesResult){};
+    rpc ActiveProxyNode(ProxyNode) returns(OptResult){};
+    rpc UpdateProxySubscribe(OptRequest) returns(UpdateSubscribeResult){};
+}
