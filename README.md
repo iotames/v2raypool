@@ -10,6 +10,7 @@
 go mod tidy
 
 # 运行服务端
+cd main
 go run .
 ```
 
