@@ -30,7 +30,7 @@ func main() {
 	flag.Parse()
 
 	if version {
-		fmt.Println(AppVersion)
+		fmt.Printf("AppVersion:%s\nGoVersion:%s\n", AppVersion, GoVersion)
 		return
 	}
 	if setproxytesturl != "" {

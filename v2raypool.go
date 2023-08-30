@@ -442,7 +442,7 @@ func RunProxyPoolInit() {
 	subscribeRawData := cf.GetSubscribeData()
 	if cf.SubscribeUrl == "" {
 		// subscribeRawData == ""
-		panic("subscribe url can not be empty")
+		panic("subscribe url can not be empty.订阅地址不能为空")
 	}
 	port := cf.GetHttpProxyPort()
 	// 程序退出后，还会存在端口占用

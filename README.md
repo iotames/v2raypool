@@ -96,6 +96,9 @@ v2raypool.exe --testproxynodes
 
 # 根据索引值激活某个节点为系统代理的端口（--getproxynodes 查看索引值，系统代理端口从VP_HTTP_PROXY的值读取）
 v2raypool.exe --activeproxynode=16
+
+# 停止所有节点
+v2raypool.exe --stopproxynodes
 ```
 
 ### 6. 配置systemd系统服务(Linux)
