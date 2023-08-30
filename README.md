@@ -1,15 +1,17 @@
 ## 简介
 
-同时运行多个v2ray代理，暴露的多个本地IP端口。
-可以选一个设为系统代理，用来浏览网页等常规上网。也可调用多个，要求不高的话，可作为爬虫切换IP的代理池。
-提供gRPC控制接口，参看根目录的数据定义文件 `v2raypool.proto`
+同时运行多个v2ray代理，暴露多个本地IP端口，组成简单的IP代理池。
+
+可以选一个节点设为系统代理，用来浏览网页。要求不高的话，也可同时调用多个，作为爬虫切换IP的代理池。
+
+提供通用的gRPC控制接口，参看数据定义文件 `v2raypool.proto`
 
 
 ## 使用说明
 
-不想自己从项目源码编译的，想直接使用，可下载[Release压缩包](https://github.com/iotames/v2raypool/releases)，看第4，第5步使用说明即可。
+不想自己编译项目源码，可下载[Release压缩包](https://github.com/iotames/v2raypool/releases)直接使用，再看第4-5步的使用说明。
 
-1. 下载依赖
+### 1. 下载依赖
 
 运行命令: `go mod tidy`
 
@@ -25,7 +27,7 @@ go mod init github.com/iotames/v2raypool
 go mod tidy
 ```
 
-2. 编译可执行文件
+### 2. 编译可执行文件
 
 2.1 编译
 
@@ -50,7 +52,7 @@ VP_V2RAY_PATH 配置项错误，找不到可执行文件。
 请下载v2ray核心文件(https://github.com/v2fly/v2ray-core/releases)
 ```
 
-3. 下载v2ray核心文件
+### 3. 下载v2ray核心文件
 
 3.1 官网下载核心文件Zip压缩包: https://github.com/v2fly/v2ray-core/releases
 
@@ -59,7 +61,7 @@ VP_V2RAY_PATH 配置项错误，找不到可执行文件。
 3.3 检查或修改v2ray `可执行文件路径`: 查看 `.env` 配置文件的 `VP_V2RAY_PATH` 配置项。
 
 
-4. 设置订阅地址
+### 4. 设置订阅地址
 
 更改 `.env` 配置文件的 `VP_SUBSCRIBE_URL`，改成实际使用的订阅源地址(http开头)
 若订阅源地址网络异常，可使用 `VP_SUBSCRIBE_DATA_FILE` 配置项。通过其他途径查看订阅地址的响应结果，把内容存入文件。
@@ -67,7 +69,7 @@ VP_V2RAY_PATH 配置项错误，找不到可执行文件。
 `VP_HTTP_PROXY` 配置项，可设置一个http开头的代理地址。在 `gRPC客户端` 使用 `--activeproxynode` 命令项可激活一个节点使用代理端口。
 
 
-5. 运行服务端和客户端
+### 5. 运行服务端和客户端
 
 5.1 服务端
 
@@ -96,7 +98,7 @@ v2raypool.exe --testproxynodes
 v2raypool.exe --activeproxynode=16
 ```
 
-## 配置为Linux的systemd系统服务
+### 6. 配置systemd系统服务(Linux)
 
 使用环境变量 `VP_ENV_FILE` 定义环境变量配置文件的路径。不设置默认为 `.env`
 
