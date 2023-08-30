@@ -21,16 +21,17 @@ func getHttpClient(maxDuration time.Duration, requestUrl string, proxyAddr strin
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}).Clone() // trans.(*http.Transport)
 	httpTrans.DisableKeepAlives = true // 解决 Get "https://www.google.com": EOF
-	var proxy *url.URL
-	proxy, err = url.Parse(proxyAddr)
-	if err != nil {
-		panic(err)
+	if proxyAddr != "" {
+		var proxy *url.URL
+		proxy, err = url.Parse(proxyAddr)
+		if err != nil {
+			panic(err)
+		}
+		httpTrans.Proxy = func(r *http.Request) (*url.URL, error) {
+			// fmt.Printf("---SET PROXY[%d](%s)---\n", i, s.ItemKey)
+			return proxy, nil
+		}
 	}
-	httpTrans.Proxy = func(r *http.Request) (*url.URL, error) {
-		// fmt.Printf("---SET PROXY[%d](%s)---\n", i, s.ItemKey)
-		return proxy, nil
-	}
-
 	c = &http.Client{Transport: httpTrans, Timeout: maxDuration}
 	r, err = http.NewRequest("GET", requestUrl, http.NoBody)
 	r.Header.Add("Connection", "close")

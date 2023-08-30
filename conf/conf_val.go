@@ -10,7 +10,7 @@ import (
 
 const DEFAULT_RUNTIME_DIR = "runtime"
 const DEFAULT_GRPC_PORT = 50051
-const DEFAULT_V2RAY_PATH = "bin/v2ray"
+const DEFAULT_V2RAY_PATH = "bin/v2ray.exe"
 const DEFAULT_HTTP_PROXY = "http://127.0.0.1:30000"
 const DEFAULT_SUBSCRIBE_DATA_FILE = "subscribe_data.txt"
 

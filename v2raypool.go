@@ -151,9 +151,20 @@ func (p *ProxyPool) InitSubscribeData() *ProxyPool {
 	if p.localPortStart == 0 {
 		panic("please set localPortStart")
 	}
-	dt, err := parseSubscribeByRaw(p.subscribeRawData)
-	if err != nil {
-		panic(err)
+	var err error
+	var dt string
+	if p.subscribeRawData != "" {
+		dt, err = parseSubscribeByRaw(p.subscribeRawData)
+		if err != nil {
+			panic(err)
+		}
+	} else {
+		if p.subscribeUrl != "" {
+			dt, _, err = parseSubscribeByUrl(p.subscribeUrl, "")
+			if err != nil {
+				panic(err)
+			}
+		}
 	}
 	vnds := ParseV2rayNodes(dt)
 	for i, vnd := range vnds {
@@ -250,8 +261,10 @@ func (p *ProxyPool) TestAllForce() {
 	activePort := p.localPortStart - 1
 	hasActive := false
 	wg := sync.WaitGroup{}
+	runcount := 0
 	for i, n := range p.nodes {
 		if n.IsRunning() {
+			runcount++
 			if n.LocalPort == activePort {
 				hasActive = true
 			}
@@ -263,6 +276,11 @@ func (p *ProxyPool) TestAllForce() {
 		}
 	}
 	wg.Wait()
+	if runcount == 0 {
+		p.IsLock = false
+		fmt.Println("测速失败，没有可测速的代理节点。请先执行 --startproxynodes 命令，启动IP代理池")
+		return
+	}
 	p.nodes.SortBySpeed()
 	if !hasActive {
 		p.ActiveNode(p.nodes[0])
@@ -275,8 +293,10 @@ func (p *ProxyPool) TestAll() {
 	activePort := p.localPortStart - 1
 	hasActive := false
 	// wg := sync.WaitGroup{}
+	runcount := 0
 	for i, n := range p.nodes {
 		if n.IsRunning() {
+			runcount++
 			if n.LocalPort == activePort {
 				hasActive = true
 			}
@@ -290,12 +310,18 @@ func (p *ProxyPool) TestAll() {
 		}
 	}
 	// wg.Wait()
+	if runcount == 0 {
+		p.IsLock = false
+		fmt.Println("测速失败，没有可测速的代理节点。请先执行 --startproxynodes 命令，启动IP代理池")
+		return
+	}
 	p.nodes.SortBySpeed()
 	if !hasActive {
 		p.ActiveNode(p.nodes[0])
 	}
 	p.IsLock = false
 }
+
 func (p *ProxyPool) StartAll() error {
 	var err error
 	p.IsLock = true
@@ -414,8 +440,9 @@ func (p *ProxyPool) ActiveNode(n ProxyNode) error {
 func RunProxyPoolInit() {
 	cf := conf.GetConf()
 	subscribeRawData := cf.GetSubscribeData()
-	if cf.SubscribeUrl == "" || subscribeRawData == "" {
-		panic("subscribe url and data can not be empty")
+	if cf.SubscribeUrl == "" {
+		// subscribeRawData == ""
+		panic("subscribe url can not be empty")
 	}
 	port := cf.GetHttpProxyPort()
 	// 程序退出后，还会存在端口占用

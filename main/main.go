@@ -2,15 +2,21 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"time"
 
 	vp "github.com/iotames/v2raypool"
 )
 
+var AppVersion = "v1.0.1"
+var GoVersion = "go version go1.19.4 windows/amd64"
+
 func main() {
+	var version bool
 	var force, getproxynodes, killproxynodes, testproxynodes, startproxynodes, updateproxynodes, stopproxynodes bool
 	var activeproxynode int
 	var setproxytesturl, getproxynodesbydomain string
+	flag.BoolVar(&version, "version", false, "show the app version")
 	flag.BoolVar(&force, "force", false, "do some optrate force")
 	flag.StringVar(&setproxytesturl, "setproxytesturl", "", "Set testUrl of Proxy Nodes")
 	flag.StringVar(&getproxynodesbydomain, "getproxynodesbydomain", "", "Get ProxyNodes By Domain")
@@ -23,6 +29,10 @@ func main() {
 	flag.BoolVar(&stopproxynodes, "stopproxynodes", false, "stop all proxy nodes")
 	flag.Parse()
 
+	if version {
+		fmt.Println(AppVersion)
+		return
+	}
 	if setproxytesturl != "" {
 		setProxyTestUrl(setproxytesturl)
 		return

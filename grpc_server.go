@@ -157,9 +157,16 @@ func (s ProxyPoolServer) TestProxyPoolAll(ctx context.Context, req *g.OptRequest
 		err = fmt.Errorf(msg)
 		return
 	}
+	if len(GetRunningNodes()) == 0 {
+		msg := "测速失败，没有可测速的代理节点。请先执行 --startproxynodes 命令，启动IP代理池"
+		result.Status = 400
+		result.Msg = msg
+		err = fmt.Errorf(msg)
+		return
+	}
 	go pp.TestAll()
 	result.Status = 200
-	result.Msg = "普通测速已开始"
+	result.Msg = "测速已开始，请稍候片刻"
 	return
 }
 func (s ProxyPoolServer) TestProxyPoolAllForce(ctx context.Context, req *g.OptRequest) (result *g.OptResult, err error) {
@@ -172,9 +179,16 @@ func (s ProxyPoolServer) TestProxyPoolAllForce(ctx context.Context, req *g.OptRe
 		err = fmt.Errorf(msg)
 		return
 	}
+	if len(GetRunningNodes()) == 0 {
+		msg := "测速失败，没有可测速的代理节点。请先执行 --startproxynodes 命令，启动IP代理池"
+		result.Status = 400
+		result.Msg = msg
+		err = fmt.Errorf(msg)
+		return
+	}
 	go pp.TestAllForce()
 	result.Status = 200
-	result.Msg = "强制测速已开始"
+	result.Msg = "强制测速已开始，请稍候片刻"
 	return
 }
 func (s ProxyPoolServer) ActiveProxyNode(ctx context.Context, req *g.ProxyNode) (result *g.OptResult, err error) {
@@ -228,6 +242,18 @@ func (s ProxyPoolServer) KillAllNodes(ctx context.Context, req *g.OptRequest) (r
 	result.Status = 200
 	result.Msg = "操作完成"
 	return
+}
+
+func GetRunningNodes() ProxyNodes {
+	pp := GetProxyPool()
+	nds := pp.GetNodes("")
+	var result []ProxyNode
+	for _, nd := range nds {
+		if nd.IsRunning() {
+			result = append(result, nd)
+		}
+	}
+	return result
 }
 
 func RunProxyPoolGrpcServer() {
