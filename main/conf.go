@@ -11,6 +11,7 @@ import (
 )
 
 const WORK_ENV_FILE = ".env"
+const DEFAULT_ENV_FILE = "default.env"
 
 var envFile string
 
@@ -23,27 +24,56 @@ func setEnvFile() {
 
 func LoadEnv() {
 	setEnvFile()
-	initEnvFile()
-	err := godotenv.Load(envFile)
+	efiles := initEnvFile()
+	err := godotenv.Load(efiles...)
 	if err != nil {
-		panic("godotenv Error: " + err.Error())
+		panic(fmt.Errorf("godotenv.Load(%v)err(%v)", efiles, err))
 	}
-	setConfByEnv()
+	getConfByEnv()
 }
 
-func initEnvFile() {
+func initEnvFile() []string {
+	var err error
+	var files []string
+	var createNewEnvfile bool
 	if !miniutils.IsPathExists(envFile) {
-		f, err := os.Create(envFile)
+		err = createEnvFile(envFile)
 		if err != nil {
-			panic(fmt.Errorf("create env file(%s)err(%v)", envFile, err))
+			panic(err)
 		}
-		_, err = f.WriteString(getAllConfEnvStrDefault())
-		if err != nil {
-			panic(fmt.Errorf("write env file(%s)err(%v)", envFile, err))
-		}
+		files = append(files, envFile)
 		fmt.Printf("Create file %s SUCCESS\n", envFile)
-		f.Close()
+		createNewEnvfile = true
 	}
+	files = append(files, envFile)
+
+	if miniutils.IsPathExists(DEFAULT_ENV_FILE) {
+		files = append(files, DEFAULT_ENV_FILE)
+	} else {
+		if createNewEnvfile {
+			err = createEnvFile(DEFAULT_ENV_FILE)
+			if err != nil {
+				logger := miniutils.GetLogger("")
+				logger.Warnf("initEnvFile(%s)err(%v)", DEFAULT_ENV_FILE, err)
+				return files
+			}
+			files = append(files, DEFAULT_ENV_FILE)
+			fmt.Printf("Create file %s SUCCESS\n", DEFAULT_ENV_FILE)
+		}
+	}
+	return files
+}
+
+func createEnvFile(fpath string) error {
+	f, err := os.Create(fpath)
+	if err != nil {
+		return fmt.Errorf("create env file(%s)err(%v)", fpath, err)
+	}
+	_, err = f.WriteString(getAllConfEnvStrDefault())
+	if err != nil {
+		return fmt.Errorf("write env file(%s)err(%v)", fpath, err)
+	}
+	return f.Close()
 }
 
 func getEnvDefaultStr(key, defval string) string {
@@ -93,7 +123,7 @@ func getAllConfEnvStrDefault() string {
 	return fmt.Sprintf(ENV_FILE_CONTENT, conf.DEFAULT_RUNTIME_DIR, conf.DEFAULT_GRPC_PORT, conf.DEFAULT_V2RAY_PATH, "", conf.DEFAULT_SUBSCRIBE_DATA_FILE, conf.DEFAULT_HTTP_PROXY)
 }
 
-func setConfByEnv() {
+func getConfByEnv() {
 	cf := conf.GetConf()
 	cf.EnvFile = envFile
 	cf.RuntimeDir = getEnvDefaultStr("VP_RUNTIME_DIR", conf.DEFAULT_RUNTIME_DIR)

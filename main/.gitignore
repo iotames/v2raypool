@@ -1,4 +1,5 @@
 .env
+default.env
 go.sum
 v2raypool
 *.exe
