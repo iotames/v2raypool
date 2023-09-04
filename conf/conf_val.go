@@ -4,8 +4,11 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
+
+	"github.com/iotames/miniutils"
 )
 
 const DEFAULT_RUNTIME_DIR = "runtime"
@@ -60,6 +63,14 @@ func (cf Conf) UpdateSubscribeData(val string) {
 	if err != nil {
 		panic(err)
 	}
+}
+
+func (cf Conf) GetLogger() *miniutils.Logger {
+	cf.RuntimeDir = strings.TrimSpace(cf.RuntimeDir)
+	if cf.RuntimeDir == "" {
+		panic("RuntimeDir can not be empty")
+	}
+	return miniutils.GetLogger(filepath.Join(cf.RuntimeDir, "logs"))
 }
 
 var vconf Conf

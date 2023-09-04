@@ -53,8 +53,7 @@ func initEnvFile() []string {
 		if createNewEnvfile {
 			err = createEnvFile(DEFAULT_ENV_FILE)
 			if err != nil {
-				logger := miniutils.GetLogger("")
-				logger.Warnf("initEnvFile(%s)err(%v)", DEFAULT_ENV_FILE, err)
+				fmt.Printf("--------initEnvFile(%s)err(%v)\n", DEFAULT_ENV_FILE, err)
 				return files
 			}
 			files = append(files, DEFAULT_ENV_FILE)
@@ -133,7 +132,8 @@ func getConfByEnv() {
 	cf.SubscribeDataFile = getEnvDefaultStr("VP_SUBSCRIBE_DATA_FILE", conf.DEFAULT_SUBSCRIBE_DATA_FILE)
 	cf.HttpProxy = getEnvDefaultStr("VP_HTTP_PROXY", conf.DEFAULT_HTTP_PROXY)
 	conf.SetConf(cf)
-	logger := miniutils.GetLogger("")
+
+	logger := cf.GetLogger()
 	hitmsg := fmt.Sprintf("请检查配置文件，路径:(%s)\n", cf.EnvFile)
 
 	if cf.RuntimeDir == "" {

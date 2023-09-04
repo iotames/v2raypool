@@ -14,18 +14,7 @@ func getProxyNodes() {
 		if err != nil {
 			panic(err)
 		}
-		var total, countrun, countok int
-		for _, n := range nds.Items {
-			total++
-			if n.IsRunning {
-				countrun++
-			}
-			if n.IsOk {
-				countok++
-			}
-			fmt.Printf("---lPort(%d)--speed(%.3f)--isRun(%v)--TestAt(%s)--title(%s)--index(%d)\n", n.LocalPort, n.Speed, n.IsRunning, n.TestAt, n.Title, n.Index)
-		}
-		fmt.Printf("\n-----Total(%d)--CountRun(%d)--CountOk(%d)---\n", total, countrun, countok)
+		printNodes(nds)
 	})
 }
 
@@ -35,19 +24,23 @@ func getProxyNodesByDomain(domain string) {
 		if err != nil {
 			panic(err)
 		}
-		var total, countrun, countok int
-		for _, n := range nds.Items {
-			total++
-			if n.IsRunning {
-				countrun++
-			}
-			if n.IsOk {
-				countok++
-			}
-			fmt.Printf("---lPort(%d)--speed(%.3f)--isRun(%v)--TestAt(%s)--title(%s)--index(%d)\n", n.LocalPort, n.Speed, n.IsRunning, n.TestAt, n.Title, n.Index)
-		}
-		fmt.Printf("\n-----Total(%d)--CountRun(%d)--CountOk(%d)---\n", total, countrun, countok)
+		printNodes(nds)
 	})
+}
+
+func printNodes(nds *g.ProxyNodes) {
+	var total, countrun, countok int
+	for _, n := range nds.Items {
+		total++
+		if n.IsRunning {
+			countrun++
+		}
+		if n.IsOk {
+			countok++
+		}
+		fmt.Printf("-----lPort(%d)--speed(%.3f)--isRun(%v)--TestAt(%s)--title(%s)--index(%d)\n", n.LocalPort, n.Speed, n.IsRunning, n.TestAt, n.Title, n.Index)
+	}
+	fmt.Printf("\n-----Total(%d)--CountRun(%d)--CountOk(%d)---\n", total, countrun, countok)
 }
 
 func setProxyTestUrl(url string) {

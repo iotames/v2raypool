@@ -2,14 +2,13 @@ package v2raypool
 
 import (
 	"crypto/tls"
-	"fmt"
 	"io"
 	"net/http"
 	"net/url"
 	"strings"
 	"time"
 
-	"github.com/iotames/miniutils"
+	"github.com/iotames/v2raypool/conf"
 )
 
 func getHttpClient(maxDuration time.Duration, requestUrl string, proxyAddr string) (c *http.Client, r *http.Request) {
@@ -43,17 +42,17 @@ func getHttpClient(maxDuration time.Duration, requestUrl string, proxyAddr strin
 	return c, r
 }
 func testProxyNode(testUrl string, localAddr string, index int, maxDuration time.Duration) (speed time.Duration, ok bool) {
-	logger := miniutils.GetLogger("")
+	logger := conf.GetConf().GetLogger()
 	c, r := getHttpClient(maxDuration, testUrl, localAddr)
 	speed, ok = requestNode(c, r, maxDuration, index)
 	if ok {
-		logger.Debug(fmt.Sprintf("----SUCCESS---NodeSpeedTest[%d]---Local(%s)---Speed(%s)--", index, localAddr, speed))
+		logger.Debugf("----SUCCESS---NodeSpeedTest[%d]---Local(%s)---Speed(%s)--", index, localAddr, speed)
 	}
 	return
 }
 
 func requestNode(c *http.Client, r *http.Request, maxDuration time.Duration, i int) (speed time.Duration, ok bool) {
-	logger := miniutils.GetLogger("")
+	logger := conf.GetConf().GetLogger()
 	ok = false
 	speed = maxDuration
 	start := time.Now()
@@ -69,7 +68,7 @@ func requestNode(c *http.Client, r *http.Request, maxDuration time.Duration, i i
 		if strings.Contains(err.Error(), io.EOF.Error()) {
 			speed = costTime
 		}
-		logger.Debug(fmt.Sprintf("---SpeedTestError(%d)Error(%s)---statusCode(%d)--cost(%+v)---", i, err, statusCode, costTime))
+		logger.Debugf("---SpeedTestError(%d)Error(%s)---statusCode(%d)--cost(%+v)---", i, err, statusCode, costTime)
 		return
 	}
 
