@@ -106,7 +106,7 @@ func (p *ProxyPool) GetNodes(domain string) ProxyNodes {
 	if domain == "" {
 		return p.nodes
 	}
-	return p.GetSpeedNodes(domain)
+	return p.getSpeedNodes(domain)
 }
 
 func (p *ProxyPool) UpdateNode(n ProxyNode) error {
@@ -138,9 +138,9 @@ func (p *ProxyPool) AddSpeedNode(key string, n ProxyNode) {
 		p.speedMap[key] = []ProxyNode{n}
 	}
 }
-func (p *ProxyPool) GetSpeedNodes(key string) []ProxyNode {
-	p.lock.Lock()
-	defer p.lock.Unlock()
+func (p *ProxyPool) getSpeedNodes(key string) []ProxyNode {
+	// p.lock.Lock() 重复使用lock会导致永久锁死
+	// defer p.lock.Unlock()
 	nds, ok := p.speedMap[key]
 	if ok {
 		return nds
@@ -370,7 +370,7 @@ func (p *ProxyPool) KillAllNodes() (total, runport, kill, fail int) {
 	var err error
 	p.IsLock = true
 	portToNode := p.getNodesMap()
-	startPort := p.localPortStart
+	startPort := p.localPortStart - 1
 	maxport := startPort + len(p.nodes) + 1
 	for i := startPort; i < maxport; i++ {
 		total++
