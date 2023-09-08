@@ -1,11 +1,11 @@
 package v2raypool
 
 import (
+	"context"
 	"fmt"
 	"net"
-
-	"context"
 	"strings"
+	"sync"
 
 	"github.com/iotames/v2raypool/conf"
 	g "github.com/iotames/v2raypool/grpc"
@@ -256,6 +256,20 @@ func GetRunningNodes() ProxyNodes {
 	return result
 }
 
+func StartServer() {
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	wg1 := sync.WaitGroup{}
+	wg1.Add(1)
+	go func() {
+		proxyPoolInit()
+		wg.Done()
+		wg1.Wait()
+	}()
+	wg.Wait()
+	RunProxyPoolGrpcServer()
+}
+
 func RunProxyPoolGrpcServer() {
 	lisAddr := fmt.Sprintf(":%d", conf.GetConf().GrpcPort)
 	fmt.Printf("---listenAddr(%s)---\n", lisAddr)
@@ -267,7 +281,7 @@ func RunProxyPoolGrpcServer() {
 	s := grpc.NewServer()
 	g.RegisterProxyPoolServiceServer(s, ProxyPoolServer{})
 
-	fmt.Printf("server listening at(%+v)\n", lis.Addr())
+	fmt.Printf("SUCCESS: gRPC Server Listening At(%+v)\n", lis.Addr())
 	if err := s.Serve(lis); err != nil {
 		fmt.Printf("failed to serve: %v", err)
 	}

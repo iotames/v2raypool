@@ -433,11 +433,12 @@ func (p *ProxyPool) ActiveNode(n ProxyNode) error {
 	return err
 }
 
-// RunProxyPoolInit 初始化代理池
+// proxyPoolInit 初始化代理池
 // TODO 自带控制系统(TCP, HTTP, protobuf, 跨进程共享内存)
 // TODO 独立运行，使用protobuf与其他进程交互，在schedule中更新订阅
 // https://cloud.tencent.com/developer/article/1564128
-func RunProxyPoolInit() {
+func proxyPoolInit() {
+	startAt := time.Now()
 	cf := conf.GetConf()
 	subscribeRawData := cf.GetSubscribeData()
 	if cf.SubscribeUrl == "" {
@@ -457,11 +458,8 @@ func RunProxyPoolInit() {
 		SetTestMaxDuration(maxDuration).
 		InitSubscribeData()
 	nds := pp.GetNodes("")
-	wg := sync.WaitGroup{}
-	wg.Add(1)
 	for i, n := range nds {
 		fmt.Printf("---[%d]--Lport(%d)--Speed(%.3f)--Run(%v)--TestAt(%s)--Remote(%s)--T(%s)--index(%d)\n", i, n.LocalPort, n.Speed.Seconds(), n.IsRunning(), n.TestAt.Format("2006-01-02 15:04"), n.RemoteAddr, n.Title, n.Index)
-
 	}
-	wg.Wait()
+	fmt.Printf("-----SUCCESS--RunProxyPoolInit--cost(%.3fs)--\n", time.Since(startAt).Seconds())
 }

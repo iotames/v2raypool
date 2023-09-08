@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"time"
 
 	vp "github.com/iotames/v2raypool"
 )
@@ -69,9 +68,7 @@ func main() {
 		stopProxyNodes()
 		return
 	}
-	go vp.RunProxyPoolInit()
-	time.Sleep(3 * time.Second)
-	vp.RunProxyPoolGrpcServer()
+	vp.StartServer()
 }
 
 func init() {
