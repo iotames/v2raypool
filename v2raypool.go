@@ -246,11 +246,13 @@ func (p *ProxyPool) testOneNode(n *ProxyNode, i int) bool {
 	speed, ok := testProxyNode(p.testUrl, p.GetLocalAddr(*n), i, p.testMaxDuration)
 	n.Speed = speed
 	if ok {
+		n.TestUrl = p.testUrl
 		n.TestAt = time.Now()
 	}
 	p.UpdateNode(*n)
 	if speed < p.testMaxDuration {
 		k := miniutils.GetDomainByUrl(p.testUrl)
+		n.TestUrl = p.testUrl
 		p.AddSpeedNode(k, *n)
 	}
 	return ok
@@ -351,6 +353,20 @@ func (p ProxyPool) getNodesMap() map[int]ProxyNode {
 	}
 	return mp
 }
+func (p *ProxyPool) UpdateAfterStopAll() {
+	for _, nd := range p.nodes {
+		if nd.IsRunning() {
+			nd.Stop()
+		}
+	}
+	for _, nds := range p.speedMap {
+		for _, n := range nds {
+			if n.IsRunning() {
+				n.Stop()
+			}
+		}
+	}
+}
 func (p *ProxyPool) StopAll() error {
 	var err error
 	p.IsLock = true
@@ -363,6 +379,7 @@ func (p *ProxyPool) StopAll() error {
 			}
 		}
 	}
+	p.UpdateAfterStopAll()
 	p.IsLock = false
 	return err
 }
@@ -392,6 +409,7 @@ func (p *ProxyPool) KillAllNodes() (total, runport, kill, fail int) {
 			}
 		}
 	}
+	p.UpdateAfterStopAll()
 	p.IsLock = false
 	return
 }
