@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+
+	"github.com/iotames/v2raypool/conf"
 )
 
 // github.com/v2fly/v2ray-core/v5/infra/conf/v5cfg
@@ -67,23 +69,39 @@ func getV2rayConfigV4(n V2rayNode, inPort int) io.Reader {
 	vconf.Log = []byte(`{"loglevel":"debug"}`) // v4
 	// vconf.Log = []byte(`{"access":{"type":"Console","level":"Debug"}}`) // v5
 
+	cf := conf.GetConf()
+
 	rule1 := newRouteRuleV4("DIRECT")
-	rule1.Ip = []string{
-		"geoip:private",
-		"geoip:cn",
+	if len(cf.DirectDomainList) > 0 {
+		rule1.Domains = cf.DirectDomainList
+	} else {
+		rule1.Domains = []string{
+			"geosite:cn",
+		}
 	}
-	// TODO 添加自定义IP
-	rule1.Domains = []string{
-		"geosite:cn",
+	if len(cf.DirectIpList) > 0 {
+		rule1.Ip = cf.DirectIpList
+	} else {
+		rule1.Ip = []string{
+			"geoip:private",
+			"geoip:cn",
+		}
 	}
-	// TODO 添加自定义domain
 
 	rule2 := newRouteRuleV4("PROXY")
-	rule2.Ip = []string{
-		"geoip:!cn",
+	if len(cf.ProxyDomainList) > 0 {
+		rule2.Domains = cf.ProxyDomainList
+	} else {
+		rule2.Domains = []string{
+			"geosite:google",
+		}
 	}
-	rule2.Domains = []string{
-		"geosite:google",
+	if len(cf.ProxyIpList) > 0 {
+		rule2.Ip = cf.ProxyIpList
+	} else {
+		rule2.Ip = []string{
+			"geoip:!cn",
+		}
 	}
 
 	rules := []V2rayRouteRuleV4{rule1, rule2}

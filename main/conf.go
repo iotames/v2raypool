@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/iotames/miniutils"
 	conf "github.com/iotames/v2raypool/conf"
@@ -92,6 +93,14 @@ func getEnvDefaultInt(key string, defval int) int {
 	return vv
 }
 
+func getEnvDefaultStrList(key string, defval string, sep string) []string {
+	v, ok := os.LookupEnv(key)
+	if !ok {
+		return strings.Split(defval, sep)
+	}
+	return strings.Split(v, sep)
+}
+
 const ENV_FILE_CONTENT = `# 设置 VP_ENV_FILE 环境变量，可更改配置文件路径。
 
 # 该目录存放程序运行时产生的文件
@@ -113,13 +122,18 @@ VP_SUBSCRIBE_DATA_FILE = "%s"
 
 # 设置HTTP代理，代理池的端口号网上开始累加。为防止与常用端口冲突，尽量设大点。
 VP_HTTP_PROXY = "%s"
+
+VP_DIRECT_DOMAIN_LIST = "%s"
+VP_DIRECT_IP_LIST = "%s"
+VP_PROXY_DOMAIN_LIST = "%s"
+VP_PROXY_IP_LIST = "%s"
 `
 
 //	func getAllConfEnvStr() string {
 //		return fmt.Sprintf(ENV_FILE_CONTENT, vconf.RuntimeDir, GrpcPort, vconf.V2rayPath, SubscribeUrl, SubscribeDataFile, HttpProxy)
 //	}
 func getAllConfEnvStrDefault() string {
-	return fmt.Sprintf(ENV_FILE_CONTENT, conf.DEFAULT_RUNTIME_DIR, conf.DEFAULT_GRPC_PORT, conf.DEFAULT_V2RAY_PATH, "", conf.DEFAULT_SUBSCRIBE_DATA_FILE, conf.DEFAULT_HTTP_PROXY)
+	return fmt.Sprintf(ENV_FILE_CONTENT, conf.DEFAULT_RUNTIME_DIR, conf.DEFAULT_GRPC_PORT, conf.DEFAULT_V2RAY_PATH, "", conf.DEFAULT_SUBSCRIBE_DATA_FILE, conf.DEFAULT_HTTP_PROXY, conf.DEFAULT_DIRECT_DOMAIN_LIST, conf.DEFAULT_DIRECT_IP_LIST, conf.DEFAULT_PROXY_DOMAIN_LIST, conf.DEFAULT_PROXY_IP_LIST)
 }
 
 func getConfByEnv() {
@@ -131,6 +145,10 @@ func getConfByEnv() {
 	cf.SubscribeUrl = getEnvDefaultStr("VP_SUBSCRIBE_URL", "")
 	cf.SubscribeDataFile = getEnvDefaultStr("VP_SUBSCRIBE_DATA_FILE", conf.DEFAULT_SUBSCRIBE_DATA_FILE)
 	cf.HttpProxy = getEnvDefaultStr("VP_HTTP_PROXY", conf.DEFAULT_HTTP_PROXY)
+	cf.DirectDomainList = getEnvDefaultStrList("VP_DIRECT_DOMAIN_LIST", conf.DEFAULT_DIRECT_DOMAIN_LIST, ",")
+	cf.DirectIpList = getEnvDefaultStrList("VP_DIRECT_IP_LIST", conf.DEFAULT_DIRECT_IP_LIST, ",")
+	cf.ProxyDomainList = getEnvDefaultStrList("VP_PROXY_DOMAIN_LIST", conf.DEFAULT_PROXY_DOMAIN_LIST, ",")
+	cf.ProxyIpList = getEnvDefaultStrList("VP_PROXY_IP_LIST", conf.DEFAULT_PROXY_IP_LIST, ",")
 	conf.SetConf(cf)
 
 	logger := cf.GetLogger()

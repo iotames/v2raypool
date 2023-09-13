@@ -17,25 +17,20 @@ const DEFAULT_V2RAY_PATH = "bin/v2ray.exe"
 const DEFAULT_HTTP_PROXY = "http://127.0.0.1:30000"
 const DEFAULT_SUBSCRIBE_DATA_FILE = "subscribe_data.txt"
 
-const DEFAULT_PROXY_DOMAIN_LIST = ""
-const DEFAULT_DIRECT_DOMAIN_LIST = ""
-const DEFAULT_PROXY_IP_LIST = ""
-const DEFAULT_DIRECT_IP_LIST = ""
-
-// "geoip:private",
-// "geoip:cn",
-// "geosite:cn",
-// "geoip:!cn",
-// "geosite:google",
+const DEFAULT_DIRECT_DOMAIN_LIST = "geosite:cn"
+const DEFAULT_DIRECT_IP_LIST = "geoip:private,geoip:cn"
+const DEFAULT_PROXY_DOMAIN_LIST = "geosite:google"
+const DEFAULT_PROXY_IP_LIST = "geoip:!cn"
 
 type Conf struct {
-	EnvFile           string
-	RuntimeDir        string
-	GrpcPort          int
-	V2rayPath         string
-	SubscribeUrl      string
-	SubscribeDataFile string
-	HttpProxy         string
+	EnvFile                                                      string
+	RuntimeDir                                                   string
+	GrpcPort                                                     int
+	V2rayPath                                                    string
+	SubscribeUrl                                                 string
+	SubscribeDataFile                                            string
+	HttpProxy                                                    string
+	DirectDomainList, DirectIpList, ProxyDomainList, ProxyIpList []string
 }
 
 func (cf Conf) GetSubscribeData() string {
