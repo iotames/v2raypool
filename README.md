@@ -148,6 +148,45 @@ systemctl start v2raypool
 systemctl stop v2raypool
 ```
 
+## 路由规则
+
+支持自定义域名和IP列表配置:
+
+- PROXY_DOMAIN_LIST 代理域名列表
+- DIRECT_DOMAIN_LIST 直连域名列表
+- PROXY_IP_LIST 代理IP列表
+- DIRECT_IP_LIST 直连IP列表
+
+
+域名匹配规则:
+
+- `纯字符串`：当此字符串匹配`目标域名中任意部分`，该规则生效。比如 sina.com 可以匹配 sina.com、sina.com.cn、sina.company 和 www.sina.com，但不匹配 sina.cn。
+- `正则表达式`：由 `regexp:` 开始，余下部分是一个正则表达式。当此正则表达式匹配目标域名时，该规则生效。例如 regexp:\.goo.*\.com$ 匹配 www.google.com、fonts.googleapis.com，但不匹配 google.com。
+- `子域名（推荐）`：由 `domain:` 开始，余下部分是一个域名。当此域名是目标域名或其子域名时，该规则生效。例如 domain:v2ray.com 匹配 www.v2ray.com、v2ray.com，但不匹配 xv2ray.com。
+- `完整匹配`：由 `full:` 开始，余下部分是一个域名。当此域名完整匹配目标域名时，该规则生效。例如 full:v2ray.com 匹配 v2ray.com 但不匹配 www.v2ray.com。
+- `预定义域名列表`：由 `geosite:` 开头，余下部分是一个类别名称（域名列表），如 `geosite:google` 或者 `geosite:cn`。名称及域名列表参考预定义域名列表。
+- `从文件中加载域名`：形如 `ext:file:tag`，必须以 `ext:` 开头，后面跟文件名和标签，文件存放在资源目录中，文件格式与 `geosite.dat` 相同，标签必须在文件中存在。
+
+IP匹配规则:
+
+- `IP`：形如 127.0.0.1。
+- `CIDR`：形如 10.0.0.0/8。
+- `GeoIP`：
+形如 `geoip:cn` 为正向匹配，即为匹配「中国大陆 IP 地址」。后面跟双字符国家或地区代码，支持所有可以上网的国家和地区。
+
+形如 geoip:!cn 为反向匹配，即为匹配「非中国大陆 IP 地址」。后面跟双字符国家或地区代码，支持所有可以上网的国家和地区。
+
+特殊值：`geoip:private`（V2Ray 3.5+），包含所有私有地址，如 127.0.0.1。
+
+- 从文件中加载 IP：
+形如 `ext:file:tag` 和 `ext-ip:file:tag` 为正向匹配，即为匹配 「tag 内的 IP 地址」。
+
+形如 ext:file:!tag 和 ext-ip:file:!tag 为反向匹配，即为匹配「非 tag 内的 IP 地址」。
+
+必须以 `ext:` 或 `ext-ip:` 开头，后面跟文件名、标签或 !标签，文件存放在资源目录中，文件格式与 `geoip.dat` 相同，标签必须在文件中存在。
+
+具体请参看 [v2ray路由规则](https://www.v2fly.org/config/routing.html#ruleobject)
+
 ## 开发相关
 
 ### gRPC接口
