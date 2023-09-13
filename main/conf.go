@@ -123,8 +123,11 @@ VP_SUBSCRIBE_DATA_FILE = "%s"
 # 设置HTTP代理，代理池的端口号网上开始累加。为防止与常用端口冲突，尽量设大点。
 VP_HTTP_PROXY = "%s"
 
+# 路由规则：直连上网的域名列表和IP列表。用英文逗号,隔开
 VP_DIRECT_DOMAIN_LIST = "%s"
 VP_DIRECT_IP_LIST = "%s"
+
+# 路由规则：代理上网的域名列表和IP列表。用英文逗号,隔开
 VP_PROXY_DOMAIN_LIST = "%s"
 VP_PROXY_IP_LIST = "%s"
 `
@@ -133,7 +136,10 @@ VP_PROXY_IP_LIST = "%s"
 //		return fmt.Sprintf(ENV_FILE_CONTENT, vconf.RuntimeDir, GrpcPort, vconf.V2rayPath, SubscribeUrl, SubscribeDataFile, HttpProxy)
 //	}
 func getAllConfEnvStrDefault() string {
-	return fmt.Sprintf(ENV_FILE_CONTENT, conf.DEFAULT_RUNTIME_DIR, conf.DEFAULT_GRPC_PORT, conf.DEFAULT_V2RAY_PATH, "", conf.DEFAULT_SUBSCRIBE_DATA_FILE, conf.DEFAULT_HTTP_PROXY, conf.DEFAULT_DIRECT_DOMAIN_LIST, conf.DEFAULT_DIRECT_IP_LIST, conf.DEFAULT_PROXY_DOMAIN_LIST, conf.DEFAULT_PROXY_IP_LIST)
+	return fmt.Sprintf(ENV_FILE_CONTENT, conf.DEFAULT_RUNTIME_DIR, conf.DEFAULT_GRPC_PORT, conf.DEFAULT_V2RAY_PATH,
+		"", conf.DEFAULT_SUBSCRIBE_DATA_FILE, conf.DEFAULT_HTTP_PROXY,
+		conf.DEFAULT_DIRECT_DOMAIN_LIST, conf.DEFAULT_DIRECT_IP_LIST, conf.DEFAULT_PROXY_DOMAIN_LIST, conf.DEFAULT_PROXY_IP_LIST,
+	)
 }
 
 func getConfByEnv() {

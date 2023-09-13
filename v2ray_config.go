@@ -48,8 +48,8 @@ type V2rayConfigV4 struct {
 	Outbounds []V2rayOutbound `json:"outbounds"`
 }
 
-// V2rayRouteRuleV4 https://www.v2fly.org/config/routing.html#ruleobject
-type V2rayRouteRuleV4 struct {
+// V2rayRouteRule https://www.v2fly.org/config/routing.html#ruleobject
+type V2rayRouteRule struct {
 	DomainMatcher string   `json:"domainMatcher"`
 	Type          string   `json:"type"`
 	Domains       []string `json:"domains"`
@@ -59,9 +59,31 @@ type V2rayRouteRuleV4 struct {
 
 }
 
-func newRouteRuleV4(outboundTag string) V2rayRouteRuleV4 {
-	r := V2rayRouteRuleV4{DomainMatcher: "mph", Type: "field", OutboundTag: outboundTag}
+func newRouteRule(outboundTag string) V2rayRouteRule {
+	r := V2rayRouteRule{DomainMatcher: "mph", Type: "field", OutboundTag: outboundTag}
 	return r
+}
+
+func getRouteRules() []V2rayRouteRule {
+	cf := conf.GetConf()
+
+	rule1 := newRouteRule("DIRECT")
+	if len(cf.DirectDomainList) > 0 {
+		rule1.Domains = cf.DirectDomainList
+	}
+	if len(cf.DirectIpList) > 0 {
+		rule1.Ip = cf.DirectIpList
+	}
+
+	rule2 := newRouteRule("PROXY")
+	if len(cf.ProxyDomainList) > 0 {
+		rule2.Domains = cf.ProxyDomainList
+	}
+	if len(cf.ProxyIpList) > 0 {
+		rule2.Ip = cf.ProxyIpList
+	}
+
+	return []V2rayRouteRule{rule1, rule2}
 }
 
 func getV2rayConfigV4(n V2rayNode, inPort int) io.Reader {
@@ -69,48 +91,12 @@ func getV2rayConfigV4(n V2rayNode, inPort int) io.Reader {
 	vconf.Log = []byte(`{"loglevel":"debug"}`) // v4
 	// vconf.Log = []byte(`{"access":{"type":"Console","level":"Debug"}}`) // v5
 
-	cf := conf.GetConf()
-
-	rule1 := newRouteRuleV4("DIRECT")
-	if len(cf.DirectDomainList) > 0 {
-		rule1.Domains = cf.DirectDomainList
-	} else {
-		rule1.Domains = []string{
-			"geosite:cn",
-		}
-	}
-	if len(cf.DirectIpList) > 0 {
-		rule1.Ip = cf.DirectIpList
-	} else {
-		rule1.Ip = []string{
-			"geoip:private",
-			"geoip:cn",
-		}
-	}
-
-	rule2 := newRouteRuleV4("PROXY")
-	if len(cf.ProxyDomainList) > 0 {
-		rule2.Domains = cf.ProxyDomainList
-	} else {
-		rule2.Domains = []string{
-			"geosite:google",
-		}
-	}
-	if len(cf.ProxyIpList) > 0 {
-		rule2.Ip = cf.ProxyIpList
-	} else {
-		rule2.Ip = []string{
-			"geoip:!cn",
-		}
-	}
-
-	rules := []V2rayRouteRuleV4{rule1, rule2}
-
 	var rulesb []byte
-	rulesb, _ = json.Marshal(rules)
+	rulesb, _ = json.Marshal(getRouteRules())
 
+	// 域名解析策略domainStrategy: 不要使用 AsIs , 要用 IPOnDemand 或者 IPIfNonMatch ，否则直连规则不生效
 	routing := fmt.Sprintf(`{
-		"domainStrategy": "AsIs",
+		"domainStrategy": "IPOnDemand",
 		"domainMatcher": "mph",
 		"rules": %s,
 		"balancers": []
@@ -151,7 +137,7 @@ func getV2rayConfigV4(n V2rayNode, inPort int) io.Reader {
 	outbd.StreamSetting = json.RawMessage(streamSet)
 
 	outdirect := V2rayOutbound{Protocol: "freedom", Tag: "DIRECT"} // "sendThrough": "0.0.0.0",
-	outdirect.Settings = json.RawMessage(`{"domainStrategy": "AsIs","redirect": ":0"}`)
+	outdirect.Settings = json.RawMessage(`{}`)
 	outdirect.StreamSetting = json.RawMessage(`{}`)
 
 	vconf.Inbounds = []V2rayInbound{inbd1}
@@ -161,7 +147,7 @@ func getV2rayConfigV4(n V2rayNode, inPort int) io.Reader {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Printf("\n---v2ray.config=(%+v)--\n", string(vconfjs))
+	fmt.Printf("\n---v2ray.config=(%s)--\n", string(vconfjs))
 	return bytes.NewReader(vconfjs)
 }
 

@@ -24,6 +24,7 @@ func ParseV2rayNodes(data string) []V2rayNode {
 				fmt.Printf("\n---ParseV2rayNodes--Base64.Decode--err(%v)---RAW(%s)---\n", err, d)
 				continue
 			}
+			fmt.Printf("\n-----ParseV2rayNodes--node(%s)--\n", string(b))
 			err = json.Unmarshal(b, &n)
 			if err != nil {
 				fmt.Printf("\n---ParseV2rayNodes--json.Unmarshal err---[%d]--err(%v)--RAW(%s)--data(%s)---\n", i, err, d, string(b))
