@@ -115,7 +115,7 @@ func (p *ProxyPool) UpdateNode(n ProxyNode) error {
 	// fmt.Printf("----BeginUpdateNode(%+v)--Id(%s)--Index(%d)\n", n, n.GetId(), n.Index)
 	for i, nn := range p.nodes {
 		if nn.GetId() == n.GetId() {
-			fmt.Printf("---UpdateProxyNode--Index(%d)--Id(%s)--Title(%s)--IsRunning(%v)\n", n.Index, n.GetId(), n.Title, n.IsRunning())
+			fmt.Printf("---UpdateProxyNode--Index(%d)--Id(%s)--Title(%s)--IsRunning(%v)--Speed(%.3fs)--\n", n.Index, n.GetId(), n.Title, n.IsRunning(), n.Speed.Seconds())
 			find++
 			p.nodes[i] = n
 		}
@@ -216,7 +216,6 @@ func (p *ProxyPool) UpdateSubscribe() (total, add int) {
 			add++
 		}
 	}
-
 	return
 }
 func (p ProxyPool) getNodeByV2rayNode(vnd V2rayNode, i int) ProxyNode {
@@ -271,10 +270,12 @@ func (p *ProxyPool) TestAllForce() {
 				hasActive = true
 			}
 			wg.Add(1)
-			go func(n *ProxyNode, i int) {
-				p.testOneNode(n, i)
+			ii := i
+			nn := n
+			go func(nnn *ProxyNode, iii int) {
+				p.testOneNode(nnn, iii)
 				wg.Done()
-			}(&n, i)
+			}(&nn, ii)
 		}
 	}
 	wg.Wait()
@@ -294,7 +295,7 @@ func (p *ProxyPool) TestAll() {
 	p.IsLock = true
 	activePort := p.localPortStart - 1
 	hasActive := false
-	// wg := sync.WaitGroup{}
+	wg := sync.WaitGroup{}
 	runcount := 0
 	for i, n := range p.nodes {
 		if n.IsRunning() {
@@ -302,16 +303,18 @@ func (p *ProxyPool) TestAll() {
 			if n.LocalPort == activePort {
 				hasActive = true
 			}
-			if miniutils.GetDomainByUrl(p.testUrl) != miniutils.GetDomainByUrl(n.TestUrl) {
-				p.testOneNode(&n, i)
-			} else {
-				if !n.IsOk() {
-					p.testOneNode(&n, i)
-				}
+			if miniutils.GetDomainByUrl(p.testUrl) != miniutils.GetDomainByUrl(n.TestUrl) || !n.IsOk() {
+				wg.Add(1)
+				ii := i
+				nn := n
+				go func(nnn *ProxyNode, iii int) {
+					p.testOneNode(nnn, iii)
+					wg.Done()
+				}(&nn, ii)
 			}
 		}
 	}
-	// wg.Wait()
+	wg.Wait()
 	if runcount == 0 {
 		p.IsLock = false
 		fmt.Println("测速失败，没有可测速的代理节点。请先执行 --startproxynodes 命令，启动IP代理池")

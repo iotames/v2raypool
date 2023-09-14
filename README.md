@@ -35,8 +35,8 @@ go mod tidy
 # 进入项目 main 目录，并执行go编译命令
 cd main
 
-# linux或mac 运行: go build -o v2raypool .
-go build -o v2raypool.exe .
+# linux或mac 运行: go build -o v2raypool -trimpath -ldflags "-s -w -buildid=" .
+go build -o v2raypool.exe -trimpath -ldflags "-s -w -buildid=" .
 ```
 
 编译出二进制可执行文件 `v2raypool`(linux or max) 或 `v2raypool.exe`(windows)
