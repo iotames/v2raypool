@@ -11,6 +11,7 @@ import (
 	"github.com/iotames/miniutils"
 )
 
+const DEFAULT_TEST_URL = "https://www.google.com"
 const DEFAULT_RUNTIME_DIR = "runtime"
 const DEFAULT_GRPC_PORT = 50051
 const DEFAULT_V2RAY_PATH = "bin/v2ray.exe"
@@ -23,6 +24,7 @@ const DEFAULT_PROXY_DOMAIN_LIST = "geosite:google"
 const DEFAULT_PROXY_IP_LIST = "geoip:!cn"
 
 type Conf struct {
+	TestUrl                                                      string
 	EnvFile                                                      string
 	RuntimeDir                                                   string
 	GrpcPort                                                     int

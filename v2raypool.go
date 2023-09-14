@@ -469,7 +469,7 @@ func proxyPoolInit() {
 	maxDuration := 3 * time.Second
 	pp := GetProxyPool()
 	pp.SetV2rayPath(cf.V2rayPath).
-		SetTestUrl("https://www.google.com").
+		SetTestUrl(cf.TestUrl).
 		SetSubscribeRawData(subscribeRawData).
 		SetSubscribeUrl(cf.SubscribeUrl).
 		SetLocalPortStart(port + 1).

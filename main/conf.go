@@ -136,6 +136,9 @@ VP_SUBSCRIBE_DATA_FILE = "%s"
 # 设置HTTP代理，代理池的端口号网上开始累加。为防止与常用端口冲突，尽量设大点。
 VP_HTTP_PROXY = "%s"
 
+# 节点测速的URL
+VP_TEST_URL = "%s"
+
 # 路由规则：直连上网的域名列表和IP列表。用英文逗号,隔开
 VP_DIRECT_DOMAIN_LIST = "%s"
 VP_DIRECT_IP_LIST = "%s"
@@ -150,7 +153,7 @@ VP_PROXY_IP_LIST = "%s"
 //	}
 func getAllConfEnvStrDefault() string {
 	return fmt.Sprintf(ENV_FILE_CONTENT, conf.DEFAULT_RUNTIME_DIR, conf.DEFAULT_GRPC_PORT, conf.DEFAULT_V2RAY_PATH,
-		"", conf.DEFAULT_SUBSCRIBE_DATA_FILE, conf.DEFAULT_HTTP_PROXY,
+		"", conf.DEFAULT_SUBSCRIBE_DATA_FILE, conf.DEFAULT_HTTP_PROXY, conf.DEFAULT_TEST_URL,
 		conf.DEFAULT_DIRECT_DOMAIN_LIST, conf.DEFAULT_DIRECT_IP_LIST, conf.DEFAULT_PROXY_DOMAIN_LIST, conf.DEFAULT_PROXY_IP_LIST,
 	)
 }
@@ -164,6 +167,7 @@ func getConfByEnv() {
 	cf.SubscribeUrl = getEnvDefaultStr("VP_SUBSCRIBE_URL", "")
 	cf.SubscribeDataFile = getEnvDefaultStr("VP_SUBSCRIBE_DATA_FILE", conf.DEFAULT_SUBSCRIBE_DATA_FILE)
 	cf.HttpProxy = getEnvDefaultStr("VP_HTTP_PROXY", conf.DEFAULT_HTTP_PROXY)
+	cf.TestUrl = getEnvDefaultStr("VP_TEST_URL", conf.DEFAULT_TEST_URL)
 	cf.DirectDomainList = getEnvDefaultStrList("VP_DIRECT_DOMAIN_LIST", conf.DEFAULT_DIRECT_DOMAIN_LIST, ",")
 	cf.DirectIpList = getEnvDefaultStrList("VP_DIRECT_IP_LIST", conf.DEFAULT_DIRECT_IP_LIST, ",")
 	cf.ProxyDomainList = getEnvDefaultStrList("VP_PROXY_DOMAIN_LIST", conf.DEFAULT_PROXY_DOMAIN_LIST, ",")
