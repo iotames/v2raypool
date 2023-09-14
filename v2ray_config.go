@@ -66,24 +66,30 @@ func newRouteRule(outboundTag string) V2rayRouteRule {
 
 func getRouteRules() []V2rayRouteRule {
 	cf := conf.GetConf()
+	var rules []V2rayRouteRule
 
-	rule1 := newRouteRule("DIRECT")
-	if len(cf.DirectDomainList) > 0 {
-		rule1.Domains = cf.DirectDomainList
-	}
-	if len(cf.DirectIpList) > 0 {
-		rule1.Ip = cf.DirectIpList
-	}
-
-	rule2 := newRouteRule("PROXY")
-	if len(cf.ProxyDomainList) > 0 {
-		rule2.Domains = cf.ProxyDomainList
-	}
-	if len(cf.ProxyIpList) > 0 {
-		rule2.Ip = cf.ProxyIpList
+	if len(cf.DirectDomainList) > 0 || len(cf.DirectIpList) > 0 {
+		rule1 := newRouteRule("DIRECT")
+		if len(cf.DirectDomainList) > 0 {
+			rule1.Domains = cf.DirectDomainList
+		}
+		if len(cf.DirectIpList) > 0 {
+			rule1.Ip = cf.DirectIpList
+		}
+		rules = append(rules, rule1)
 	}
 
-	return []V2rayRouteRule{rule1, rule2}
+	if len(cf.ProxyDomainList) > 0 || len(cf.ProxyIpList) > 0 {
+		rule2 := newRouteRule("PROXY")
+		if len(cf.ProxyDomainList) > 0 {
+			rule2.Domains = cf.ProxyDomainList
+		}
+		if len(cf.ProxyIpList) > 0 {
+			rule2.Ip = cf.ProxyIpList
+		}
+		rules = append(rules, rule2)
+	}
+	return rules
 }
 
 func getV2rayConfigV4(n V2rayNode, inPort int) io.Reader {

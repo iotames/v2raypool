@@ -93,12 +93,25 @@ func getEnvDefaultInt(key string, defval int) int {
 	return vv
 }
 
+// getEnvDefaultStrList 切片的每个元素去掉收尾空格，空字符串对应长度为0的空切片。
 func getEnvDefaultStrList(key string, defval string, sep string) []string {
 	v, ok := os.LookupEnv(key)
 	if !ok {
-		return strings.Split(defval, sep)
+		v = defval
 	}
-	return strings.Split(v, sep)
+	v = strings.TrimSpace(v)
+	if v == "" {
+		return []string{}
+	}
+	vv := strings.Split(v, sep)
+	var result []string
+	for _, iv := range vv {
+		vvv := strings.TrimSpace(iv)
+		if vvv != "" {
+			result = append(result, vvv)
+		}
+	}
+	return result
 }
 
 const ENV_FILE_CONTENT = `# 设置 VP_ENV_FILE 环境变量，可更改配置文件路径。

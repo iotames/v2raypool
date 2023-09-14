@@ -12,12 +12,12 @@ fi
 CGO_ENABLED=0
 GOARCH=amd64
 
-BuildArgs="-ldflags \"-w -s \
+BuildArgs="-trimpath -ldflags \"-w -s -buildid= \
 -X 'main.AppVersion=${APP_VERSION}' \
 -X 'main.GoVersion=${GO_VERSION}'\" \
 -gcflags=\"all=-trimpath=${PWD}\" \
 -asmflags=\"all=-trimpath=${PWD}\""
 
-bash -c "GOOS=linux go build ${BuildArgs} -o $LinuxFineName ."
+bash -c "GOOS=linux go build -o $LinuxFineName ${BuildArgs} ."
 
-bash -c "GOOS=windows go build ${BuildArgs} -o $WinFileName ."
+bash -c "GOOS=windows go build -o $WinFileName ${BuildArgs} ."
