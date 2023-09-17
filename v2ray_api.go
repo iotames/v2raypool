@@ -161,3 +161,9 @@ func (a V2rayApiClient) AddOutbound(addr, port, nett, id, tls, outag string) err
 	}
 	return a.AddOutboundByV2rayNode(nd, outag)
 }
+
+func (a V2rayApiClient) RemoveOutbound(outag string) error {
+	result, err := a.c.RemoveOutbound(a.ctx, &pros.RemoveOutboundRequest{Tag: outag})
+	fmt.Printf("---RemoveInbound----result(%v)---err(%v)-\n", result, err)
+	return err
+}
