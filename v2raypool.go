@@ -261,24 +261,27 @@ func (p *ProxyPool) TestAllForce() {
 	p.IsLock = true
 	activePort := p.localPortStart - 1
 	hasActive := false
-	wg := sync.WaitGroup{}
+	// wg := sync.WaitGroup{}
 	runcount := 0
+	logger := miniutils.GetLogger("")
 	for i, n := range p.nodes {
 		if n.IsRunning() {
 			runcount++
 			if n.LocalPort == activePort {
 				hasActive = true
 			}
-			wg.Add(1)
-			ii := i
-			nn := n
-			go func(nnn *ProxyNode, iii int) {
-				p.testOneNode(nnn, iii)
-				wg.Done()
-			}(&nn, ii)
+			logger.Debugf("---i[%d]---n.addr(%s)---localPort(%d)---", i, n.RemoteAddr, n.LocalPort)
+			p.testOneNode(&n, i)
+			// wg.Add(1)
+			// ii := i
+			// nn := n
+			// go func(nnn *ProxyNode, iii int) {
+			// 	p.testOneNode(nnn, iii)
+			// 	wg.Done()
+			// }(&nn, ii)
 		}
 	}
-	wg.Wait()
+	// wg.Wait()
 	if runcount == 0 {
 		p.IsLock = false
 		fmt.Println("测速失败，没有可测速的代理节点。请先执行 --startproxynodes 命令，启动IP代理池")
