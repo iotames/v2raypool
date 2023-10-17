@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/golang/protobuf/proto"
@@ -22,6 +23,7 @@ import (
 	// "github.com/v2fly/v2ray-core/v5/proxy/socks"
 	// "github.com/v2fly/v2ray-core/v5/common/uuid"
 	"github.com/v2fly/v2ray-core/v5/proxy/http"
+	"github.com/v2fly/v2ray-core/v5/proxy/socks"
 	"github.com/v2fly/v2ray-core/v5/proxy/vmess"
 	"github.com/v2fly/v2ray-core/v5/proxy/vmess/outbound"
 	"google.golang.org/grpc"
@@ -64,17 +66,28 @@ func (a *V2rayApiClient) Dial() error {
 	return nil
 }
 
-func (a V2rayApiClient) AddInbound(inport net.Port, intag string) error {
+// AddInbound 添加入站规则
+// protocol http|socks
+func (a V2rayApiClient) AddInbound(inport net.Port, intag, protocol string) error {
+	var proxySet proto.Message
+	protocol = strings.ToLower(protocol)
+	if protocol == "http" {
+		proxySet = &http.ServerConfig{
+			// AllowTransparent: true,
+			UserLevel: 0,
+		}
+	}
+	if protocol == "socks" {
+		proxySet = &socks.ServerConfig{UserLevel: 0}
+	}
+
 	resp, err := a.c.AddInbound(a.ctx, &pros.AddInboundRequest{Inbound: &v5.InboundHandlerConfig{
 		Tag: intag,
 		ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
 			PortRange: net.SinglePortRange(inport),
 			Listen:    net.NewIPOrDomain(net.LocalHostIP),
 		}),
-		ProxySettings: serial.ToTypedMessage(&http.ServerConfig{
-			// AllowTransparent: true,
-			UserLevel: 0,
-		}),
+		ProxySettings: serial.ToTypedMessage(proxySet),
 	}})
 	fmt.Printf("---AddInbound----result(%s)--err(%v)--\n", resp, err)
 	return err

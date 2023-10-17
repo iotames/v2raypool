@@ -40,7 +40,7 @@ func main() {
 				intag = v
 			}
 		}
-		err = c.AddInbound(net.Port(inport), intag)
+		err = c.AddInbound(net.Port(inport), intag, "http")
 		if err != nil {
 			panic(err)
 		}

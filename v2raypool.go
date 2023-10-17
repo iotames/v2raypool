@@ -66,13 +66,13 @@ func (p *ProxyPool) AddNode(n ProxyNode) {
 	// fmt.Printf("----Begin---AddNode(%+v)---\n", n)
 	p.lock.Lock()
 	ok := true
-	hasPid, killStat := n.KillPidByLocalPort()
-	if hasPid > 0 {
-		fmt.Printf("----AddNode----Find--LocalPort(%d)---HasPID(%d)---\n", n.LocalPort, hasPid)
-	}
-	if killStat != nil {
-		panic(fmt.Errorf("---AddNode---killPidErr(%v)-----LocalPort(%d)----HasPID(%d)---", killStat, n.LocalPort, hasPid))
-	}
+	// hasPid, killStat := n.KillPidByLocalPort()
+	// if hasPid > 0 {
+	// 	fmt.Printf("----AddNode----Find--LocalPort(%d)---HasPID(%d)---\n", n.LocalPort, hasPid)
+	// }
+	// if killStat != nil {
+	// 	panic(fmt.Errorf("---AddNode---killPidErr(%v)-----LocalPort(%d)----HasPID(%d)---", killStat, n.LocalPort, hasPid))
+	// }
 	for _, nd := range p.nodes {
 		// kill 端口占用进程
 		if nd.LocalPort == n.LocalPort {
@@ -333,16 +333,23 @@ func (p *ProxyPool) TestAll() {
 func (p *ProxyPool) StartAll() error {
 	var err error
 	p.IsLock = true
+	_, err = NewV2ray(p.v2rayPath, 0).Start()
+
+	c := NewV2rayApiClientV5(p.getGrpcAddr())
+	if c.Dial() == nil {
+		defer c.Close()
+	}
 	for _, n := range p.nodes {
 		if !n.IsRunning() {
-			hasPid, killStat := n.KillPidByLocalPort()
-			if hasPid > 0 {
-				fmt.Printf("----StartAll----Find--LocalPort(%d)---HasPID(%d)---\n", n.LocalPort, hasPid)
-			}
-			if killStat != nil {
-				panic(fmt.Errorf("---StartAll---killPidErr(%v)-----LocalPort(%d)----HasPID(%d)---", killStat, n.LocalPort, hasPid))
-			}
-			err = n.Start(p.v2rayPath)
+			// hasPid, killStat := n.KillPidByLocalPort()
+			// if hasPid > 0 {
+			// 	fmt.Printf("----StartAll----Find--LocalPort(%d)---HasPID(%d)---\n", n.LocalPort, hasPid)
+			// }
+			// if killStat != nil {
+			// 	panic(fmt.Errorf("---StartAll---killPidErr(%v)-----LocalPort(%d)----HasPID(%d)---", killStat, n.LocalPort, hasPid))
+			// }
+			// err = n.Start(p.v2rayPath)
+			err = n.AddToPool(c)
 			p.UpdateNode(n)
 			if err != nil {
 				break
@@ -359,16 +366,25 @@ func (p ProxyPool) getNodesMap() map[int]ProxyNode {
 	}
 	return mp
 }
+func (p ProxyPool) getGrpcAddr() string {
+	return fmt.Sprintf("127.0.0.1:%d", conf.GetConf().V2rayApiPort)
+}
 func (p *ProxyPool) UpdateAfterStopAll() {
+	c := NewV2rayApiClientV5(p.getGrpcAddr())
+	if c.Dial() == nil {
+		defer c.Close()
+	}
 	for _, nd := range p.nodes {
 		if nd.IsRunning() {
-			nd.Stop()
+			// nd.Stop()
+			nd.Remove(c, "")
 		}
 	}
 	for _, nds := range p.speedMap {
 		for _, n := range nds {
 			if n.IsRunning() {
-				n.Stop()
+				// n.Stop()
+				n.Remove(c, "")
 			}
 		}
 	}
@@ -376,9 +392,14 @@ func (p *ProxyPool) UpdateAfterStopAll() {
 func (p *ProxyPool) StopAll() error {
 	var err error
 	p.IsLock = true
+	c := NewV2rayApiClientV5(p.getGrpcAddr())
+	if c.Dial() == nil {
+		defer c.Close()
+	}
 	for _, n := range p.nodes {
 		if n.IsRunning() {
-			err = n.Stop()
+			// err = n.Stop()
+			err = n.Remove(c, "")
 			p.UpdateNode(n)
 			if err != nil {
 				break
@@ -392,6 +413,10 @@ func (p *ProxyPool) StopAll() error {
 func (p *ProxyPool) KillAllNodes() (total, runport, kill, fail int) {
 	var err error
 	p.IsLock = true
+	c := NewV2rayApiClientV5(p.getGrpcAddr())
+	if c.Dial() == nil {
+		defer c.Close()
+	}
 	portToNode := p.getNodesMap()
 	startPort := p.localPortStart - 1
 	maxport := startPort + len(p.nodes) + 1
@@ -402,7 +427,8 @@ func (p *ProxyPool) KillAllNodes() (total, runport, kill, fail int) {
 			runport++
 			nd, ok := portToNode[i]
 			if ok {
-				err = nd.Stop()
+				// err = nd.Stop()
+				err = nd.Remove(c, "")
 				p.UpdateNode(nd)
 			} else {
 				err = miniutils.KillPid(fmt.Sprintf("%d", pid))
@@ -419,42 +445,53 @@ func (p *ProxyPool) KillAllNodes() (total, runport, kill, fail int) {
 	p.IsLock = false
 	return
 }
+
 func (p *ProxyPool) ActiveNode(n ProxyNode) error {
 	var err error
+	c := NewV2rayApiClientV5(p.getGrpcAddr())
+	if c.Dial() == nil {
+		defer c.Close()
+	}
 	activePort := p.localPortStart - 1
-	if n.LocalPort == activePort {
-		fmt.Println("-----SelectedNode.LocalPort==", activePort)
-		if !n.IsRunning() {
-			err = n.Start(p.v2rayPath)
-			if err != nil {
-				return err
-			}
-			err = p.UpdateNode(n)
-		}
+	err = n.Active(activePort, c)
+	if err != nil {
 		return err
 	}
-	for _, nn := range p.nodes {
-		if nn.LocalPort == activePort {
-			fmt.Println("-----FindOtherNode.LocalPort==", activePort)
-			if nn.IsRunning() {
-				fmt.Println("-----StopRunning---FindOtherNode.Index=", nn.Index)
-				nn.Stop()
-				p.SetLocalAddr(&nn, 0)
-				nn.Start(p.v2rayPath)
-			}
-			p.SetLocalAddr(&nn, 0)
-			p.UpdateNode(nn)
-		}
-	}
-	if n.IsRunning() {
-		fmt.Println("-----StopSelectedNode------")
-		n.Stop()
-	}
-	p.SetLocalAddr(&n, activePort)
-	err = n.Start(p.v2rayPath)
-	fmt.Println("-----Start---SelectedNode------")
-	p.UpdateNode(n)
-	return err
+	return p.UpdateNode(n)
+
+	// if n.LocalPort == activePort {
+	// 	fmt.Println("-----SelectedNode.LocalPort==", activePort)
+	// 	if !n.IsRunning() {
+	// 		err = n.Start(p.v2rayPath)
+	// 		if err != nil {
+	// 			return err
+	// 		}
+	// 		err = p.UpdateNode(n)
+	// 	}
+	// 	return err
+	// }
+	// for _, nn := range p.nodes {
+	// 	if nn.LocalPort == activePort {
+	// 		fmt.Println("-----FindOtherNode.LocalPort==", activePort)
+	// 		if nn.IsRunning() {
+	// 			fmt.Println("-----StopRunning---FindOtherNode.Index=", nn.Index)
+	// 			nn.Stop()
+	// 			p.SetLocalAddr(&nn, 0)
+	// 			nn.Start(p.v2rayPath)
+	// 		}
+	// 		p.SetLocalAddr(&nn, 0)
+	// 		p.UpdateNode(nn)
+	// 	}
+	// }
+	// if n.IsRunning() {
+	// 	fmt.Println("-----StopSelectedNode------")
+	// 	n.Stop()
+	// }
+	// p.SetLocalAddr(&n, activePort)
+	// err = n.Start(p.v2rayPath)
+	// fmt.Println("-----Start---SelectedNode------")
+	// p.UpdateNode(n)
+	// return err
 }
 
 // proxyPoolInit 初始化代理池

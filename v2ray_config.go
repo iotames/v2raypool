@@ -9,6 +9,10 @@ import (
 	"github.com/iotames/v2raypool/conf"
 )
 
+const TAG_OUTBOUND_ACTIVE = "TAG_ACTIVE_OUTBOUND"
+const TAG_OUTBOUND_API = "TAG_OUTBOUND_API"
+const TAG_INBOUND_API = "TAG_INBOUND_API"
+
 // github.com/v2fly/v2ray-core/v5/infra/conf/v5cfg
 // 执行 ./v2ray run -c $configure_file_name -format jsonv5 命令以运行您的配置文件。
 
@@ -42,6 +46,7 @@ type V2rayConfigV5 struct {
 
 type V2rayConfigV4 struct {
 	Log json.RawMessage `json:"log"`
+	Api json.RawMessage `json:"api"`
 	// Dns       json.RawMessage `json:"dns"`
 	Routing   json.RawMessage `json:"routing"`
 	Inbounds  []V2rayInbound  `json:"inbounds"`
@@ -54,8 +59,8 @@ type V2rayRouteRule struct {
 	Type          string   `json:"type"`
 	Domains       []string `json:"domains"`
 	Ip            []string `json:"ip"`
-	// InboundTag []string `json:"inboundTag"`
-	OutboundTag string `json:"outboundTag"` //direct
+	InboundTag    []string `json:"inboundTag"`
+	OutboundTag   string   `json:"outboundTag"` //direct
 
 }
 
@@ -67,7 +72,7 @@ func newRouteRule(outboundTag string) V2rayRouteRule {
 func getRouteRules() []V2rayRouteRule {
 	cf := conf.GetConf()
 	var rules []V2rayRouteRule
-
+	rules = append(rules, V2rayRouteRule{Type: "field", InboundTag: []string{TAG_INBOUND_API}, OutboundTag: TAG_OUTBOUND_API})
 	if len(cf.DirectDomainList) > 0 || len(cf.DirectIpList) > 0 {
 		rule1 := newRouteRule("DIRECT")
 		if len(cf.DirectDomainList) > 0 {
@@ -80,7 +85,7 @@ func getRouteRules() []V2rayRouteRule {
 	}
 
 	if len(cf.ProxyDomainList) > 0 || len(cf.ProxyIpList) > 0 {
-		rule2 := newRouteRule("PROXY")
+		rule2 := newRouteRule(TAG_OUTBOUND_ACTIVE)
 		if len(cf.ProxyDomainList) > 0 {
 			rule2.Domains = cf.ProxyDomainList
 		}
@@ -89,10 +94,15 @@ func getRouteRules() []V2rayRouteRule {
 		}
 		rules = append(rules, rule2)
 	}
+	for i := 0; i < 100; i++ {
+		tag := fmt.Sprintf("TAG_PROXY_%d", i)
+		rules = append(rules, V2rayRouteRule{Type: "field", InboundTag: []string{tag}, OutboundTag: tag})
+	}
 	return rules
 }
 
 func getV2rayConfigV4(n V2rayNode, inPort int) io.Reader {
+	cf := conf.GetConf()
 	vconf := V2rayConfigV4{}
 	vconf.Log = []byte(`{"loglevel":"debug"}`) // v4
 	// vconf.Log = []byte(`{"access":{"type":"Console","level":"Debug"}}`) // v5
@@ -107,9 +117,8 @@ func getV2rayConfigV4(n V2rayNode, inPort int) io.Reader {
 		"rules": %s,
 		"balancers": []
 	}`, string(rulesb))
-
+	vconf.Api = json.RawMessage(fmt.Sprintf(`{"tag": "%s", "services": ["HandlerService"]}`, TAG_OUTBOUND_API))
 	vconf.Routing = json.RawMessage(routing)
-
 	inAddr := "0.0.0.0" // "127.0.0.1"
 	inSet := fmt.Sprintf(`{"auth":"noauth","udp":true,"ip":"%s"}`, inAddr)
 	// 	SOCKS5 通过 UDP ASSOCIATE 命令建立 UDP 会话。服务端在对客户端发来的该命令的回复中，指定客户端发包的目标地址。
@@ -123,6 +132,16 @@ func getV2rayConfigV4(n V2rayNode, inPort int) io.Reader {
 		Settings: json.RawMessage(inSet),
 		Tag:      "http_IN",
 	}
+
+	inbdapi := V2rayInbound{
+		Listen:   "127.0.0.1",
+		Port:     cf.V2rayApiPort,
+		Protocol: "dokodemo-door",
+		Settings: json.RawMessage(`{"address": "127.0.0.1"}`),
+		Tag:      TAG_INBOUND_API,
+	}
+	vconf.Inbounds = []V2rayInbound{inbdapi}
+
 	// inbd2 := V2rayInbound{
 	// 	Protocol: "socket",
 	// 	Port:     inPort, // 端口号相同会冲突
@@ -134,7 +153,7 @@ func getV2rayConfigV4(n V2rayNode, inPort int) io.Reader {
 	outbd := V2rayOutbound{
 		Protocol: n.Protocol,
 		// SendThrough: "0.0.0.0",
-		Tag: "PROXY",
+		Tag: TAG_OUTBOUND_ACTIVE,
 	}
 	outSet := fmt.Sprintf(`{"vnext":[{"address":"%s","port":%s,"users":[{"id":"%s","security":"aes-128-gcm"}]}]}`, n.Add, n.Port, n.Id)
 	outbd.Settings = json.RawMessage(outSet)
@@ -145,9 +164,13 @@ func getV2rayConfigV4(n V2rayNode, inPort int) io.Reader {
 	outdirect := V2rayOutbound{Protocol: "freedom", Tag: "DIRECT"} // "sendThrough": "0.0.0.0",
 	outdirect.Settings = json.RawMessage(`{}`)
 	outdirect.StreamSetting = json.RawMessage(`{}`)
-
-	vconf.Inbounds = []V2rayInbound{inbd1}
-	vconf.Outbounds = []V2rayOutbound{outbd, outdirect}
+	if inbd1.Port != 0 {
+		vconf.Inbounds = append(vconf.Inbounds, inbd1)
+	}
+	vconf.Outbounds = []V2rayOutbound{outdirect}
+	if n.Add != "" {
+		vconf.Outbounds = append(vconf.Outbounds, outbd)
+	}
 
 	vconfjs, err := json.Marshal(vconf)
 	if err != nil {
