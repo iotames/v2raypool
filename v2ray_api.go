@@ -85,7 +85,7 @@ func (a V2rayApiClient) AddInbound(inport net.Port, intag, protocol string) erro
 		Tag: intag,
 		ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
 			PortRange: net.SinglePortRange(inport),
-			Listen:    net.NewIPOrDomain(net.LocalHostIP),
+			Listen:    net.NewIPOrDomain(net.AnyIP),
 		}),
 		ProxySettings: serial.ToTypedMessage(proxySet),
 	}})
