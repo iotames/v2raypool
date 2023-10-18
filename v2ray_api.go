@@ -89,13 +89,13 @@ func (a V2rayApiClient) AddInbound(inport net.Port, intag, protocol string) erro
 		}),
 		ProxySettings: serial.ToTypedMessage(proxySet),
 	}})
-	fmt.Printf("---AddInbound----result(%s)--err(%v)--\n", resp, err)
+	fmt.Printf("---AddInbound(%s)--port(%d)--result(%s)--err(%v)--\n", intag, inport, resp, err)
 	return err
 }
 
 func (a V2rayApiClient) RemoveInbound(intag string) error {
 	result, err := a.c.RemoveInbound(a.ctx, &pros.RemoveInboundRequest{Tag: intag})
-	fmt.Printf("---RemoveInbound----result(%v)---err(%v)-\n", result, err)
+	fmt.Printf("---RemoveInbound(%s)----result(%v)---err(%v)-\n", intag, result, err)
 	return err
 }
 
@@ -159,7 +159,7 @@ func (a V2rayApiClient) AddOutboundByV2rayNode(nd V2rayNode, outag string) error
 		// 	UserLevel:      0,
 		// }),
 	}})
-	fmt.Printf("---AddInbound----result(%s)--err(%v)--\n", resp, err)
+	fmt.Printf("---AddOutbound(%s)--(%s:%s)--result(%s)--err(%v)--\n", outag, nd.Add, nd.Port, resp, err)
 	return err
 }
 
@@ -177,6 +177,6 @@ func (a V2rayApiClient) AddOutbound(addr, port, nett, id, tls, outag string) err
 
 func (a V2rayApiClient) RemoveOutbound(outag string) error {
 	result, err := a.c.RemoveOutbound(a.ctx, &pros.RemoveOutboundRequest{Tag: outag})
-	fmt.Printf("---RemoveInbound----result(%v)---err(%v)-\n", result, err)
+	fmt.Printf("---RemoveOutbound(%s)----result(%v)---err(%v)-\n", outag, result, err)
 	return err
 }

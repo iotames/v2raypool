@@ -45,7 +45,7 @@ func (p *ProxyNode) SetV2ray(n V2rayNode) *ProxyNode {
 }
 
 func (p *ProxyNode) AddToPool(c *V2rayApiClient) error {
-	tag := fmt.Sprintf("TAG_PROXY_%d", p.Index)
+	tag := getProxyNodeTag(p.Index)
 	err := c.AddInbound(net.Port(p.LocalPort), tag, "http")
 	if err != nil {
 		return err
@@ -68,6 +68,18 @@ func (p *ProxyNode) Active(localPort int, c *V2rayApiClient) error {
 		return err
 	}
 	p.status = 1
+	return err
+}
+
+func (p *ProxyNode) UnActive(c *V2rayApiClient) error {
+	err := c.RemoveOutbound(TAG_OUTBOUND_ACTIVE)
+	if err != nil {
+		return err
+	}
+	err = c.RemoveInbound(TAG_OUTBOUND_ACTIVE)
+	if err != nil {
+		return err
+	}
 	return err
 }
 

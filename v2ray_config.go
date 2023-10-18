@@ -95,10 +95,15 @@ func getRouteRules() []V2rayRouteRule {
 		rules = append(rules, rule2)
 	}
 	for i := 0; i < 100; i++ {
-		tag := fmt.Sprintf("TAG_PROXY_%d", i)
+		tag := getProxyNodeTag(i)
+		// 添加路由规则，相同标签的每一个出站和入站一一对应
 		rules = append(rules, V2rayRouteRule{Type: "field", InboundTag: []string{tag}, OutboundTag: tag})
 	}
 	return rules
+}
+
+func getProxyNodeTag(index int) string {
+	return fmt.Sprintf("TAG_PROXY_%d", index)
 }
 
 func getV2rayConfigV4(n V2rayNode, inPort int) io.Reader {
@@ -176,7 +181,7 @@ func getV2rayConfigV4(n V2rayNode, inPort int) io.Reader {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Printf("\n---v2ray.config=(%s)--\n", string(vconfjs))
+	fmt.Printf("\n---getV2rayConfigV4--Outbounds-len(%d)-val(%+v)---v2ray.config=(%s)--\n", len(vconf.Outbounds), vconf.Outbounds, string(vconfjs))
 	return bytes.NewReader(vconfjs)
 }
 

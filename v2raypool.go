@@ -3,6 +3,7 @@ package v2raypool
 import (
 	"fmt"
 
+	"os/exec"
 	"sync"
 	"time"
 
@@ -21,6 +22,7 @@ func GetProxyPool() *ProxyPool {
 }
 
 type ProxyPool struct {
+	cmd                            *exec.Cmd
 	localPortStart                 int
 	v2rayPath, testUrl             string
 	subscribeRawData, subscribeUrl string
@@ -33,6 +35,9 @@ type ProxyPool struct {
 
 func NewProxyPool() *ProxyPool {
 	return &ProxyPool{lock: &sync.Mutex{}, speedMap: make(map[string]ProxyNodes)}
+}
+func (p *ProxyPool) SetCmd(cmd *exec.Cmd) {
+	p.cmd = cmd
 }
 func (p *ProxyPool) SetLocalPortStart(port int) *ProxyPool {
 	p.localPortStart = port
@@ -333,7 +338,6 @@ func (p *ProxyPool) TestAll() {
 func (p *ProxyPool) StartAll() error {
 	var err error
 	p.IsLock = true
-	_, err = NewV2ray(p.v2rayPath, 0).Start()
 
 	c := NewV2rayApiClientV5(p.getGrpcAddr())
 	if c.Dial() == nil {
@@ -359,13 +363,14 @@ func (p *ProxyPool) StartAll() error {
 	p.IsLock = false
 	return err
 }
-func (p ProxyPool) getNodesMap() map[int]ProxyNode {
-	mp := make(map[int]ProxyNode, len(p.nodes))
-	for _, n := range p.nodes {
-		mp[n.LocalPort] = n
-	}
-	return mp
-}
+
+//	func (p ProxyPool) getNodesMap() map[int]ProxyNode {
+//		mp := make(map[int]ProxyNode, len(p.nodes))
+//		for _, n := range p.nodes {
+//			mp[n.LocalPort] = n
+//		}
+//		return mp
+//	}
 func (p ProxyPool) getGrpcAddr() string {
 	return fmt.Sprintf("127.0.0.1:%d", conf.GetConf().V2rayApiPort)
 }
@@ -374,17 +379,16 @@ func (p *ProxyPool) UpdateAfterStopAll() {
 	if c.Dial() == nil {
 		defer c.Close()
 	}
-	for _, nd := range p.nodes {
+	for i, nd := range p.nodes {
 		if nd.IsRunning() {
-			// nd.Stop()
-			nd.Remove(c, "")
+			nd.Remove(c, getProxyNodeTag(nd.Index))
+			p.nodes[i].status = 0
 		}
 	}
-	for _, nds := range p.speedMap {
-		for _, n := range nds {
+	for k, nds := range p.speedMap {
+		for i, n := range nds {
 			if n.IsRunning() {
-				// n.Stop()
-				n.Remove(c, "")
+				p.speedMap[k][i].status = 0
 			}
 		}
 	}
@@ -398,12 +402,11 @@ func (p *ProxyPool) StopAll() error {
 	}
 	for _, n := range p.nodes {
 		if n.IsRunning() {
-			// err = n.Stop()
 			err = n.Remove(c, "")
-			p.UpdateNode(n)
 			if err != nil {
 				break
 			}
+			p.UpdateNode(n)
 		}
 	}
 	p.UpdateAfterStopAll()
@@ -417,35 +420,52 @@ func (p *ProxyPool) KillAllNodes() (total, runport, kill, fail int) {
 	if c.Dial() == nil {
 		defer c.Close()
 	}
-	portToNode := p.getNodesMap()
-	startPort := p.localPortStart - 1
-	maxport := startPort + len(p.nodes) + 1
-	for i := startPort; i < maxport; i++ {
-		total++
-		pid := miniutils.GetPidByPort(i)
-		if pid > 0 {
-			runport++
-			nd, ok := portToNode[i]
-			if ok {
-				// err = nd.Stop()
-				err = nd.Remove(c, "")
-				p.UpdateNode(nd)
-			} else {
-				err = miniutils.KillPid(fmt.Sprintf("%d", pid))
-			}
-			if err != nil {
-				fail++
-				fmt.Printf("----KillPid(%d)--Port(%d)---Fail----\n", pid, i)
-			} else {
-				kill++
-			}
+	for _, nd := range p.nodes {
+		err = nd.Remove(c, getProxyNodeTag(nd.Index))
+		if err == nil {
+			p.UpdateNode(nd)
+			kill++
+		} else {
+			fail++
 		}
 	}
+	total = len(p.nodes)
+	if total > 0 {
+		p.nodes[0].UnActive(c)
+	}
+
+	// portToNode := p.getNodesMap()
+	// startPort := p.localPortStart - 1
+	// maxport := startPort + len(p.nodes) + 1
+	// for i := startPort; i < maxport; i++ {
+	// 	total++
+	// 	pid := miniutils.GetPidByPort(i)
+	// 	if pid > 0 {
+	// 		runport++
+	// 		nd, ok := portToNode[i]
+	// 		if ok {
+	// 			// err = nd.Stop()
+	// 			err = nd.Remove(c, "")
+	// 			p.UpdateNode(nd)
+	// 		} else {
+	// 			err = miniutils.KillPid(fmt.Sprintf("%d", pid))
+	// 		}
+	// 		if err != nil {
+	// 			fail++
+	// 			fmt.Printf("----KillPid(%d)--Port(%d)---Fail----\n", pid, i)
+	// 		} else {
+	// 			kill++
+	// 		}
+	// 	}
+	// }
+
 	p.UpdateAfterStopAll()
 	p.IsLock = false
+	p.cmd.Process.Kill()
 	return
 }
 
+// ActiveNode 浏览器访问要关闭再打开才会生效
 func (p *ProxyPool) ActiveNode(n ProxyNode) error {
 	var err error
 	c := NewV2rayApiClientV5(p.getGrpcAddr())
@@ -453,6 +473,8 @@ func (p *ProxyPool) ActiveNode(n ProxyNode) error {
 		defer c.Close()
 	}
 	activePort := p.localPortStart - 1
+	err = n.UnActive(c)
+	fmt.Printf("---UnActive--node(%d)--err(%v)--\n", n.Index, err)
 	err = n.Active(activePort, c)
 	if err != nil {
 		return err
@@ -522,5 +544,11 @@ func proxyPoolInit() {
 	for i, n := range nds {
 		fmt.Printf("---[%d]--Lport(%d)--Speed(%.3f)--Run(%v)--TestAt(%s)--Remote(%s)--T(%s)--index(%d)\n", i, n.LocalPort, n.Speed.Seconds(), n.IsRunning(), n.TestAt.Format("2006-01-02 15:04"), n.RemoteAddr, n.Title, n.Index)
 	}
-	fmt.Printf("-----SUCCESS--RunProxyPoolInit--cost(%.3fs)--\n", time.Since(startAt).Seconds())
+	cmd, err := NewV2ray(cf.V2rayPath, 0).Start()
+	if err == nil {
+		pp.SetCmd(cmd)
+		fmt.Printf("-----SUCCESS--RunProxyPoolInit--Pid(%d)--cost(%.3fs)--\n", cmd.Process.Pid, time.Since(startAt).Seconds())
+	} else {
+		fmt.Printf("-----FAIL--StartV2rayCoreFail-----cost(%.3fs)--\n", time.Since(startAt).Seconds())
+	}
 }

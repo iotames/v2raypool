@@ -139,11 +139,11 @@ VP_HTTP_PROXY = "%s"
 # 节点测速的URL
 VP_TEST_URL = "%s"
 
-# 路由规则：直连上网的域名列表和IP列表。用英文逗号,隔开
+# 路由规则：直连上网的域名列表和IP列表。用英文逗号,隔开。例：baidu.com,domain:baidu.com,full:www.baidu.com,regexp:.*\.qq\.com$
 VP_DIRECT_DOMAIN_LIST = "%s"
 VP_DIRECT_IP_LIST = "%s"
 
-# 路由规则：代理上网的域名列表和IP列表。用英文逗号,隔开
+# 路由规则：代理上网的域名列表和IP列表。用英文逗号,隔开。例：youtube.com,domain:youtube.com,full:www.youtube.com,regexp:.*\.google.com$
 VP_PROXY_DOMAIN_LIST = "%s"
 VP_PROXY_IP_LIST = "%s"
 
