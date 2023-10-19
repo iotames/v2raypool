@@ -58,30 +58,30 @@ func (p *ProxyNode) AddToPool(c *V2rayApiClient) error {
 	return err
 }
 
-func (p *ProxyNode) Active(localPort int, c *V2rayApiClient) error {
-	err := c.AddInbound(net.Port(localPort), TAG_OUTBOUND_ACTIVE, "http")
-	if err != nil {
-		return err
-	}
-	err = c.AddOutboundByV2rayNode(p.v2rayNode, TAG_OUTBOUND_ACTIVE)
-	if err != nil {
-		return err
-	}
-	p.status = 1
-	return err
-}
+// func (p *ProxyNode) Active(localPort int, c *V2rayApiClient) error {
+// 	err := c.AddInbound(net.Port(localPort), TAG_OUTBOUND_ACTIVE, "http")
+// 	if err != nil {
+// 		return err
+// 	}
+// 	err = c.AddOutboundByV2rayNode(p.v2rayNode, TAG_OUTBOUND_ACTIVE)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	p.status = 1
+// 	return err
+// }
 
-func (p *ProxyNode) UnActive(c *V2rayApiClient) error {
-	err := c.RemoveOutbound(TAG_OUTBOUND_ACTIVE)
-	if err != nil {
-		return err
-	}
-	err = c.RemoveInbound(TAG_OUTBOUND_ACTIVE)
-	if err != nil {
-		return err
-	}
-	return err
-}
+// func (p *ProxyNode) UnActive(c *V2rayApiClient) error {
+// 	err := c.RemoveOutbound(TAG_OUTBOUND_ACTIVE)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	err = c.RemoveInbound(TAG_OUTBOUND_ACTIVE)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	return err
+// }
 
 // func (p *ProxyNode) Start(path string) (err error) {
 // 	v := NewV2ray(path, p.LocalPort)

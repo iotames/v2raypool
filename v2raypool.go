@@ -23,6 +23,8 @@ func GetProxyPool() *ProxyPool {
 
 type ProxyPool struct {
 	cmd                            *exec.Cmd
+	activeCmd                      *exec.Cmd
+	activeNode                     ProxyNode
 	localPortStart                 int
 	v2rayPath, testUrl             string
 	subscribeRawData, subscribeUrl string
@@ -264,17 +266,12 @@ func (p *ProxyPool) testOneNode(n *ProxyNode, i int) bool {
 
 func (p *ProxyPool) TestAllForce() {
 	p.IsLock = true
-	activePort := p.localPortStart - 1
-	hasActive := false
 	// wg := sync.WaitGroup{}
 	runcount := 0
 	logger := miniutils.GetLogger("")
 	for i, n := range p.nodes {
 		if n.IsRunning() {
 			runcount++
-			if n.LocalPort == activePort {
-				hasActive = true
-			}
 			logger.Debugf("---i[%d]---n.addr(%s)---localPort(%d)---", i, n.RemoteAddr, n.LocalPort)
 			p.testOneNode(&n, i)
 			// wg.Add(1)
@@ -293,7 +290,8 @@ func (p *ProxyPool) TestAllForce() {
 		return
 	}
 	p.nodes.SortBySpeed()
-	if !hasActive {
+
+	if p.activeCmd == nil {
 		p.ActiveNode(p.nodes[0])
 	}
 	p.IsLock = false
@@ -301,16 +299,11 @@ func (p *ProxyPool) TestAllForce() {
 
 func (p *ProxyPool) TestAll() {
 	p.IsLock = true
-	activePort := p.localPortStart - 1
-	hasActive := false
 	wg := sync.WaitGroup{}
 	runcount := 0
 	for i, n := range p.nodes {
 		if n.IsRunning() {
 			runcount++
-			if n.LocalPort == activePort {
-				hasActive = true
-			}
 			if miniutils.GetDomainByUrl(p.testUrl) != miniutils.GetDomainByUrl(n.TestUrl) || !n.IsOk() {
 				wg.Add(1)
 				ii := i
@@ -329,7 +322,7 @@ func (p *ProxyPool) TestAll() {
 		return
 	}
 	p.nodes.SortBySpeed()
-	if !hasActive {
+	if p.activeCmd == nil {
 		p.ActiveNode(p.nodes[0])
 	}
 	p.IsLock = false
@@ -429,10 +422,7 @@ func (p *ProxyPool) KillAllNodes() (total, runport, kill, fail int) {
 			fail++
 		}
 	}
-	total = len(p.nodes)
-	if total > 0 {
-		p.nodes[0].UnActive(c)
-	}
+	// TODO kill active cmd node
 
 	// portToNode := p.getNodesMap()
 	// startPort := p.localPortStart - 1
@@ -465,60 +455,28 @@ func (p *ProxyPool) KillAllNodes() (total, runport, kill, fail int) {
 	return
 }
 
-// ActiveNode 浏览器访问要关闭再打开才会生效
+// ActiveNode TODO 另开一条线程
 func (p *ProxyPool) ActiveNode(n ProxyNode) error {
 	var err error
-	c := NewV2rayApiClientV5(p.getGrpcAddr())
-	if c.Dial() == nil {
-		defer c.Close()
-	}
 	activePort := p.localPortStart - 1
-	err = n.UnActive(c)
-	fmt.Printf("---UnActive--node(%d)--err(%v)--\n", n.Index, err)
-	err = n.Active(activePort, c)
-	if err != nil {
-		return err
+	if p.activeCmd != nil {
+		err = p.activeCmd.Process.Kill()
+		fmt.Printf("-----ActiveNode---KillCmdProcess(%d)--err(%v)----\n", p.activeCmd.Process.Pid, err)
 	}
-	return p.UpdateNode(n)
-
-	// if n.LocalPort == activePort {
-	// 	fmt.Println("-----SelectedNode.LocalPort==", activePort)
-	// 	if !n.IsRunning() {
-	// 		err = n.Start(p.v2rayPath)
-	// 		if err != nil {
-	// 			return err
-	// 		}
-	// 		err = p.UpdateNode(n)
-	// 	}
-	// 	return err
-	// }
-	// for _, nn := range p.nodes {
-	// 	if nn.LocalPort == activePort {
-	// 		fmt.Println("-----FindOtherNode.LocalPort==", activePort)
-	// 		if nn.IsRunning() {
-	// 			fmt.Println("-----StopRunning---FindOtherNode.Index=", nn.Index)
-	// 			nn.Stop()
-	// 			p.SetLocalAddr(&nn, 0)
-	// 			nn.Start(p.v2rayPath)
-	// 		}
-	// 		p.SetLocalAddr(&nn, 0)
-	// 		p.UpdateNode(nn)
-	// 	}
-	// }
-	// if n.IsRunning() {
-	// 	fmt.Println("-----StopSelectedNode------")
-	// 	n.Stop()
-	// }
-	// p.SetLocalAddr(&n, activePort)
-	// err = n.Start(p.v2rayPath)
-	// fmt.Println("-----Start---SelectedNode------")
-	// p.UpdateNode(n)
-	// return err
+	p.activeCmd, err = NewV2ray(p.v2rayPath).SetPort(activePort).SetNode(n.v2rayNode).Start()
+	if err == nil {
+		fmt.Printf("-----SUCCESS--ActiveNode--LocalPort(%d)--Pid(%d)---RemoteAddr(%s)--\n", activePort, p.activeCmd.Process.Pid, n.RemoteAddr)
+	} else {
+		fmt.Printf("-----FAIL--ActiveNode--StartV2rayCoreFail---LocalPort(%d)---RemoteAddr(%s)---\n", activePort, n.RemoteAddr)
+	}
+	n.status = 1
+	n.LocalPort = activePort
+	p.activeNode = n
+	return nil
 }
 
 // proxyPoolInit 初始化代理池
-// TODO 自带控制系统(TCP, HTTP, protobuf, 跨进程共享内存)
-// TODO 独立运行，使用protobuf与其他进程交互，在schedule中更新订阅
+// 在schedule中更新订阅
 // https://cloud.tencent.com/developer/article/1564128
 func proxyPoolInit() {
 	startAt := time.Now()
@@ -544,7 +502,7 @@ func proxyPoolInit() {
 	for i, n := range nds {
 		fmt.Printf("---[%d]--Lport(%d)--Speed(%.3f)--Run(%v)--TestAt(%s)--Remote(%s)--T(%s)--index(%d)\n", i, n.LocalPort, n.Speed.Seconds(), n.IsRunning(), n.TestAt.Format("2006-01-02 15:04"), n.RemoteAddr, n.Title, n.Index)
 	}
-	cmd, err := NewV2ray(cf.V2rayPath, 0).Start()
+	cmd, err := NewV2ray(cf.V2rayPath).Start()
 	if err == nil {
 		pp.SetCmd(cmd)
 		fmt.Printf("-----SUCCESS--RunProxyPoolInit--Pid(%d)--cost(%.3fs)--\n", cmd.Process.Pid, time.Since(startAt).Seconds())
