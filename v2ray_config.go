@@ -17,6 +17,7 @@ const TAG_OUTBOUND_ACTIVE = "TAG_ACTIVE_OUTBOUND"
 const TAG_OUTBOUND_API = "TAG_OUTBOUND_API"
 const TAG_INBOUND_API = "TAG_INBOUND_API"
 const ROUTING_RULES_FILE = "routing.rules.json"
+const V2RAY_CONFIG_FILE = "v2ray.config.json"
 
 // github.com/v2fly/v2ray-core/v5/infra/conf/v5cfg
 // 执行 ./v2ray run -c $configure_file_name -format jsonv5 命令以运行您的配置文件。
@@ -256,12 +257,28 @@ func getV2rayConfigV4(n V2rayNode, inPort int) io.Reader {
 	setV2rayConfigV4Routing(&vconf, cf, inPort)
 	setV2rayConfigV4Inbounds(&vconf, inPort, cf)
 	setV2rayConfigV4Outbounds(&vconf, n)
-	vconfjs, err := json.Marshal(vconf)
+
+	var vconfb []byte
+	var err error
+	var f *os.File
+	if inPort == 0 {
+		vconfb, err = json.Marshal(vconf)
+	} else {
+		vconfb, err = json.MarshalIndent(vconf, "", "\t")
+	}
 	if err != nil {
 		panic(err)
 	}
-	fmt.Printf("\n---getV2rayConfigV4--Outbounds-len(%d)--v2ray.config=(%s)--\n", len(vconf.Outbounds), string(vconfjs))
-	return bytes.NewReader(vconfjs)
+	if inPort > 0 {
+		f, err = os.OpenFile(V2RAY_CONFIG_FILE, os.O_TRUNC|os.O_CREATE|os.O_WRONLY, 0777)
+		if err != nil {
+			panic(err)
+		}
+		defer f.Close()
+		f.Write(vconfb)
+	}
+	fmt.Printf("\n---getV2rayConfigV4--Outbounds-len(%d)--v2ray.config=(%s)--\n", len(vconf.Outbounds), string(vconfb))
+	return bytes.NewReader(vconfb)
 }
 
 func getV2rayConfig(n V2rayNode, inPort int) io.Reader {
