@@ -452,10 +452,12 @@ func (p *ProxyPool) KillAllNodes() (total, runport, kill, fail int) {
 	p.UpdateAfterStopAll()
 	p.IsLock = false
 	p.cmd.Process.Kill()
+	if p.activeCmd != nil {
+		p.activeCmd.Process.Kill()
+	}
 	return
 }
 
-// ActiveNode TODO 另开一条线程
 func (p *ProxyPool) ActiveNode(n ProxyNode) error {
 	var err error
 	activePort := p.localPortStart - 1

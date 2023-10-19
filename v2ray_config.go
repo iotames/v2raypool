@@ -138,7 +138,7 @@ func getRoutingRules(cf conf.Conf, inPort int) string {
 			}
 			rulestr = strings.TrimSpace(string(rulesb))
 		} else {
-			f, err = os.OpenFile(ROUTING_RULES_FILE, os.O_CREATE|os.O_TRUNC, 0777)
+			f, err = os.OpenFile(ROUTING_RULES_FILE, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0777)
 			if err != nil {
 				panic(err)
 			}
@@ -154,6 +154,7 @@ func getRoutingRules(cf conf.Conf, inPort int) string {
 		}
 		// 保存路由配置为 routing.rules.json 路由规则文件
 		_, err = f.Write(rulesb)
+		// Debian下出现: panic: write routing.rules.json: bad file descriptor 添加 os.O_WRONLY 解决
 		if err != nil {
 			panic(err)
 		}
