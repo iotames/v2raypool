@@ -465,7 +465,7 @@ func (p *ProxyPool) ActiveNode(n ProxyNode) error {
 	}
 	p.activeCmd, err = NewV2ray(p.v2rayPath).SetPort(activePort).SetNode(n.v2rayNode).Start()
 	if err == nil {
-		fmt.Printf("-----SUCCESS--ActiveNode--LocalPort(%d)--Pid(%d)---RemoteAddr(%s)--\n", activePort, p.activeCmd.Process.Pid, n.RemoteAddr)
+		fmt.Printf("-----SUCCESS--ActiveNode--Index(%d)--LocalPort(%d)--Pid(%d)---RemoteAddr(%s)--\n", n.Index, activePort, p.activeCmd.Process.Pid, n.RemoteAddr)
 	} else {
 		fmt.Printf("-----FAIL--ActiveNode--StartV2rayCoreFail---LocalPort(%d)---RemoteAddr(%s)---\n", activePort, n.RemoteAddr)
 	}

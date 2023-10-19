@@ -139,11 +139,15 @@ VP_HTTP_PROXY = "%s"
 # 节点测速的URL
 VP_TEST_URL = "%s"
 
-# 路由规则：直连上网的域名列表和IP列表。用英文逗号,隔开。例：baidu.com,domain:baidu.com,full:www.baidu.com,regexp:.*\.qq\.com$
+# 路由规则，用英文逗号,隔开。此处更改规则，必须删除 routing.rules.json 文件再重启才可生效。也可直接更改json文件(比如调整规则的优先级顺序)。
+# 1. 规则是放在 routing.rules 这个数组当中，数组的内容是有顺序的，也就是说在这里规则是有顺序的，匹配规则时是从上往下匹配；
+# 2. 当路由匹配到一个规则时就会跳出匹配而不会对之后的规则进行匹配；
+
+# 路由规则：直连上网的域名列表和IP列表。例：baidu.com,domain:baidu.com,full:www.baidu.com,regexp:.*\.qq\.com$
 VP_DIRECT_DOMAIN_LIST = "%s"
 VP_DIRECT_IP_LIST = "%s"
 
-# 路由规则：代理上网的域名列表和IP列表。用英文逗号,隔开。例：youtube.com,domain:youtube.com,full:www.youtube.com,regexp:.*\.google.com$
+# 路由规则：代理上网的域名列表和IP列表。例：youtube.com,domain:youtube.com,full:www.youtube.com,regexp:.*\.google.com$
 VP_PROXY_DOMAIN_LIST = "%s"
 VP_PROXY_IP_LIST = "%s"
 
