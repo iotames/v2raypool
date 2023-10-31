@@ -167,9 +167,19 @@ func (p *ProxyPool) InitSubscribeData() *ProxyPool {
 		}
 	} else {
 		if p.subscribeUrl != "" {
-			dt, _, err = parseSubscribeByUrl(p.subscribeUrl, "")
+			var rawdt string
+			dt, rawdt, err = parseSubscribeByUrl(p.subscribeUrl, "")
 			if err != nil {
-				panic(err)
+				fmt.Printf("-----InitSubscribeData-parseSubscribeByUrl-err(%v)\n", err)
+				dt, rawdt, err = parseSubscribeByUrl(p.subscribeUrl, fmt.Sprintf("http://127.0.0.1:%d", p.localPortStart-1))
+				if err != nil {
+					panic(err)
+				}
+			}
+
+			fmt.Printf("------InitSubscribeData----rawdt(%s)----\n", rawdt)
+			if rawdt != "" {
+				conf.GetConf().UpdateSubscribeData(rawdt)
 			}
 		}
 	}
