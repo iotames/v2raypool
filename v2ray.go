@@ -41,13 +41,13 @@ func (v *V2rayServer) getExeCmd() *exec.Cmd {
 	return cmd
 }
 
-func (v *V2rayServer) Run() {
-	err := v.getExeCmd().Run()
-	if err != nil {
-		fmt.Printf("---cmdRunError(%s)", err)
-		panic(err)
-	}
-}
+// func (v *V2rayServer) Run() {
+// 	err := v.getExeCmd().Run()
+// 	if err != nil {
+// 		fmt.Printf("---cmdRunError(%s)", err)
+// 		panic(err)
+// 	}
+// }
 
 func (v *V2rayServer) Start() (cmd *exec.Cmd, err error) {
 	cmd = v.getExeCmd()

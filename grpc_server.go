@@ -256,7 +256,7 @@ func GetRunningNodes() ProxyNodes {
 	return result
 }
 
-func StartServer() {
+func RunServer() {
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 	wg1 := sync.WaitGroup{}

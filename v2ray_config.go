@@ -16,7 +16,11 @@ const TAG_OUTBOUND_DIRECT = "DIRECT"
 const TAG_OUTBOUND_ACTIVE = "TAG_ACTIVE_OUTBOUND"
 const TAG_OUTBOUND_API = "TAG_OUTBOUND_API"
 const TAG_INBOUND_API = "TAG_INBOUND_API"
+
+// 若存在，则优先读取。否则创建(v2raypool)
 const ROUTING_RULES_FILE = "routing.rules.json"
+
+// 只写文件，被 ROUTING_RULES_FILE 文件覆盖部分值(v2raypool)
 const V2RAY_CONFIG_FILE = "v2ray.config.json"
 
 // github.com/v2fly/v2ray-core/v5/infra/conf/v5cfg

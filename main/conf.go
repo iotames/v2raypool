@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io/fs"
 	"os"
 	"strconv"
 	"strings"
@@ -15,6 +16,7 @@ const WORK_ENV_FILE = ".env"
 const DEFAULT_ENV_FILE = "default.env"
 
 var envFile string
+var vconf conf.Conf
 
 func setEnvFile() {
 	envFile = os.Getenv("VP_ENV_FILE")
@@ -181,6 +183,7 @@ func getConfByEnv() {
 	cf.ProxyIpList = getEnvDefaultStrList("VP_PROXY_IP_LIST", conf.DEFAULT_PROXY_IP_LIST, ",")
 	cf.V2rayApiPort = getEnvDefaultInt("VP_V2RAY_API_PORT", conf.DEFAULT_V2RAY_API_PORT)
 	conf.SetConf(cf)
+	vconf = cf
 
 	logger := cf.GetLogger()
 	hitmsg := fmt.Sprintf("请检查配置文件，路径:(%s)\n", cf.EnvFile)
@@ -190,14 +193,26 @@ func getConfByEnv() {
 		logger.Error(hitmsg)
 		panic("RuntimeDir can not be empty")
 	}
-	if !miniutils.IsPathExists(cf.V2rayPath) {
+	var err error
+	var finfo fs.FileInfo
+	finfo, err = os.Stat(cf.V2rayPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			err = fmt.Errorf("无法找到v2ray可执行文件【v2ray.exe(windows)/v2ray(linux or mac)】。can not find v2ray in path(%s)", cf.V2rayPath)
+		}
+	} else {
+		if finfo.IsDir() {
+			err = fmt.Errorf("检测到 VP_V2RAY_PATH 的值指向一文件夹，请改为可执行文件路径。")
+		}
+	}
+	if err != nil {
 		hitmsg += "VP_V2RAY_PATH 配置项错误，找不到可执行文件。\n"
 		hitmsg += "请下载v2ray核心文件(https://github.com/v2fly/v2ray-core/releases)\n"
 		hitmsg += "下载后，请【删除或改名】默认配置文件(config.json)，防止错误读取"
 		logger.Error(hitmsg)
-		panic(fmt.Errorf("无法找到v2ray可执行文件【v2ray.exe(windows)/v2ray(linux or mac)】。can not find v2ray in path(%s)", cf.V2rayPath))
+		panic(err)
 	}
-	var err error
+
 	if !miniutils.IsPathExists(cf.RuntimeDir) {
 		fmt.Printf("------创建runtime目录(%s)--\n", cf.RuntimeDir)
 		err = os.Mkdir(cf.RuntimeDir, 0755)

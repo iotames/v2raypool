@@ -3,8 +3,6 @@ package main
 import (
 	"flag"
 	"fmt"
-
-	vp "github.com/iotames/v2raypool"
 )
 
 var AppVersion = "v1.0.1"
@@ -68,7 +66,7 @@ func main() {
 		stopProxyNodes()
 		return
 	}
-	vp.StartServer()
+	runServer()
 }
 
 func init() {
