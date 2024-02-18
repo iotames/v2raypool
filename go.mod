@@ -3,6 +3,7 @@ module github.com/iotames/v2raypool
 go 1.19
 
 require (
+	github.com/golang/protobuf v1.5.3
 	github.com/iotames/miniutils v1.0.10
 	github.com/joho/godotenv v1.5.1
 	github.com/v2fly/v2ray-core/v5 v5.7.0
@@ -13,7 +14,6 @@ require (
 require (
 	github.com/adrg/xdg v0.4.0 // indirect
 	github.com/dgryski/go-metro v0.0.0-20200812162917-85c65e2d0165 // indirect
-	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/gorilla/websocket v1.5.0 // indirect
 	github.com/pires/go-proxyproto v0.6.2 // indirect
 	github.com/riobard/go-bloom v0.0.0-20200614022211-cdc8013cb5b3 // indirect

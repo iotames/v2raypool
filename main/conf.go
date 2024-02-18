@@ -44,7 +44,7 @@ func initEnvFile() []string {
 		if err != nil {
 			panic(err)
 		}
-		files = append(files, envFile)
+		// files = append(files, envFile)
 		fmt.Printf("Create file %s SUCCESS\n", envFile)
 		createNewEnvfile = true
 	}
@@ -121,7 +121,7 @@ const ENV_FILE_CONTENT = `# 设置 VP_ENV_FILE 环境变量，可更改配置文
 # 该目录存放程序运行时产生的文件
 VP_RUNTIME_DIR = "%s"
 
-# gRPC服务端口
+# 代理池的gRPC服务端口
 VP_GRPC_PORT = %d
 
 # v2ray可执行文件路径

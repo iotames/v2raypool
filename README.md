@@ -148,6 +148,39 @@ systemctl start v2raypool
 systemctl stop v2raypool
 ```
 
+## 配置说明
+
+在 `main` 目录编译生成可执行文件，首次运行会生成2个文件:
+
+- `default.env`: 显示所有配置项的默认值，不应修改此文件。
+- `.env`: 程序配置文件。更改后可覆盖 default.env 文件中的默认值。
+
+```
+# 该目录存放程序运行时产生的文件
+VP_RUNTIME_DIR = "runtime"
+
+# 代理池的gRPC服务端口
+VP_GRPC_PORT = 50051
+
+# v2ray可执行文件路径
+# 例: "D:\\Users\\yourname\\v2ray-windows-64\\v2ray.exe" or "/root/v2ray-linux64/v2ray"
+VP_V2RAY_PATH = "bin/v2ray.exe"
+
+# 代理节点订阅地址
+VP_SUBSCRIBE_URL = ""
+
+# 若订阅地址无法直接访问，可指定订阅数据文件，数据文件内容为访问订阅地址获取的原始数据。
+# 若有设置订阅数据文件，且文件内容不为空。则优先从该文件读取订阅节点信息。
+VP_SUBSCRIBE_DATA_FILE = "subscribe_data.txt"
+
+# 设置HTTP代理，代理池每个节点的本地端口号，往后开始累加。为防止与常用端口冲突，尽量设大点。
+VP_HTTP_PROXY = "http://127.0.0.1:30000"
+
+# 节点测速的URL
+VP_TEST_URL = "https://www.google.com"
+```
+
+
 ## 路由规则
 
 支持自定义域名和IP列表配置:
@@ -191,9 +224,11 @@ IP匹配规则:
 
 ### gRPC接口
 
-proto数据格式定义文件: ./v2raypool.proto
-gRPC接口文件目录: ./grpc
+1. 使用proto数据格式定义文件: `./v2raypool.proto` 可实现跨语言调用
+2. Go语言的gRPC接口文件位于 `./grpc` 目录。引用包名: `github.com/iotames/v2raypool/grpc`
+3. 调用过程参考代码文件: `./main/main_grpc.go`
 
 ```
-protoc --go_out=./ --go-grpc_out=./ product.proto
+# 从proto数据格式文件生成可供Go语言调用的代码包
+protoc --go_out=./ --go-grpc_out=./ v2raypool.proto
 ```

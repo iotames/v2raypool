@@ -359,6 +359,8 @@ func (p *ProxyPool) StartAll() error {
 			err = n.AddToPool(c)
 			p.UpdateNode(n)
 			if err != nil {
+				logger := miniutils.GetLogger("")
+				logger.Errorf("------StartAll--err--AddToPool(%v)", err)
 				break
 			}
 		}

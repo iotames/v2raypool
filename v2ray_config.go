@@ -216,6 +216,8 @@ func setV2rayConfigV4Outbounds(confv4 *V2rayConfigV4, n V2rayNode) {
 
 func setV2rayConfigV4Inbounds(confv4 *V2rayConfigV4, inPort int, cf conf.Conf) {
 	inAddr := "0.0.0.0" // "127.0.0.1" 仅允许本地访问
+	logger := miniutils.GetLogger("")
+
 	if inPort == 0 {
 		inbdapi := V2rayInbound{
 			Listen:   "127.0.0.1",
@@ -225,6 +227,7 @@ func setV2rayConfigV4Inbounds(confv4 *V2rayConfigV4, inPort int, cf conf.Conf) {
 			Tag:      TAG_INBOUND_API,
 		}
 		confv4.Inbounds = []V2rayInbound{inbdapi}
+		logger.Infof("-----setV2rayConfigV4Inbounds--inPort(%d)--inbdapi--port(%d)", inPort, inbdapi.Port)
 	} else {
 		// https://www.v2fly.org/config/protocols/http.html#inboundconfigurationobject
 		inbd1 := V2rayInbound{
@@ -234,6 +237,7 @@ func setV2rayConfigV4Inbounds(confv4 *V2rayConfigV4, inPort int, cf conf.Conf) {
 			Settings: json.RawMessage(`{"allowTransparent":false,"timeout":30}`),
 			Tag:      "http_IN",
 		}
+		logger.Infof("-----setV2rayConfigV4Inbounds--inPort(%d)--inbd1--", inPort)
 		confv4.Inbounds = []V2rayInbound{inbd1}
 	}
 

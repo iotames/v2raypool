@@ -35,5 +35,4 @@ func logStart() {
 	if err != nil {
 		panic(err)
 	}
-
 }

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/iotames/miniutils"
 	"github.com/iotames/v2raypool/conf"
 	g "github.com/iotames/v2raypool/grpc"
 	"google.golang.org/grpc"
@@ -35,35 +36,29 @@ func RequestProxyPoolGrpcOnce(h func(c g.ProxyPoolServiceClient, ctx context.Con
 	h(c, ctx)
 }
 
+// ChangeProxyNode 更换一个可用节点
 func ChangeProxyNode() error {
 	var err error
 	RequestProxyPoolGrpcOnce(func(c g.ProxyPoolServiceClient, ctx context.Context) {
 		var nds *g.ProxyNodes
 		nds, err = c.GetProxyNodes(ctx, &g.ProxyNode{IsRunning: true})
 		if err != nil {
+			fmt.Printf("-----ChangeProxyNode--GetProxyNodes--err(%v)\n", err)
 			return
 		}
-		selectport := conf.GetConf().GetHttpProxyPort()
-		nextIndex := -1
-		for i, n := range nds.Items {
-			if n.LocalPort == uint32(selectport) {
-				if i < len(nds.Items)-1 {
-					nextIndex = int(nds.Items[i+1].Index)
-				}
-				break
-			}
-		}
-		if nextIndex > -1 {
-			var res *g.OptResult
-			res, err = c.ActiveProxyNode(ctx, &g.ProxyNode{Index: uint32(nextIndex)})
-			if err != nil {
-				return
-			}
-			fmt.Println(res.Msg)
+		// TODO 找出当前激活的节点
+
+		// selectport := conf.GetConf().GetHttpProxyPort()
+
+		nid := miniutils.GetRandInt(0, 9)
+		nextIndex := nds.Items[nid].Index
+		var res *g.OptResult
+		res, err = c.ActiveProxyNode(ctx, &g.ProxyNode{Index: nextIndex})
+		if err != nil {
+			fmt.Printf("-----ChangeProxyNode--ActiveProxyNode--err(%v)\n", err)
 			return
-		} else {
-			err = fmt.Errorf("can not find available node")
 		}
+		fmt.Println(res.Msg)
 	})
 	return err
 }
