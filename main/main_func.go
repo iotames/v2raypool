@@ -7,11 +7,14 @@ import (
 	"time"
 
 	vp "github.com/iotames/v2raypool"
+	"github.com/iotames/v2raypool/webserver"
 )
 
 func runServer() {
 	logStart()
-	vp.RunServer()
+	go vp.RunServer()
+	time.Sleep(time.Second * 1)
+	webserver.RunWebServer()
 }
 
 func logStart() {

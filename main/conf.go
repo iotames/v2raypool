@@ -121,6 +121,9 @@ const ENV_FILE_CONTENT = `# 设置 VP_ENV_FILE 环境变量，可更改配置文
 # 该目录存放程序运行时产生的文件
 VP_RUNTIME_DIR = "%s"
 
+# Web服务器端口
+VP_WEB_SERVER_PORT = %d
+
 # 代理池的gRPC服务端口
 VP_GRPC_PORT = %d
 
@@ -161,7 +164,7 @@ VP_V2RAY_API_PORT = %d
 //		return fmt.Sprintf(ENV_FILE_CONTENT, vconf.RuntimeDir, GrpcPort, vconf.V2rayPath, SubscribeUrl, SubscribeDataFile, HttpProxy)
 //	}
 func getAllConfEnvStrDefault() string {
-	return fmt.Sprintf(ENV_FILE_CONTENT, conf.DEFAULT_RUNTIME_DIR, conf.DEFAULT_GRPC_PORT, conf.DEFAULT_V2RAY_PATH,
+	return fmt.Sprintf(ENV_FILE_CONTENT, conf.DEFAULT_RUNTIME_DIR, conf.DEFAULT_WEB_SERVER_PORT, conf.DEFAULT_GRPC_PORT, conf.DEFAULT_V2RAY_PATH,
 		"", conf.DEFAULT_SUBSCRIBE_DATA_FILE, conf.DEFAULT_HTTP_PROXY, conf.DEFAULT_TEST_URL,
 		conf.DEFAULT_DIRECT_DOMAIN_LIST, conf.DEFAULT_DIRECT_IP_LIST, conf.DEFAULT_PROXY_DOMAIN_LIST, conf.DEFAULT_PROXY_IP_LIST, conf.DEFAULT_V2RAY_API_PORT,
 	)
@@ -182,6 +185,7 @@ func getConfByEnv() {
 	cf.ProxyDomainList = getEnvDefaultStrList("VP_PROXY_DOMAIN_LIST", conf.DEFAULT_PROXY_DOMAIN_LIST, ",")
 	cf.ProxyIpList = getEnvDefaultStrList("VP_PROXY_IP_LIST", conf.DEFAULT_PROXY_IP_LIST, ",")
 	cf.V2rayApiPort = getEnvDefaultInt("VP_V2RAY_API_PORT", conf.DEFAULT_V2RAY_API_PORT)
+	cf.WebServerPort = getEnvDefaultInt("VP_WEB_SERVER_PORT", conf.DEFAULT_WEB_SERVER_PORT)
 	conf.SetConf(cf)
 	vconf = cf
 

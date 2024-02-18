@@ -13,6 +13,7 @@ import (
 
 const DEFAULT_TEST_URL = "https://www.google.com"
 const DEFAULT_RUNTIME_DIR = "runtime"
+const DEFAULT_WEB_SERVER_PORT = 8087
 const DEFAULT_GRPC_PORT = 50051
 const DEFAULT_V2RAY_API_PORT = 15492
 const DEFAULT_V2RAY_PATH = "bin/v2ray.exe"
@@ -28,7 +29,7 @@ type Conf struct {
 	TestUrl                                                      string
 	EnvFile                                                      string
 	RuntimeDir                                                   string
-	GrpcPort, V2rayApiPort                                       int
+	GrpcPort, V2rayApiPort, WebServerPort                        int
 	V2rayPath                                                    string
 	SubscribeUrl                                                 string
 	SubscribeDataFile                                            string
