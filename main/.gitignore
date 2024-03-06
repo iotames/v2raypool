@@ -7,5 +7,5 @@ v2raypool
 *.txt
 routing.rules.json
 v2ray.config.json
-resource/
+# resource/
 runtime/

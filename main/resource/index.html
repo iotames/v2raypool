@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>V2rayPool控制面板</title>
+  <link href="/static/layui/css/layui.css" rel="stylesheet">
+</head>
+
+<body>
+  <!-- HTML Content -->
+  <script src="/static/layui/layui.js"></script>
+
+  <div style="padding: 16px;">
+
+    <h2 style="padding: 16px;text-align: center;">
+      V2rayPool控制面板
+    </h2>
+
+    <table class="layui-hide" id="test" lay-filter="test"></table>
+  </div>
+
+  <script type="text/html" id="toolbarDemo">
+  <div class="layui-btn-container">
+    <!-- <button class="layui-btn layui-btn-sm" lay-event="getCheckData">获取选中行数据</button> -->
+    <button class="layui-btn layui-btn-sm" lay-event="testNodes" id="testproxynodes">节点测速</button>
+    <button class="layui-btn layui-btn-sm layui-bg-blue" lay-event="startNodes" id="startproxynodes">启动代理池</button>
+  </div>
+</script>
+
+  <script type="text/html" id="barDemo">
+  <div class="layui-clear-space">
+    <!-- <a class="layui-btn layui-btn-xs" lay-event="edit">编辑</a> -->
+    <a class="layui-btn layui-btn-xs layui-bg-blue" lay-event="active">启用</a>
+  </div>
+</script>
+
+  <script>
+    layui.use(['table', 'dropdown'], function () {
+      var table = layui.table;
+      var dropdown = layui.dropdown;
+
+      // 创建渲染实例
+      table.render({
+        elem: '#test',
+        url: '/api/nodes', // 此处为静态模拟数据，实际使用时需换成真实接口
+        toolbar: '#toolbarDemo',
+        defaultToolbar: ['filter', 'exports', 'print'],
+        height: 'full-35', // 最大高度减去其他容器已占有的高度差
+        // lineStyle: 'height: 95px;',
+        css: [ // 重设当前表格样式
+          '.layui-table-tool-temp{padding-right: 145px;}'
+        ].join(''),
+        cellMinWidth: 80,
+        // totalRow: true, // 开启合计行
+        // page: true,
+        cols: [[
+          { type: 'checkbox', fixed: 'left' },
+          { field: 'index', fixed: 'left', width: 100, title: 'Index', sort: true }, // , totalRowText: '合计：'
+          // {field:'id', width:120, title: 'ID'},
+          { field: 'local_port', title: '本地端口', width: 110, sort: true },
+          { field: 'local_addr', title: '本机地址', width: 180 },
+          { field: 'speed', title: '速度/秒', width: 100, sort: true },
+          { field: 'title', title: '标题', width: 200, edit: 'text' },
+          { field: 'remote_addr', title: '节点地址', width: 180, edit: 'text' },
+          { field: 'is_running', title: '状态', width: 60 },
+          { field: 'test_at', title: '测速时间', width: 180 },
+          { fixed: 'right', title: '操作', width: 134, minWidth: 125, toolbar: '#barDemo' }
+        ]],
+        error: function (res, msg) {
+          console.log(res, msg)
+        }
+      });
+
+      // 工具栏事件
+      table.on('toolbar(test)', function (obj) {
+        var id = obj.config.id;
+        var checkStatus = table.checkStatus(id);
+        var othis = lay(this);
+        switch (obj.event) {
+          case 'getCheckData':
+            var data = checkStatus.data;
+            layer.alert(layui.util.escape(JSON.stringify(data)));
+            break;
+          case 'testNodes':
+            var btn = document.getElementById("testproxynodes")
+            postjson("/api/nodes/test", {}, function (dt) {
+              layer.msg(dt.msg);
+              var times = 3;
+              interval = setInterval(function () {
+                console.log("-----setInterval--times:", times)
+                if (times > 0) {
+                  table.reload('test')
+                  btn.disabled = true;
+                  btn.innerText = ((times < 10 ? "0" + times : times) + "s测速中");
+                  times--;
+                } else {
+                  clearInterval(interval);
+                  btn.disabled = false;
+                  btn.innerText = "节点测速";
+                }
+              }, 2000);
+            }, function (dt) {
+              layer.alert(dt.msg, { icon: 2, title: dt.code + "错误" });
+            }, btn)
+            break;
+          case 'startNodes':
+            var btn = document.getElementById("startproxynodes")
+            postjson('/api/nodes/start', {}, function (dt) {
+              layer.msg(dt.msg);
+              var times = 2;
+              interval = setInterval(function () {
+                console.log("-----setInterval--times:", times)
+                if (times > 0) {
+                  table.reload('test')
+                  btn.disabled = true;
+                  btn.innerText = ((times < 10 ? "0" + times : times) + "s启动中");
+                  times--;
+                } else {
+                  clearInterval(interval);
+                  btn.disabled = false;
+                  btn.innerText = "启动代理池";
+                }
+              }, 3000);
+
+
+            }, function (dt) {
+              layer.alert(dt.msg, { icon: 2, title: dt.code + "错误" });
+            }, btn)
+            break;
+        };
+      });
+
+      // 触发单元格工具事件
+      table.on('tool(test)', function (obj) { // 双击 toolDouble
+        var data = obj.data; // 获得当前行数据
+        // console.log(obj)
+        switch (obj.event) {
+          // case 'edit':
+          //   layer.open({
+          //     title: '编辑 - id:' + data.id,
+          //     type: 1,
+          //     area: ['80%', '80%'],
+          //     content: '<div style="padding: 16px;">自定义表单元素</div>'
+          //   });
+          //   break;
+          case 'active':
+            layer.confirm('设置[' + data.title + ']节点为系统代理吗？', function (index) {
+
+              console.log(data)
+              layer.close(index);
+            });
+            break;
+        }
+      });
+    });
+
+    var postjson = function (posturl, postdata, success, fail, btn) {
+      // var btn = document.getElementById("id" + tag)
+      var times = 5;
+      var interval;
+      btn.disabled = true;
+
+      var xhr = new XMLHttpRequest();
+      xhr.open('post', posturl, true);
+      xhr.setRequestHeader('Content-Type', 'application/json');
+      xhr.send(JSON.stringify(postdata));
+      xhr.onreadystatechange = function () {
+        if (xhr.readyState === 4) {
+          if (xhr.status === 200) {
+            dt = JSON.parse(xhr.responseText)
+            if (dt.code == 200) {
+              interval = setInterval(function () {
+                if (times > 0) {
+                  btn.disabled = true;
+                  times--;
+                } else {
+                  clearInterval(interval);
+                  btn.disabled = false;
+                }
+              }, 1000);
+              success(dt)
+              // layer.msg(dt.msg);
+            } else {
+              btn.disabled = false;
+              fail(dt)
+              // layer.alert(dt.msg, { icon: 2, title: dt.status + "错误" });
+            }
+          } else {
+            btn.disabled = false;
+          }
+        }
+      };
+    }
+
+
+  </script>
+
+
+</body>
+
+</html>
