@@ -64,7 +64,11 @@ func GetNodes() []byte {
 	nds := pp.GetNodes("")
 	nds.SortBySpeed()
 	var rows []map[string]any
-	for _, n := range nds {
+	for i, n := range nds {
+		isActive := false
+		if i == 6 {
+			isActive = true
+		}
 		runState := "已停止"
 		if n.IsRunning() {
 			runState = "运行中"
@@ -78,6 +82,7 @@ func GetNodes() []byte {
 			"local_addr":  pp.GetLocalAddr(n),
 			"remote_addr": n.RemoteAddr,
 			"is_running":  runState,
+			"is_active":   isActive,
 			"is_ok":       n.IsOk(),
 			"test_at":     n.TestAt.Format("2006-01-02 15:04"),
 		}

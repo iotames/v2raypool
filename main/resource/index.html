@@ -32,7 +32,9 @@
   <script type="text/html" id="barDemo">
   <div class="layui-clear-space">
     <!-- <a class="layui-btn layui-btn-xs" lay-event="edit">编辑</a> -->
-    <a class="layui-btn layui-btn-xs layui-bg-blue" lay-event="active">启用</a>
+    <a class="layui-btn layui-btn-xs {{= d.is_active ? 'layui-bg-purple' : 'layui-bg-blue' }}" lay-event="active">
+      {{= d.is_active ? '已启用' : '启用' }}
+    </a>
   </div>
 </script>
 
@@ -146,8 +148,12 @@
           //   });
           //   break;
           case 'active':
-            layer.confirm('设置[' + data.title + ']节点为系统代理吗？', function (index) {
-
+            hintmsg = '激活[' + data.title + ']节点为系统代理吗？'
+            if (data.is_active) {
+              hintmsg = '取消[' + data.title + ']节点为系统代理吗？'
+            }
+            layer.confirm(hintmsg, function (index) {
+              layer.msg("功能开发中");
               console.log(data)
               layer.close(index);
             });
