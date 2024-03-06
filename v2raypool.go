@@ -484,12 +484,13 @@ func (p *ProxyPool) UnActiveNode(n ProxyNode) error {
 		if err != nil {
 			return err
 		}
+		p.activeCmd = nil
 	}
 	if runtime.GOOS == "windows" {
 		if err := SetProxy(""); err == nil {
-			fmt.Println("取消代理设置成功!")
+			fmt.Println("取消代理成功!")
 		} else {
-			fmt.Printf("取消代理设置失败: %s\n", err)
+			fmt.Printf("取消代理失败: %s\n", err)
 		}
 	}
 	p.activeNode = ProxyNode{}
@@ -504,16 +505,12 @@ func (p *ProxyPool) ActiveNode(n ProxyNode) error {
 		if err != nil {
 			return err
 		}
+		p.activeCmd = nil
 	}
 	p.activeCmd, err = NewV2ray(p.v2rayPath).SetPort(activePort).SetNode(n.v2rayNode).Start()
 	if err == nil {
 		fmt.Printf("-----SUCCESS--ActiveNode--Index(%d)--LocalPort(%d)--Pid(%d)---RemoteAddr(%s)--\n", n.Index, activePort, p.activeCmd.Process.Pid, n.RemoteAddr)
 		if runtime.GOOS == "windows" {
-			// if err := SetProxy(""); err == nil {
-			// 	fmt.Println("取消代理设置成功!")
-			// } else {
-			// 	fmt.Printf("取消代理设置失败: %s\n", err)
-			// }
 			httproxy := fmt.Sprintf(`127.0.0.1:%d`, activePort)
 			if err = SetProxy(httproxy); err == nil {
 				fmt.Printf("设置代理服务器: %s 成功!\n", httproxy)
