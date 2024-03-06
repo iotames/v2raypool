@@ -38,7 +38,7 @@ func LoadEnv() {
 func initEnvFile() []string {
 	var err error
 	var files []string
-	var createNewEnvfile bool
+	// var createNewEnvfile bool
 	if !miniutils.IsPathExists(envFile) {
 		err = createEnvFile(envFile)
 		if err != nil {
@@ -46,23 +46,19 @@ func initEnvFile() []string {
 		}
 		// files = append(files, envFile)
 		fmt.Printf("Create file %s SUCCESS\n", envFile)
-		createNewEnvfile = true
+		// createNewEnvfile = true
 	}
 	files = append(files, envFile)
 
-	if miniutils.IsPathExists(DEFAULT_ENV_FILE) {
-		files = append(files, DEFAULT_ENV_FILE)
-	} else {
-		if createNewEnvfile {
-			err = createEnvFile(DEFAULT_ENV_FILE)
-			if err != nil {
-				fmt.Printf("--------initEnvFile(%s)err(%v)\n", DEFAULT_ENV_FILE, err)
-				return files
-			}
-			files = append(files, DEFAULT_ENV_FILE)
-			fmt.Printf("Create file %s SUCCESS\n", DEFAULT_ENV_FILE)
+	if !miniutils.IsPathExists(DEFAULT_ENV_FILE) {
+		err = createEnvFile(DEFAULT_ENV_FILE)
+		if err != nil {
+			panic(err)
 		}
 	}
+
+	files = append(files, DEFAULT_ENV_FILE)
+	fmt.Printf("Create file %s SUCCESS\n", DEFAULT_ENV_FILE)
 	return files
 }
 
@@ -121,7 +117,7 @@ const ENV_FILE_CONTENT = `# 设置 VP_ENV_FILE 环境变量，可更改配置文
 # 该目录存放程序运行时产生的文件
 VP_RUNTIME_DIR = "%s"
 
-# Web服务器端口
+# Web服务器端口。设置为0可禁用Web面板
 VP_WEB_SERVER_PORT = %d
 
 # 代理池的gRPC服务端口

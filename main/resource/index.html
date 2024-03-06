@@ -19,13 +19,14 @@
     </h2>
 
     <table class="layui-hide" id="test" lay-filter="test"></table>
+
   </div>
 
   <script type="text/html" id="toolbarDemo">
   <div class="layui-btn-container">
     <!-- <button class="layui-btn layui-btn-sm" lay-event="getCheckData">获取选中行数据</button> -->
-    <button class="layui-btn layui-btn-sm" lay-event="testNodes" id="testproxynodes">节点测速</button>
     <button class="layui-btn layui-btn-sm layui-bg-blue" lay-event="startNodes" id="startproxynodes">启动代理池</button>
+    <button class="layui-btn layui-btn-sm" lay-event="testNodes" id="testproxynodes">节点测速</button>
   </div>
 </script>
 
@@ -49,6 +50,7 @@
         url: '/api/nodes', // 此处为静态模拟数据，实际使用时需换成真实接口
         toolbar: '#toolbarDemo',
         defaultToolbar: ['filter', 'exports', 'print'],
+        escape: false,
         height: 'full-35', // 最大高度减去其他容器已占有的高度差
         // lineStyle: 'height: 95px;',
         css: [ // 重设当前表格样式
@@ -58,17 +60,17 @@
         // totalRow: true, // 开启合计行
         // page: true,
         cols: [[
-          { type: 'checkbox', fixed: 'left' },
-          { field: 'index', fixed: 'left', width: 100, title: 'Index', sort: true }, // , totalRowText: '合计：'
+          // { type: 'checkbox', fixed: 'left' },
+          { field: 'index', fixed: 'left', width: 100, title: 'Index', sort: true, hide: true }, // , totalRowText: '合计：'
           // {field:'id', width:120, title: 'ID'},
-          { field: 'local_port', title: '本地端口', width: 110, sort: true },
+          { field: 'local_port', title: '本地端口', width: 110, sort: true, hide: true },
           { field: 'local_addr', title: '本机地址', width: 180 },
           { field: 'speed', title: '速度/秒', width: 100, sort: true },
-          { field: 'title', title: '标题', width: 200, edit: 'text' },
-          { field: 'remote_addr', title: '节点地址', width: 180, edit: 'text' },
-          { field: 'is_running', title: '状态', width: 60 },
+          { field: 'title', title: '标题', width: 200},
+          { field: 'remote_addr', title: '节点地址', width: 180},
+          { field: 'status', title: '状态', width: 60 },
           { field: 'test_at', title: '测速时间', width: 180 },
-          { fixed: 'right', title: '操作', width: 134, minWidth: 125, toolbar: '#barDemo' }
+          { fixed: 'right', title: '操作', width: 80, minWidth: 80, toolbar: '#barDemo' }
         ]],
         error: function (res, msg) {
           console.log(res, msg)
@@ -89,7 +91,7 @@
             var btn = document.getElementById("testproxynodes")
             postjson("/api/nodes/test", {}, function (dt) {
               layer.msg(dt.msg);
-              var times = 3;
+              var times = 4;
               interval = setInterval(function () {
                 console.log("-----setInterval--times:", times)
                 if (times > 0) {
@@ -109,9 +111,10 @@
             break;
           case 'startNodes':
             var btn = document.getElementById("startproxynodes")
+            console.log(btn)
             postjson('/api/nodes/start', {}, function (dt) {
               layer.msg(dt.msg);
-              var times = 2;
+              var times = 1;
               interval = setInterval(function () {
                 console.log("-----setInterval--times:", times)
                 if (times > 0) {
@@ -125,8 +128,6 @@
                   btn.innerText = "启动代理池";
                 }
               }, 3000);
-
-
             }, function (dt) {
               layer.alert(dt.msg, { icon: 2, title: dt.code + "错误" });
             }, btn)
@@ -148,12 +149,20 @@
           //   });
           //   break;
           case 'active':
+            console.log(obj)
+            var posturl = "/api/node/active"
             hintmsg = '激活[' + data.title + ']节点为系统代理吗？'
             if (data.is_active) {
               hintmsg = '取消[' + data.title + ']节点为系统代理吗？'
+              posturl = "/api/node/unactive"
             }
             layer.confirm(hintmsg, function (index) {
-              layer.msg("功能开发中");
+              postjson(posturl, { remote_addr: data.remote_addr }, function (dt) {
+                layer.msg(dt.msg);
+                table.reload('test')
+              }, function (dt) {
+                layer.alert(dt.msg, { icon: 2, title: dt.code + "错误" });
+              })
               console.log(data)
               layer.close(index);
             });
@@ -166,8 +175,9 @@
       // var btn = document.getElementById("id" + tag)
       var times = 5;
       var interval;
-      btn.disabled = true;
-
+      if (btn != undefined) {
+        btn.disabled = true;
+      }
       var xhr = new XMLHttpRequest();
       xhr.open('post', posturl, true);
       xhr.setRequestHeader('Content-Type', 'application/json');
@@ -179,22 +189,30 @@
             if (dt.code == 200) {
               interval = setInterval(function () {
                 if (times > 0) {
-                  btn.disabled = true;
+                  if (btn != undefined) {
+                    btn.disabled = true;
+                  }
                   times--;
                 } else {
                   clearInterval(interval);
-                  btn.disabled = false;
+                  if (btn != undefined) {
+                    btn.disabled = false;
+                  }
                 }
               }, 1000);
               success(dt)
               // layer.msg(dt.msg);
             } else {
-              btn.disabled = false;
+              if (btn != undefined) {
+                btn.disabled = false;
+              }
               fail(dt)
               // layer.alert(dt.msg, { icon: 2, title: dt.status + "错误" });
             }
           } else {
-            btn.disabled = false;
+            if (btn != undefined) {
+              btn.disabled = false;
+            }
           }
         }
       };

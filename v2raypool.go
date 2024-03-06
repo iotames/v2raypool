@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"os/exec"
+	"runtime"
 	"sync"
 	"time"
 
@@ -37,6 +38,9 @@ type ProxyPool struct {
 
 func NewProxyPool() *ProxyPool {
 	return &ProxyPool{lock: &sync.Mutex{}, speedMap: make(map[string]ProxyNodes)}
+}
+func (p ProxyPool) GetActiveNode() ProxyNode {
+	return p.activeNode
 }
 func (p *ProxyPool) SetCmd(cmd *exec.Cmd) {
 	p.cmd = cmd
@@ -261,6 +265,7 @@ func (p *ProxyPool) SetLocalAddr(n *ProxyNode, port int) string {
 func (p *ProxyPool) testOneNode(n *ProxyNode, i int) bool {
 	speed, ok := testProxyNode(p.testUrl, p.GetLocalAddr(*n), i, p.testMaxDuration)
 	n.Speed = speed
+	fmt.Printf("-----testOneNode--ok(%v)--speed(%.4f)--nodeTestUrl(%s)-----ProxyPool.testUrl(%s)-----\n", ok, speed.Seconds(), n.TestUrl, p.testUrl)
 	if ok {
 		n.TestUrl = p.testUrl
 		n.TestAt = time.Now()
@@ -315,6 +320,7 @@ func (p *ProxyPool) TestAll() {
 		if n.IsRunning() {
 			runcount++
 			if miniutils.GetDomainByUrl(p.testUrl) != miniutils.GetDomainByUrl(n.TestUrl) || !n.IsOk() {
+				// fmt.Printf("-----TestAll--nodeTestUrl(%s)-----ProxyPool.testUrl(%s)-----\n", n.TestUrl, p.testUrl)
 				wg.Add(1)
 				ii := i
 				nn := n
@@ -469,24 +475,60 @@ func (p *ProxyPool) KillAllNodes() (total, runport, kill, fail int) {
 	}
 	return
 }
-
+func (p *ProxyPool) UnActiveNode(n ProxyNode) error {
+	var err error
+	// activePort := p.localPortStart - 1
+	if p.activeCmd != nil {
+		err = p.activeCmd.Process.Kill()
+		fmt.Printf("-----ActiveNode---KillCmdProcess(%d)--err(%v)----\n", p.activeCmd.Process.Pid, err)
+		if err != nil {
+			return err
+		}
+	}
+	if runtime.GOOS == "windows" {
+		if err := SetProxy(""); err == nil {
+			fmt.Println("取消代理设置成功!")
+		} else {
+			fmt.Printf("取消代理设置失败: %s\n", err)
+		}
+	}
+	p.activeNode = ProxyNode{}
+	return err
+}
 func (p *ProxyPool) ActiveNode(n ProxyNode) error {
 	var err error
 	activePort := p.localPortStart - 1
 	if p.activeCmd != nil {
 		err = p.activeCmd.Process.Kill()
 		fmt.Printf("-----ActiveNode---KillCmdProcess(%d)--err(%v)----\n", p.activeCmd.Process.Pid, err)
+		if err != nil {
+			return err
+		}
 	}
 	p.activeCmd, err = NewV2ray(p.v2rayPath).SetPort(activePort).SetNode(n.v2rayNode).Start()
 	if err == nil {
 		fmt.Printf("-----SUCCESS--ActiveNode--Index(%d)--LocalPort(%d)--Pid(%d)---RemoteAddr(%s)--\n", n.Index, activePort, p.activeCmd.Process.Pid, n.RemoteAddr)
+		if runtime.GOOS == "windows" {
+			// if err := SetProxy(""); err == nil {
+			// 	fmt.Println("取消代理设置成功!")
+			// } else {
+			// 	fmt.Printf("取消代理设置失败: %s\n", err)
+			// }
+			httproxy := fmt.Sprintf(`127.0.0.1:%d`, activePort)
+			if err = SetProxy(httproxy); err == nil {
+				fmt.Printf("设置代理服务器: %s 成功!\n", httproxy)
+			} else {
+				fmt.Printf("设置代理服务器: %s 失败, : %s\n", httproxy, err)
+			}
+		}
 	} else {
 		fmt.Printf("-----FAIL--ActiveNode--StartV2rayCoreFail---LocalPort(%d)---RemoteAddr(%s)---\n", activePort, n.RemoteAddr)
+		return err
 	}
 	n.status = 1
 	n.LocalPort = activePort
 	p.activeNode = n
-	return nil
+	return err
 }
 
 // proxyPoolInit 初始化代理池

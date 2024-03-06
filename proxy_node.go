@@ -12,13 +12,14 @@ import (
 type ProxyNode struct {
 	Index, LocalPort int
 	// cmd               *exec.Cmd
-	Id, localAddr     string
-	RemoteAddr, Title string
-	TestUrl           string
-	Speed             time.Duration
-	TestAt            time.Time
-	v2rayNode         V2rayNode
-	status            int
+	Id, localAddr string
+	RemoteAddr    string `json:"remote_addr"`
+	Title         string
+	TestUrl       string
+	Speed         time.Duration
+	TestAt        time.Time
+	v2rayNode     V2rayNode
+	status        int
 }
 
 func NewProxyNodeByV2ray(vnd V2rayNode) *ProxyNode {

@@ -6,6 +6,9 @@
 
 提供通用的gRPC控制接口，参看数据定义文件 `v2raypool.proto`
 
+![WebUI面板](/webui.png "WebUI面板")
+
+Windows代理设置: `网络和Internet` -> `代理` -> `手动设置代理`
 
 ## 使用说明
 
@@ -158,6 +161,9 @@ systemctl stop v2raypool
 ```
 # 该目录存放程序运行时产生的文件
 VP_RUNTIME_DIR = "runtime"
+
+# Web服务器端口。设置为0可禁用Web面板
+VP_WEB_SERVER_PORT = 8087
 
 # 代理池的gRPC服务端口
 VP_GRPC_PORT = 50051

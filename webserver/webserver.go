@@ -5,14 +5,16 @@ import (
 
 	"github.com/iotames/glayui/web"
 	"github.com/iotames/miniutils"
-	"github.com/iotames/v2raypool/conf"
 )
 
-func RunWebServer() {
-	addr := fmt.Sprintf(":%d", conf.GetConf().WebServerPort)
+func RunWebServer(webPort int) {
+	addr := fmt.Sprintf(":%d", webPort)
 	fmt.Printf("-----启动Web服务器。监听地址(%s)------\n", addr)
 	s := web.NewEasyServer(addr)
 	setRouter(s)
-	miniutils.StartBrowserByUrl(`http://127.0.0.1` + addr)
+	err := miniutils.StartBrowserByUrl(`http://127.0.0.1` + addr)
+	if err != nil {
+		fmt.Println("StartBrowserByUrl error: " + err.Error())
+	}
 	s.ListenAndServe()
 }
