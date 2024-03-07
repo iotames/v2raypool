@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	github.com/golang/protobuf v1.5.3
-	github.com/iotames/glayui v0.0.0-20240116035343-bca415237c8d
+	github.com/iotames/glayui v1.0.2
 	github.com/iotames/miniutils v1.0.10
 	github.com/joho/godotenv v1.5.1
 	github.com/v2fly/v2ray-core/v5 v5.7.0

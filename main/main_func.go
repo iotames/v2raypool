@@ -21,6 +21,7 @@ func runServer() {
 	go vp.RunServer()
 	time.Sleep(time.Second * 1)
 	s := webserver.NewWebServer(webPort)
+	// s.SetData("ENV_FILE", envFile)
 	s.ListenAndServe()
 }
 

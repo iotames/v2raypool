@@ -9,8 +9,10 @@ import (
 	"strings"
 
 	"github.com/iotames/miniutils"
+	"github.com/joho/godotenv"
 )
 
+const DEFAULT_ENV_FILE = "default.env"
 const DEFAULT_TEST_URL = "https://www.google.com"
 const DEFAULT_RUNTIME_DIR = "runtime"
 const DEFAULT_WEB_SERVER_PORT = 8087
@@ -90,4 +92,23 @@ func SetConf(v Conf) {
 }
 func GetConf() Conf {
 	return vconf
+}
+
+func UpdateConf(mp map[string]string, fpath string) error {
+	// Load 和 Read 文件顺序对配置值的影响不一致
+	oldData, err := godotenv.Read(DEFAULT_ENV_FILE, fpath)
+	if err != nil {
+		return err
+	}
+	for k, v := range mp {
+		vv, ok := oldData[k]
+		if ok {
+			oldData[k] = v
+			os.Setenv(k, v)
+			if vv != v {
+				fmt.Printf("------UpdateConf--%s--(%v)-to(%v)--\n", k, vv, v)
+			}
+		}
+	}
+	return godotenv.Write(oldData, fpath)
 }

@@ -5,10 +5,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"strconv"
 
 	"github.com/iotames/glayui/gtpl"
 	"github.com/iotames/glayui/web"
 	vp "github.com/iotames/v2raypool"
+	"github.com/iotames/v2raypool/conf"
 )
 
 func setRouter(s *web.EasyServer) {
@@ -16,7 +18,7 @@ func setRouter(s *web.EasyServer) {
 	tpl.SetResourceDirPath("resource")
 
 	s.AddHandler("GET", "/", func(ctx web.Context) {
-		tpl.SetDataByTplFile("index.html", nil, ctx.Writer)
+		tpl.SetDataByTplFile("index.html", conf.GetConf(), ctx.Writer)
 	})
 	s.AddHandler("GET", "/api/nodes", func(ctx web.Context) {
 		ctx.Writer.Write(GetNodes())
@@ -28,40 +30,84 @@ func setRouter(s *web.EasyServer) {
 		ctx.Writer.Write(StartNodes())
 	})
 	s.AddHandler("POST", "/api/node/active", func(ctx web.Context) {
-		postdata, err := io.ReadAll(ctx.Request.Body)
-		if err != nil {
-			result := BaseResult{Msg: err.Error(), Code: 500}
-			ctx.Writer.Write(result.Bytes())
-			return
-		}
 		dt := vp.ProxyNode{}
-		err = json.Unmarshal(postdata, &dt)
+		err := getPostJson(ctx, &dt)
 		if err != nil {
-			result := BaseResult{Msg: err.Error(), Code: 500}
-			ctx.Writer.Write(result.Bytes())
 			return
 		}
 		ctx.Writer.Write(ActiveNode(dt.RemoteAddr))
 	})
 
 	s.AddHandler("POST", "/api/node/unactive", func(ctx web.Context) {
-		postdata, err := io.ReadAll(ctx.Request.Body)
-		if err != nil {
-			result := BaseResult{Msg: err.Error(), Code: 500}
-			ctx.Writer.Write(result.Bytes())
-			return
-		}
 		dt := vp.ProxyNode{}
-		err = json.Unmarshal(postdata, &dt)
+		err := getPostJson(ctx, &dt)
 		if err != nil {
-			result := BaseResult{Msg: err.Error(), Code: 500}
-			ctx.Writer.Write(result.Bytes())
 			return
 		}
 		ctx.Writer.Write(UnActiveNode(dt.RemoteAddr))
 	})
+
+	s.AddHandler("POST", "/api/setting/update", func(ctx web.Context) {
+		// envfile := ctx.Server.GetData("ENV_FILE").Value.(string)
+		// fmt.Println(envfile)
+		dt := make(map[string]string)
+		err := getPostJson(ctx, &dt)
+		if err != nil {
+			return
+		}
+		ctx.Writer.Write(UpdateConf(dt, conf.GetConf().EnvFile))
+	})
 }
 
+func getPostJson(ctx web.Context, v any) error {
+	postdata, err := io.ReadAll(ctx.Request.Body)
+	if err != nil {
+		result := BaseResult{Msg: err.Error(), Code: 500}
+		ctx.Writer.Write(result.Bytes())
+		return err
+	}
+	err = json.Unmarshal(postdata, v)
+	if err != nil {
+		result := BaseResult{Msg: err.Error(), Code: 500}
+		ctx.Writer.Write(result.Bytes())
+		return err
+	}
+	return err
+}
+
+func UpdateConf(dt map[string]string, fpath string) []byte {
+	err := conf.UpdateConf(dt, fpath)
+	result := BaseResult{}
+	if err != nil {
+		result.Fail("更新失败:"+err.Error(), 500)
+		return result.Bytes()
+	}
+	// fmt.Printf("-----cf(%+v)---\n", dt)
+	cf := conf.GetConf()
+	cf.V2rayApiPort, err = strconv.Atoi(dt["VP_V2RAY_API_PORT"])
+	if err != nil {
+		result.Fail("VP_V2RAY_API_PORT 更新失败:"+err.Error(), 400)
+		return result.Bytes()
+	}
+	cf.WebServerPort, err = strconv.Atoi(dt["VP_WEB_SERVER_PORT"])
+	if err != nil {
+		result.Fail("VP_WEB_SERVER_PORT 更新失败:"+err.Error(), 400)
+		return result.Bytes()
+	}
+	cf.GrpcPort, err = strconv.Atoi(dt["VP_GRPC_PORT"])
+	if err != nil {
+		result.Fail("VP_GRPC_PORT 更新失败:"+err.Error(), 400)
+		return result.Bytes()
+	}
+	cf.TestUrl = dt["VP_TEST_URL"]
+	cf.SubscribeUrl = dt["VP_SUBSCRIBE_URL"]
+	cf.SubscribeDataFile = dt["VP_SUBSCRIBE_DATA_FILE"]
+	cf.V2rayPath = dt["VP_V2RAY_PATH"]
+	cf.HttpProxy = dt["VP_HTTP_PROXY"]
+	conf.SetConf(cf)
+	result.Success("设置成功，重启应用后生效。")
+	return result.Bytes()
+}
 func UnActiveNode(remoteAddr string) []byte {
 	var err error
 	pp := vp.GetProxyPool()

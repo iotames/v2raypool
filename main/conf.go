@@ -13,7 +13,6 @@ import (
 )
 
 const WORK_ENV_FILE = ".env"
-const DEFAULT_ENV_FILE = "default.env"
 
 var envFile string
 var vconf conf.Conf
@@ -28,6 +27,7 @@ func setEnvFile() {
 func LoadEnv() {
 	setEnvFile()
 	efiles := initEnvFile()
+	fmt.Printf("------LoadEnv--env-files(%v)\n", efiles)
 	err := godotenv.Load(efiles...)
 	if err != nil {
 		panic(fmt.Errorf("godotenv.Load(%v)err(%v)", efiles, err))
@@ -50,15 +50,15 @@ func initEnvFile() []string {
 	}
 	files = append(files, envFile)
 
-	if !miniutils.IsPathExists(DEFAULT_ENV_FILE) {
-		err = createEnvFile(DEFAULT_ENV_FILE)
+	if !miniutils.IsPathExists(conf.DEFAULT_ENV_FILE) {
+		err = createEnvFile(conf.DEFAULT_ENV_FILE)
 		if err != nil {
 			panic(err)
 		}
 	}
 
-	files = append(files, DEFAULT_ENV_FILE)
-	fmt.Printf("Create file %s SUCCESS\n", DEFAULT_ENV_FILE)
+	files = append(files, conf.DEFAULT_ENV_FILE)
+	fmt.Printf("Create file %s SUCCESS\n", conf.DEFAULT_ENV_FILE)
 	return files
 }
 
@@ -225,11 +225,4 @@ func getConfByEnv() {
 		fmt.Printf("------创建SubscribeDataFile文件(%s)--\n", cf.SubscribeDataFile)
 		cf.UpdateSubscribeData("")
 	}
-}
-
-func UpdateConf(mp map[string]string, fpath string) error {
-	for k, v := range mp {
-		os.Setenv(k, v)
-	}
-	return godotenv.Write(mp, fpath)
 }
