@@ -183,7 +183,10 @@ func setV2rayConfigV4Routing(confv4 *V2rayConfigV4, cf conf.Conf, inPort int) {
 	}`, rulestr)
 	confv4.Routing = json.RawMessage(routing)
 }
-func setV2rayConfigV4Outbounds(confv4 *V2rayConfigV4, n V2rayNode) {
+
+// setV2rayConfigV4Outbounds 出站配置
+// n.Add != "" 时，启用单节点代理模式。
+func setV2rayConfigV4Outbounds(confv4 *V2rayConfigV4, n V2rayNode) error {
 	outdirect := V2rayOutbound{Protocol: "freedom", Tag: TAG_OUTBOUND_DIRECT, SendThrough: "0.0.0.0"}
 	outdirect.Settings = json.RawMessage(`{}`)
 	outdirect.StreamSetting = json.RawMessage(`{}`)
@@ -196,29 +199,37 @@ func setV2rayConfigV4Outbounds(confv4 *V2rayConfigV4, n V2rayNode) {
 			SendThrough: "0.0.0.0",
 			Tag:         TAG_OUTBOUND_ACTIVE,
 		}
-		if n.Protocol != "vmess" {
-			panic("outbounds protocol only support vmess. not support " + n.Protocol)
-		}
-		outbd1.Settings = json.RawMessage(fmt.Sprintf(`{"vnext":[{"address":"%s","port":%s,"users":[{"id":"%s","security":"aes-128-gcm"}]}]}`, n.Add, n.Port, n.Id))
 
-		// "streamSettings":{"network":"ws","security":"tls","tlsSettings":{"disableSystemRoot":false},"wsSettings":{"path":""},"xtlsSettings":{"disableSystemRoot":false}}
-		// network: "tcp" | "kcp" | "ws" | "http" | "domainsocket" | "quic" | "grpc". 默认值为 tcp
-		// security: "none" | "tls" 是否启用传输层加密
-		security := n.Tls
-		if security == "" {
-			security = "none"
+		if n.Protocol == "vless" {
+			return fmt.Errorf("outbounds protocol not support vless. TODO")
 		}
-		streamSet := fmt.Sprintf(`{"network":"%s","security":"%s","wsSettings":{"path":""}}`, networkset, security) // v4: network, v5: transport
-		outbd1.StreamSetting = json.RawMessage(streamSet)
-		confv4.Outbounds = append(confv4.Outbounds, outbd1)
+		if n.Protocol == "vmess" {
+			outbd1.Settings = json.RawMessage(fmt.Sprintf(`{"vnext":[{"address":"%s","port":%s,"users":[{"id":"%s","security":"aes-128-gcm"}]}]}`, n.Add, n.Port, n.Id))
+
+			// "streamSettings":{"network":"ws","security":"tls","tlsSettings":{"disableSystemRoot":false},"wsSettings":{"path":""},"xtlsSettings":{"disableSystemRoot":false}}
+			// network: "tcp" | "kcp" | "ws" | "http" | "domainsocket" | "quic" | "grpc". 默认值为 tcp
+			// security: "none" | "tls" 是否启用传输层加密
+			security := n.Tls
+			if security == "" {
+				security = "none"
+			}
+			streamSet := fmt.Sprintf(`{"network":"%s","security":"%s","wsSettings":{"path":""}}`, networkset, security) // v4: network, v5: transport
+			outbd1.StreamSetting = json.RawMessage(streamSet)
+			confv4.Outbounds = append(confv4.Outbounds, outbd1)
+			return nil
+		}
+		return fmt.Errorf("outbounds protocol not support %s", n.Protocol)
 	}
+	return nil
 }
 
+// setV2rayConfigV4Inbounds 入站配置
 func setV2rayConfigV4Inbounds(confv4 *V2rayConfigV4, inPort int, cf conf.Conf) {
 	inAddr := "0.0.0.0" // "127.0.0.1" 仅允许本地访问
 	logger := miniutils.GetLogger("")
 
 	if inPort == 0 {
+		// inPort == 0时，启用gRPC，允许多个代理节点组成代理池。
 		inbdapi := V2rayInbound{
 			Listen:   "127.0.0.1",
 			Port:     cf.V2rayApiPort,
@@ -254,7 +265,10 @@ func setV2rayConfigV4Inbounds(confv4 *V2rayConfigV4, inPort int, cf conf.Conf) {
 	// }
 }
 
+// getV2rayConfigV4 v2ray官方配置v4版本
+// inPort == 0时，启用gRPC，允许多个代理节点组成代理池。
 func getV2rayConfigV4(n V2rayNode, inPort int) io.Reader {
+	var err error
 	cf := conf.GetConf()
 	vconf := V2rayConfigV4{}
 	if inPort == 0 {
@@ -265,10 +279,12 @@ func getV2rayConfigV4(n V2rayNode, inPort int) io.Reader {
 
 	setV2rayConfigV4Routing(&vconf, cf, inPort)
 	setV2rayConfigV4Inbounds(&vconf, inPort, cf)
-	setV2rayConfigV4Outbounds(&vconf, n)
-
+	err = setV2rayConfigV4Outbounds(&vconf, n)
+	if err != nil {
+		panic(err)
+	}
 	var vconfb []byte
-	var err error
+
 	var f *os.File
 	if inPort == 0 {
 		vconfb, err = json.Marshal(vconf)

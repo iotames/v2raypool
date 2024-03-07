@@ -6,7 +6,7 @@ WinFileName="v2raypool.exe"
 LinuxFineName="v2raypool"
 
 if [ "$APP_VERSION" = "" ];then
-    APP_VERSION="v1.0.1"
+    APP_VERSION="v1.2.2"
 fi
 
 CGO_ENABLED=0

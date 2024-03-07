@@ -20,7 +20,8 @@ func runServer() {
 	}
 	go vp.RunServer()
 	time.Sleep(time.Second * 1)
-	webserver.RunWebServer(webPort)
+	s := webserver.NewWebServer(webPort)
+	s.ListenAndServe()
 }
 
 func logStart() {

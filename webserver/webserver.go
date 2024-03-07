@@ -7,7 +7,7 @@ import (
 	"github.com/iotames/miniutils"
 )
 
-func RunWebServer(webPort int) {
+func NewWebServer(webPort int) *web.EasyServer {
 	addr := fmt.Sprintf(":%d", webPort)
 	fmt.Printf("-----启动Web服务器。监听地址(%s)------\n", addr)
 	s := web.NewEasyServer(addr)
@@ -16,5 +16,5 @@ func RunWebServer(webPort int) {
 	if err != nil {
 		fmt.Println("StartBrowserByUrl error: " + err.Error())
 	}
-	s.ListenAndServe()
+	return s
 }

@@ -48,11 +48,11 @@ func parseNodeInfo(d string) (nd V2rayNode, err error) {
 			return
 		}
 		if nd.Protocol == "vless" {
-			err = fmt.Errorf("not support protocol vless. TODO")
+			err = fmt.Errorf("protocol not support vless")
 			return
 		}
 
-		err = fmt.Errorf("not support protocol %s", nd.Protocol)
+		err = fmt.Errorf("protocol not support %s", nd.Protocol)
 		return
 	}
 	err = fmt.Errorf("can not found protocol")

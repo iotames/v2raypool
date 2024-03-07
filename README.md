@@ -198,7 +198,7 @@ VP_TEST_URL = "https://www.google.com"
 
 2. `base64订阅数据`: 访问订阅地址得到的原始数据。数据被BASE64加密，可保存为 `subscribe_data.txt` 文件，并配置 `VP_SUBSCRIBE_DATA_FILE` 选项。
 
-`base64订阅数据` 经过 `base64解码` 后，得到以 `\n` 换行符分割的多个代理节点信息。
+`base64订阅数据` 经过 `base64解码` 后，得到以 `\n` 换行符分割的多个代理节点信息。暂时仅支持 `vmess` 协议的节点。
 每个节点信息，可能都被Base64加密过(vmess://)，也可能是明文(vless://)，或者二者混合(ss://)。如下所示:
 
 ```

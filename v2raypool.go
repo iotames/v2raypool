@@ -440,32 +440,6 @@ func (p *ProxyPool) KillAllNodes() (total, runport, kill, fail int) {
 			fail++
 		}
 	}
-	// TODO kill active cmd node
-
-	// portToNode := p.getNodesMap()
-	// startPort := p.localPortStart - 1
-	// maxport := startPort + len(p.nodes) + 1
-	// for i := startPort; i < maxport; i++ {
-	// 	total++
-	// 	pid := miniutils.GetPidByPort(i)
-	// 	if pid > 0 {
-	// 		runport++
-	// 		nd, ok := portToNode[i]
-	// 		if ok {
-	// 			// err = nd.Stop()
-	// 			err = nd.Remove(c, "")
-	// 			p.UpdateNode(nd)
-	// 		} else {
-	// 			err = miniutils.KillPid(fmt.Sprintf("%d", pid))
-	// 		}
-	// 		if err != nil {
-	// 			fail++
-	// 			fmt.Printf("----KillPid(%d)--Port(%d)---Fail----\n", pid, i)
-	// 		} else {
-	// 			kill++
-	// 		}
-	// 	}
-	// }
 
 	p.UpdateAfterStopAll()
 	p.IsLock = false

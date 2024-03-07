@@ -101,7 +101,7 @@ func (a V2rayApiClient) RemoveInbound(intag string) error {
 
 func (a V2rayApiClient) AddOutboundByV2rayNode(nd V2rayNode, outag string) error {
 	if nd.Protocol != "vmess" {
-		return fmt.Errorf("dot not support %s. only support vmess", nd.Protocol)
+		return fmt.Errorf("outbound protocol not support %s. only support vmess", nd.Protocol)
 	}
 	transproto := nd.Net
 	var transptl internet.TransportProtocol
@@ -110,7 +110,7 @@ func (a V2rayApiClient) AddOutboundByV2rayNode(nd V2rayNode, outag string) error
 		transptl = internet.TransportProtocol_WebSocket
 		protoconf = &websocket.Config{}
 	} else {
-		panic("dot not support " + transproto + " only support ws or websocket")
+		return fmt.Errorf("outbound network or transport not support %s. only support ws or websocket", transproto)
 	}
 	outsendset := proxyman.SenderConfig{
 		StreamSettings: &internet.StreamConfig{
@@ -144,7 +144,7 @@ func (a V2rayApiClient) AddOutboundByV2rayNode(nd V2rayNode, outag string) error
 						{
 							Account: serial.ToTypedMessage(&vmess.Account{
 								Id:      nd.Id,
-								AlterId: 0,
+								AlterId: uint32(nd.Aid),
 								SecuritySettings: &protocol.SecurityConfig{
 									Type: protocol.SecurityType_AES128_GCM,
 								},
