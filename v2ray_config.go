@@ -197,7 +197,7 @@ func setV2rayConfigV4Outbounds(confv4 *V2rayConfigV4, n V2rayNode) {
 			Tag:         TAG_OUTBOUND_ACTIVE,
 		}
 		if n.Protocol != "vmess" {
-			panic("outbounds protocol only support vmess")
+			panic("outbounds protocol only support vmess. not support " + n.Protocol)
 		}
 		outbd1.Settings = json.RawMessage(fmt.Sprintf(`{"vnext":[{"address":"%s","port":%s,"users":[{"id":"%s","security":"aes-128-gcm"}]}]}`, n.Add, n.Port, n.Id))
 

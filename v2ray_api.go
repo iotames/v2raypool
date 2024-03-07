@@ -101,7 +101,7 @@ func (a V2rayApiClient) RemoveInbound(intag string) error {
 
 func (a V2rayApiClient) AddOutboundByV2rayNode(nd V2rayNode, outag string) error {
 	if nd.Protocol != "vmess" {
-		panic("dot not support " + nd.Protocol + " only support vmess")
+		return fmt.Errorf("dot not support %s. only support vmess", nd.Protocol)
 	}
 	transproto := nd.Net
 	var transptl internet.TransportProtocol

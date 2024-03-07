@@ -164,6 +164,7 @@ func GetNodes() []byte {
 		data := map[string]any{
 			"index":       n.Index,
 			"id":          n.Id,
+			"protocol":    n.Protocol,
 			"local_port":  n.LocalPort,
 			"speed":       fmt.Sprintf("%.4f", n.Speed.Seconds()),
 			"title":       n.Title,

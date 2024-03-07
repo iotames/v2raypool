@@ -12,23 +12,18 @@ import (
 type ProxyNode struct {
 	Index, LocalPort int
 	// cmd               *exec.Cmd
-	Id, localAddr string
-	RemoteAddr    string `json:"remote_addr"`
-	Title         string
-	TestUrl       string
-	Speed         time.Duration
-	TestAt        time.Time
-	v2rayNode     V2rayNode
-	status        int
+	Id, localAddr   string
+	RemoteAddr      string `json:"remote_addr"`
+	Title, Protocol string
+	TestUrl         string
+	Speed           time.Duration
+	TestAt          time.Time
+	v2rayNode       V2rayNode
+	status          int
 }
 
 func NewProxyNodeByV2ray(vnd V2rayNode) *ProxyNode {
-	remoteAddr := fmt.Sprintf("%s:%s", vnd.Add, vnd.Port)
-	n := &ProxyNode{
-		Id:         remoteAddr + ":" + vnd.Id,
-		RemoteAddr: remoteAddr,
-		Title:      vnd.Ps,
-	}
+	n := &ProxyNode{}
 	n.SetV2ray(vnd)
 	return n
 }
@@ -41,6 +36,10 @@ func (p *ProxyNode) GetId() string {
 	return p.Id
 }
 func (p *ProxyNode) SetV2ray(n V2rayNode) *ProxyNode {
+	p.RemoteAddr = fmt.Sprintf("%s:%s", n.Add, n.Port)
+	p.Id = p.RemoteAddr + ":" + n.Id
+	p.Title = n.Ps
+	p.Protocol = n.Protocol
 	p.v2rayNode = n
 	return p
 }

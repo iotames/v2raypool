@@ -66,10 +66,11 @@ VP_V2RAY_PATH 配置项错误，找不到可执行文件。
 
 ### 4. 设置订阅地址
 
-更改 `.env` 配置文件的 `VP_SUBSCRIBE_URL`，改成实际使用的订阅源地址(http开头)
-若订阅源地址网络异常，可使用 `VP_SUBSCRIBE_DATA_FILE` 配置项。通过其他途径查看订阅地址的响应结果，把内容存入文件。
+设置代理节点的订阅源地址，请更改 `.env` 文件的 `VP_SUBSCRIBE_URL` 配置项，配置值为http网络地址。
 
-`VP_HTTP_PROXY` 配置项，可设置一个http开头的代理地址。在 `gRPC客户端` 使用 `--activeproxynode` 命令项可激活一个节点使用代理端口。
+若网络地址访问异常，可使用 `VP_SUBSCRIBE_DATA_FILE` 配置项。设法查看订阅地址的响应结果，并存入文件。
+
+`VP_HTTP_PROXY` 配置项，可设置一个http开头的代理地址，供系统代理使用。在 `gRPC客户端` 使用 `--activeproxynode` 命令可启用一个节点使用该端口。
 
 
 ### 5. 运行服务端和客户端
@@ -103,6 +104,8 @@ v2raypool.exe --activeproxynode=16
 # 停止所有节点
 v2raypool.exe --stopproxynodes
 ```
+
+`WebUI` 网页面板: [http://127.0.0.1:8087](http://127.0.0.1:8087)
 
 ### 6. 配置systemd系统服务(Linux)
 
@@ -196,29 +199,23 @@ VP_TEST_URL = "https://www.google.com"
 2. `base64订阅数据`: 访问订阅地址得到的原始数据。数据被BASE64加密，可保存为 `subscribe_data.txt` 文件，并配置 `VP_SUBSCRIBE_DATA_FILE` 选项。
 
 `base64订阅数据` 经过 `base64解码` 后，得到以 `\n` 换行符分割的多个代理节点信息。
-每个节点信息也是被Base64加密过的。格式为: `协议://Base64加密字符串`。如下所示:
+每个节点信息，可能都被Base64加密过(vmess://)，也可能是明文(vless://)，或者二者混合(ss://)。如下所示:
 
 ```
-ss://Y2hhY2hhMjAtaWV0Zi1wb2x5MTMwNTozNlpDSGVhYlVTZktqZlFFdko0SERW@185.242.86.156:54170#github.com/freefq%20-%20%E4%BF%84%E7%BD%97%E6%96%AF%20%201
 vmess://eyJhZGQiOiAiMjAyLjc4LjE2Mi41IiwgImFpZCI6IDAsICJob3N0IjogImlyc29mdC5zeXRlcy5uZXQiLCAiaWQiOiAiMmZmOTdjNmQtODU1Ny00MmE0LWI0M2YtMTljNzdjNTk1OWVhIiwgIm5ldCI6ICJ3cyIsICJwYXRoIjogIi9AZm9yd2FyZHYycmF5IiwgInBvcnQiOiA0NDMsICJwcyI6ICJnaXRodWIuY29tL2ZyZWVmcSAtIFx1NTM3MFx1NWVhNiAgMiIsICJ0bHMiOiAidGxzIiwgInR5cGUiOiAiYXV0byIsICJzZWN1cml0eSI6ICJhdXRvIiwgInNraXAtY2VydC12ZXJpZnkiOiB0cnVlLCAic25pIjogIiJ9
-vmess://eyJhZGQiOiAiMjAyLjc4LjE2Mi41IiwgImFpZCI6IDAsICJob3N0IjogInNhaGFuZC5zZXJ2ZW1pbmVjcmFmdC5uZXQiLCAiaWQiOiAiMTE4Mjg3ZDItZTk2OC00MmUxLTgwZDAtMTJmYTJmNWQzOGQ2IiwgIm5ldCI6ICJ3cyIsICJwYXRoIjogIi9AZm9yd2FyZHYycmF5IiwgInBvcnQiOiA0NDMsICJwcyI6ICJnaXRodWIuY29tL2ZyZWVmcSAtIFx1NTM3MFx1NWVhNiAgMyIsICJ0bHMiOiAidGxzIiwgInR5cGUiOiAiYXV0byIsICJzZWN1cml0eSI6ICJhdXRvIiwgInNraXAtY2VydC12ZXJpZnkiOiB0cnVlLCAic25pIjogIiJ9
-vmess://eyJ2IjogIjIiLCAicHMiOiAiZ2l0aHViLmNvbS9mcmVlZnEgLSBcdTdmOGVcdTU2ZmRDbG91ZEZsYXJlXHU1MTZjXHU1M2Y4Q0ROXHU4MjgyXHU3MGI5IDQiLCAiYWRkIjogInd3dy5kYXJrcm9vbS5sb2wiLCAicG9ydCI6IDgwODAsICJpZCI6ICIyMjgyNmI0NC01YzFhLTRiNGItZGJhYS04M2EyZThiZDk1ZjAiLCAiYWlkIjogMCwgInNjeSI6ICJhdXRvIiwgIm5ldCI6ICJ3cyIsICJob3N0IjogInd3dy5kYXJrcm9vbS5sb2wiLCAicGF0aCI6ICIvIiwgInRscyI6ICIifQ==
+vless://26DL68CE-DL93-8342-LQ8F-317F4A6E7J76@45.43.31.159:443?encryption=none&security=reality&sni=azure.microsoft.com&fp=safari&pbk=c7qU9-_0WflwIKUiZFxSss_xw-2AP3jB1ENxKLI0OTw&type=tcp&headerType=none#u9un-US-Xr1
+ss://Y2hhY2hhMjAtaWV0Zi1wb2x5MTMwNTozNlpDSGVhYlVTZktqZlFFdko0SERW@185.242.86.156:54170#github.com/freefq%20-%20%E4%BF%84%E7%BD%97%E6%96%AF%20%201
 ss://YWVzLTI1Ni1nY206N0JjTGRzTzFXd2VvR0QwWA@193.243.147.128:40368#github.com/freefq%20-%20%E6%B3%A2%E5%85%B0%20%205
 vmess://eyJhZGQiOiAic2VydmVyMzEuYmVoZXNodGJhbmVoLmNvbSIsICJhaWQiOiAwLCAiaG9zdCI6ICJzZXJ2ZXIzMS5iZWhlc2h0YmFuZWguY29tIiwgImlkIjogIjQxNTQxNDNjLWJiYmEtNDdhNC05Zjc5LWMyZWQwODdjYmNjOSIsICJuZXQiOiAid3MiLCAicGF0aCI6ICIvIiwgInBvcnQiOiA4ODgwLCAicHMiOiAiZ2l0aHViLmNvbS9mcmVlZnEgLSBcdTdmOGVcdTU2ZmRDbG91ZEZsYXJlXHU1MTZjXHU1M2Y4Q0ROXHU4MjgyXHU3MGI5IDYiLCAidGxzIjogIiIsICJ0eXBlIjogImF1dG8iLCAic2VjdXJpdHkiOiAiYXV0byIsICJza2lwLWNlcnQtdmVyaWZ5IjogdHJ1ZSwgInNuaSI6ICIifQ==
 ```
 
 3. 系统会忽略格式错误或解析失败的节点，然后继续解析下个节点。
 
-4. 节点信息再次经过 `BASE64解码` 后，解析为JSON字符串格式。如下所示:
+4. `vmess` 节点信息再次经过 `BASE64解码` 后，解析为JSON字符串格式。如下所示:
 
 ```
 {"add":"us0.u9v2v2.top","host":"","id":"93EA57CE-EA21-7240-EE7F-317F4A6A8B65","net":"ws","path":"","port":"444","ps":"u9un-v2-US-LosAngeles0","tls":"","type":"none","v":2,"aid":0}
 ```
-
-### 错误提示
-
-1. `---ParseV2rayNodes--Base64.Decode--err`: 表示解析到一个错误的代理节点。该节点为BASE64解码错误。系统自动忽略并解析下一个节点。
-2. `---ParseV2rayNodes--json.Unmarshal err`: 表示解析到一个错误的代理节点。该节点BASE64解码后，不是符合规范的JSON数据格式。系统自动忽略并解析下一个节点。
 
 如下节点会解析失败:
 
