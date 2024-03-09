@@ -12,6 +12,9 @@ import (
 	"github.com/iotames/v2raypool/conf"
 )
 
+// 节点测速最大超时设置。
+const MAX_TEST_DURATION = 5 * time.Second
+
 var once sync.Once
 var instance *ProxyPool
 
@@ -139,12 +142,23 @@ func (p *ProxyPool) UpdateNode(n ProxyNode) error {
 	}
 	return err
 }
+
 func (p *ProxyPool) AddSpeedNode(key string, n ProxyNode) {
 	p.lock.Lock()
 	defer p.lock.Unlock()
-	_, ok := p.speedMap[key]
+	oknds, ok := p.speedMap[key]
 	if ok {
-		p.speedMap[key] = append(p.speedMap[key], n)
+		// 找出重复项，防止节点重复插入
+		okcount := 0
+		for i, oknd := range oknds {
+			if oknd.GetId() == n.GetId() {
+				p.speedMap[key][i] = n
+				okcount += 1
+			}
+		}
+		if okcount == 0 {
+			p.speedMap[key] = append(p.speedMap[key], n)
+		}
 	} else {
 		p.speedMap[key] = []ProxyNode{n}
 	}
@@ -281,7 +295,6 @@ func (p *ProxyPool) testOneNode(n *ProxyNode, i int) bool {
 
 func (p *ProxyPool) TestAllForce() {
 	p.IsLock = true
-	// wg := sync.WaitGroup{}
 	runcount := 0
 	logger := miniutils.GetLogger("")
 	for i, n := range p.nodes {
@@ -289,16 +302,8 @@ func (p *ProxyPool) TestAllForce() {
 			runcount++
 			logger.Debugf("---i[%d]---n.addr(%s)---localPort(%d)---", i, n.RemoteAddr, n.LocalPort)
 			p.testOneNode(&n, i)
-			// wg.Add(1)
-			// ii := i
-			// nn := n
-			// go func(nnn *ProxyNode, iii int) {
-			// 	p.testOneNode(nnn, iii)
-			// 	wg.Done()
-			// }(&nn, ii)
 		}
 	}
-	// wg.Wait()
 	if runcount == 0 {
 		p.IsLock = false
 		fmt.Println("测速失败，没有可测速的代理节点。请先执行 --startproxynodes 命令，启动IP代理池")
@@ -312,6 +317,23 @@ func (p *ProxyPool) TestAllForce() {
 	p.IsLock = false
 }
 
+// GetLastSpeedNode 查看当前节点是否存在测速信息
+func (p ProxyPool) GetLastSpeedNode(nd ProxyNode, d string) ProxyNode {
+	p.lock.Lock()
+	defer p.lock.Unlock()
+	result := ProxyNode{}
+	oknds, ok := p.speedMap[d]
+	if ok {
+		for _, oknd := range oknds {
+			if oknd.GetId() == nd.GetId() {
+				result = oknd
+				break
+			}
+		}
+	}
+	return result
+}
+
 func (p *ProxyPool) TestAll() {
 	p.IsLock = true
 	wg := sync.WaitGroup{}
@@ -319,7 +341,12 @@ func (p *ProxyPool) TestAll() {
 	for i, n := range p.nodes {
 		if n.IsRunning() {
 			runcount++
-			if miniutils.GetDomainByUrl(p.testUrl) != miniutils.GetDomainByUrl(n.TestUrl) || !n.IsOk() {
+
+			domain := miniutils.GetDomainByUrl(p.testUrl)
+			oknd := p.GetLastSpeedNode(n, domain)
+			// 测速前跳过近期测速过的节点
+			if !oknd.IsOk() {
+				// 针对该域名，近期测速过的节点不存在或者测速已过期的节点才进行测速
 				// fmt.Printf("-----TestAll--nodeTestUrl(%s)-----ProxyPool.testUrl(%s)-----\n", n.TestUrl, p.testUrl)
 				wg.Add(1)
 				ii := i
@@ -344,6 +371,7 @@ func (p *ProxyPool) TestAll() {
 	p.IsLock = false
 }
 
+// StartAll 启动所有已停止的节点。
 func (p *ProxyPool) StartAll() error {
 	var err error
 	p.IsLock = true
@@ -470,6 +498,7 @@ func (p *ProxyPool) UnActiveNode(n ProxyNode) error {
 	p.activeNode = ProxyNode{}
 	return err
 }
+
 func (p *ProxyPool) ActiveNode(n ProxyNode) error {
 	var err error
 	activePort := p.localPortStart - 1
@@ -485,7 +514,7 @@ func (p *ProxyPool) ActiveNode(n ProxyNode) error {
 	if err == nil {
 		fmt.Printf("-----SUCCESS--ActiveNode--Index(%d)--LocalPort(%d)--Pid(%d)---RemoteAddr(%s)--\n", n.Index, activePort, p.activeCmd.Process.Pid, n.RemoteAddr)
 		if runtime.GOOS == "windows" {
-			httproxy := fmt.Sprintf(`127.0.0.1:%d`, activePort)
+			httproxy := fmt.Sprintf(`127.0.0.1:%d`, n.LocalPort)
 			if err = SetProxy(httproxy); err == nil {
 				fmt.Printf("设置代理服务器: %s 成功!\n", httproxy)
 			} else {
@@ -497,7 +526,7 @@ func (p *ProxyPool) ActiveNode(n ProxyNode) error {
 		return err
 	}
 	n.status = 1
-	n.LocalPort = activePort
+	// n.LocalPort = activePort
 	p.activeNode = n
 	return err
 }
@@ -516,14 +545,14 @@ func proxyPoolInit() {
 	port := cf.GetHttpProxyPort()
 	// 程序退出后，还会存在端口占用
 	// port := 11080
-	maxDuration := 3 * time.Second
+
 	pp := GetProxyPool()
 	pp.SetV2rayPath(cf.V2rayPath).
 		SetTestUrl(cf.TestUrl).
 		SetSubscribeRawData(subscribeRawData).
 		SetSubscribeUrl(cf.SubscribeUrl).
 		SetLocalPortStart(port + 1).
-		SetTestMaxDuration(maxDuration).
+		SetTestMaxDuration(MAX_TEST_DURATION).
 		InitSubscribeData()
 	nds := pp.GetNodes("")
 	for i, n := range nds {

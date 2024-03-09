@@ -131,6 +131,8 @@ func (p *ProxyNode) Remove(c *V2rayApiClient, tag string) error {
 func (p ProxyNode) IsRunning() bool {
 	return p.status == 1
 }
+
+// IsOk 查看测速是否超过有效期。默认24小时
 func (p ProxyNode) IsOk() bool {
 	return time.Since(p.TestAt) < time.Hour*24
 }

@@ -37,14 +37,12 @@
   </div>
 
   <script type="text/html" id="toolbarDemo">
-  <div class="layui-btn-container">
-    <!-- <button class="layui-btn layui-btn-sm" lay-event="getCheckData">获取选中行数据</button> -->
-    
-    <button class="layui-btn layui-btn-sm layui-bg-blue" lay-event="startNodes" id="startproxynodes">启动代理池</button>
-    <button class="layui-btn layui-btn-sm" lay-event="testNodes" id="testproxynodes">节点测速</button>
-    <i class="itable-top layui-icon layui-icon-refresh-3" style="color: #1E9FFF;" lay-event="refreshData" id="refreshdata"></i>
+  <div class="layui-btn-container">    
+    <!-- <button class="layui-btn layui-btn-sm layui-bg-blue">启动代理池</button> -->
     <i class="itable-top layui-icon layui-icon-set" style="color: #fc4706e8;" lay-on="settinglayer" id="setting"></i>
-    
+    <i class="itable-top layui-icon layui-icon-play" style="color: green;" lay-event="startNodes" id="startproxynodes"></i>
+    <i class="itable-top layui-icon" style="color:deeppink" lay-event="testNodes" id="testproxynodes">⚡</i>
+    <i class="itable-top layui-icon layui-icon-refresh-3" style="color: #1E9FFF;" lay-event="refreshData" id="refreshdata"></i>
   </div>
 </script>
 
@@ -58,6 +56,9 @@
 </script>
 
   <script>
+    var showTips = function (msg, ele) {
+      layer.tips(msg, ele);
+    }
     layui.use(['table', 'dropdown', 'form'], function () {
       var table = layui.table;
       var dropdown = layui.dropdown;
@@ -186,15 +187,16 @@
         // page: true,
         cols: [[
           // { type: 'checkbox', fixed: 'left' },
-          { field: 'index', fixed: 'left', width: 100, title: 'Index', sort: true, hide: true }, // , totalRowText: '合计：'
+          {type:"numbers", fixed: 'left'}, // field: "layid",  title: "序号",
+          { field: 'index', width: 100, title: 'Index', sort: true, hide: true }, // , totalRowText: '合计：'
           // {field:'id', width:120, title: 'ID'},
           { field: 'protocol', title: '协议', width: 60 },
           { field: 'local_port', title: '本地端口', width: 110, sort: true, hide: true },
           { field: 'local_addr', title: '本机地址', width: 180 },
-          { field: 'speed', title: '速度/秒', width: 100, sort: true },
+          { field: 'speed', title: '速度/秒', templet: '<span class="layui-badge {{= d.test_at != "0001-01-01 00:00" ? "layui-bg-green" : ""}}" onclick="showTips(\'{{= d.test_url }}\', this)">{{= d.speed >= 5 ? 100 : d.speed }} s</span>', width: 100, sort: true },
           { field: 'title', title: '标题', width: 200 },
           { field: 'remote_addr', title: '节点地址', width: 180 },
-          { field: 'status', title: '状态', width: 60 },
+          { field: 'is_running', title: '状态', templet: '<span>{{= d.is_running ? "运行中" : "已停止"}}</span>', width: 60 },
           { field: 'test_at', title: '测速时间', width: 180 },
           { fixed: 'right', title: '操作', width: 80, minWidth: 80, toolbar: '#barDemo' }
         ]],
@@ -214,26 +216,32 @@
             layer.alert(layui.util.escape(JSON.stringify(data)));
             break;
           case 'testNodes':
-            var btn = document.getElementById("testproxynodes")
-            postjson("/api/nodes/test", {}, function (dt) {
-              layer.msg(dt.msg);
-              var times = 4;
-              interval = setInterval(function () {
-                console.log("-----setInterval--times:", times)
-                if (times > 0) {
-                  table.reload('test')
-                  btn.disabled = true;
-                  btn.innerText = ((times < 10 ? "0" + times : times) + "s测速中");
-                  times--;
-                } else {
-                  clearInterval(interval);
-                  btn.disabled = false;
-                  btn.innerText = "节点测速";
-                }
-              }, 2000);
-            }, function (dt) {
-              layer.alert(dt.msg, { icon: 2, title: dt.code + "错误" });
-            }, btn)
+            layer.prompt({ title: '测速地址', value: '<{% .TestUrl %}>', placeholder: "请输入http/https开头的URL网址" }, function (value, index, elem) {
+              if (value === '') return elem.focus();
+              var btn = document.getElementById("testproxynodes")
+              postjson("/api/nodes/test", { TestUrl: util.escape(value) }, function (dt) {
+                layer.msg(dt.msg);
+                var times = 4;
+                interval = setInterval(function () {
+                  console.log("-----setInterval--times:", times)
+                  if (times > 0) {
+                    table.reload('test')
+                    btn.disabled = true;
+                    btn.innerText = ((times < 10 ? "0" + times : times) + "s测速中");
+                    times--;
+                  } else {
+                    clearInterval(interval);
+                    btn.disabled = false;
+                    btn.innerText = "节点测速";
+                    window.location.reload();
+                  }
+                }, 2000);
+              }, function (dt) {
+                layer.alert(dt.msg, { icon: 2, title: dt.code + "错误" });
+              }, btn)
+              // 关闭 prompt
+              layer.close(index);
+            });
             break;
           case 'startNodes':
             var btn = document.getElementById("startproxynodes")
@@ -335,7 +343,6 @@
                 btn.disabled = false;
               }
               fail(dt)
-              // layer.alert(dt.msg, { icon: 2, title: dt.status + "错误" });
             }
           } else {
             if (btn != undefined) {

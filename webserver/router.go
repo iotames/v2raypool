@@ -9,6 +9,7 @@ import (
 
 	"github.com/iotames/glayui/gtpl"
 	"github.com/iotames/glayui/web"
+	"github.com/iotames/miniutils"
 	vp "github.com/iotames/v2raypool"
 	"github.com/iotames/v2raypool/conf"
 )
@@ -24,7 +25,12 @@ func setRouter(s *web.EasyServer) {
 		ctx.Writer.Write(GetNodes())
 	})
 	s.AddHandler("POST", "/api/nodes/test", func(ctx web.Context) {
-		ctx.Writer.Write(TestNodes())
+		dt := make(map[string]string)
+		err := getPostJson(ctx, &dt)
+		if err != nil {
+			return
+		}
+		ctx.Writer.Write(TestNodes(dt["TestUrl"]))
 	})
 	s.AddHandler("POST", "/api/nodes/start", func(ctx web.Context) {
 		ctx.Writer.Write(StartNodes())
@@ -171,7 +177,8 @@ func StartNodes() []byte {
 	result.Success("启动成功")
 	return result.Bytes()
 }
-func TestNodes() []byte {
+
+func TestNodes(testurl string) []byte {
 	result := BaseResult{}
 	pp := vp.GetProxyPool()
 	if pp.IsLock {
@@ -183,6 +190,10 @@ func TestNodes() []byte {
 		result.Fail(msg, 400)
 		return result.Bytes()
 	}
+	oldConf := conf.GetConf()
+	oldConf.TestUrl = testurl
+	conf.SetConf(oldConf)
+	pp.SetTestUrl(testurl)
 	go pp.TestAll()
 	result.Success("测速已开始，请稍候...")
 	return result.Bytes()
@@ -190,7 +201,11 @@ func TestNodes() []byte {
 
 func GetNodes() []byte {
 	pp := vp.GetProxyPool()
-	nds := pp.GetNodes("")
+	testDomain := miniutils.GetDomainByUrl(conf.GetConf().TestUrl)
+	nds := pp.GetNodes(testDomain)
+	if len(nds) == 0 {
+		nds = pp.GetNodes("")
+	}
 	nds.SortBySpeed()
 	activeNode := pp.GetActiveNode()
 	var rows []map[string]any
@@ -199,24 +214,17 @@ func GetNodes() []byte {
 		if activeNode.RemoteAddr == n.RemoteAddr {
 			isActive = true
 		}
-		runState := "已停止"
-		if n.IsRunning() {
-			runState = "运行中"
-			if n.IsOk() {
-				runState = `<span class="layui-badge layui-bg-green">推荐</span>`
-			}
-			// runState = `<span class="layui-badge">超时</span>`
-		}
 		data := map[string]any{
 			"index":       n.Index,
 			"id":          n.Id,
 			"protocol":    n.Protocol,
 			"local_port":  n.LocalPort,
-			"speed":       fmt.Sprintf("%.4f", n.Speed.Seconds()),
+			"speed":       fmt.Sprintf("%.2f", n.Speed.Seconds()),
+			"test_url":    n.TestUrl,
 			"title":       n.Title,
 			"local_addr":  pp.GetLocalAddr(n),
 			"remote_addr": n.RemoteAddr,
-			"status":      runState,
+			"is_running":  n.IsRunning(),
 			"is_active":   isActive,
 			"is_ok":       n.IsOk(),
 			"test_at":     n.TestAt.Format("2006-01-02 15:04"),
