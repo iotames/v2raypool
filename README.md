@@ -6,7 +6,7 @@
 
 提供通用的gRPC控制接口，参看数据定义文件 `v2raypool.proto`
 
-![WebUI面板](/webui.png "WebUI面板")
+![WebUI面板](screenshot.jpg)
 
 Windows代理设置: `网络和Internet` -> `代理` -> `手动设置代理`
 
