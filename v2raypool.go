@@ -26,6 +26,8 @@ func GetProxyPool() *ProxyPool {
 }
 
 type ProxyPool struct {
+	serverList                     []*V2rayServer
+	startAt                        time.Time
 	cmd                            *exec.Cmd
 	activeCmd                      *exec.Cmd
 	activeNode                     ProxyNode
@@ -42,12 +44,25 @@ type ProxyPool struct {
 func NewProxyPool() *ProxyPool {
 	return &ProxyPool{lock: &sync.Mutex{}, speedMap: make(map[string]ProxyNodes)}
 }
+func (p ProxyPool) GetV2rayServerList() []*V2rayServer {
+	return p.serverList
+}
 func (p ProxyPool) GetActiveNode() ProxyNode {
 	return p.activeNode
 }
-func (p *ProxyPool) SetCmd(cmd *exec.Cmd) {
-	p.cmd = cmd
+func (p *ProxyPool) StartV2rayPool() {
+	// -----SUCCESS--RunProxyPoolInit--Pid(13628)--cost(1.687s)--
+	vs := NewV2ray(p.v2rayPath)
+	err := vs.Start()
+	if err == nil {
+		p.cmd = vs.GetExeCmd()
+		p.serverList = []*V2rayServer{vs}
+		fmt.Printf("-----SUCCESS--RunProxyPoolInit--Pid(%d)--cost(%.3fs)--\n", p.cmd.Process.Pid, time.Since(p.startAt).Seconds())
+	} else {
+		fmt.Printf("-----FAIL--StartV2rayCoreFail-----cost(%.3fs)--\n", time.Since(p.startAt).Seconds())
+	}
 }
+
 func (p *ProxyPool) SetLocalPortStart(port int) *ProxyPool {
 	p.localPortStart = port
 	return p
@@ -69,6 +84,9 @@ func (p *ProxyPool) SetTestUrl(turl string) *ProxyPool {
 	return p
 }
 func (p *ProxyPool) SetV2rayPath(path string) *ProxyPool {
+	if !miniutils.IsPathExists(path) {
+		panic(fmt.Errorf("v2ray path %s not found", path))
+	}
 	p.v2rayPath = path
 	return p
 }
@@ -176,6 +194,7 @@ func (p *ProxyPool) InitSubscribeData() *ProxyPool {
 	if p.localPortStart == 0 {
 		panic("please set localPortStart")
 	}
+	p.startAt = time.Now()
 	var err error
 	var dt string
 	if p.subscribeRawData != "" {
@@ -487,6 +506,7 @@ func (p *ProxyPool) UnActiveNode(n ProxyNode) error {
 			return err
 		}
 		p.activeCmd = nil
+		p.serverList = []*V2rayServer{p.serverList[0]}
 	}
 	if runtime.GOOS == "windows" {
 		if err := SetProxy(""); err == nil {
@@ -510,11 +530,19 @@ func (p *ProxyPool) ActiveNode(n ProxyNode) error {
 		}
 		p.activeCmd = nil
 	}
-	p.activeCmd, err = NewV2ray(p.v2rayPath).SetPort(activePort).SetNode(n.v2rayNode).Start()
+	vs := NewV2ray(p.v2rayPath)
+	vs.SetPort(activePort).SetNode(n.v2rayNode)
+	err = vs.Start()
 	if err == nil {
+		p.activeCmd = vs.GetExeCmd()
+		p.serverList = []*V2rayServer{p.serverList[0], vs}
 		fmt.Printf("-----SUCCESS--ActiveNode--Index(%d)--LocalPort(%d)--Pid(%d)---RemoteAddr(%s)--\n", n.Index, activePort, p.activeCmd.Process.Pid, n.RemoteAddr)
 		if runtime.GOOS == "windows" {
-			httproxy := fmt.Sprintf(`127.0.0.1:%d`, n.LocalPort)
+			setPort := n.LocalPort
+			if !n.IsRunning() {
+				setPort = activePort
+			}
+			httproxy := fmt.Sprintf(`127.0.0.1:%d`, setPort)
 			if err = SetProxy(httproxy); err == nil {
 				fmt.Printf("设置代理服务器: %s 成功!\n", httproxy)
 			} else {
@@ -535,7 +563,6 @@ func (p *ProxyPool) ActiveNode(n ProxyNode) error {
 // 在schedule中更新订阅
 // https://cloud.tencent.com/developer/article/1564128
 func proxyPoolInit() {
-	startAt := time.Now()
 	cf := conf.GetConf()
 	subscribeRawData := cf.GetSubscribeData()
 	if cf.SubscribeUrl == "" {
@@ -558,11 +585,5 @@ func proxyPoolInit() {
 	for i, n := range nds {
 		fmt.Printf("---[%d]--Lport(%d)--Speed(%.3f)--Run(%v)--TestAt(%s)--Remote(%s)--T(%s)--index(%d)\n", i, n.LocalPort, n.Speed.Seconds(), n.IsRunning(), n.TestAt.Format("2006-01-02 15:04"), n.RemoteAddr, n.Title, n.Index)
 	}
-	cmd, err := NewV2ray(cf.V2rayPath).Start()
-	if err == nil {
-		pp.SetCmd(cmd)
-		fmt.Printf("-----SUCCESS--RunProxyPoolInit--Pid(%d)--cost(%.3fs)--\n", cmd.Process.Pid, time.Since(startAt).Seconds())
-	} else {
-		fmt.Printf("-----FAIL--StartV2rayCoreFail-----cost(%.3fs)--\n", time.Since(startAt).Seconds())
-	}
+	pp.StartV2rayPool()
 }

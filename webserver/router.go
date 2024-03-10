@@ -24,6 +24,9 @@ func setRouter(s *web.EasyServer) {
 	s.AddHandler("GET", "/api/nodes", func(ctx web.Context) {
 		ctx.Writer.Write(GetNodes())
 	})
+	s.AddHandler("GET", "/api/v2ray/list", func(ctx web.Context) {
+		ctx.Writer.Write(GetV2rayList())
+	})
 	s.AddHandler("POST", "/api/nodes/test", func(ctx web.Context) {
 		dt := make(map[string]string)
 		err := getPostJson(ctx, &dt)
@@ -230,6 +233,43 @@ func GetNodes() []byte {
 			"test_at":     n.TestAt.Format("2006-01-02 15:04"),
 		}
 		// fmt.Printf("-----GetNodes---ndata(%+v)------\n", data)
+		rows = append(rows, data)
+	}
+	result := NewListData(rows, len(rows))
+	result.Code = 0
+	b, err := json.Marshal(result)
+	if err == nil {
+		return b
+	}
+	res := BaseResult{
+		Code: 500,
+		Msg:  err.Error(),
+	}
+	return res.Bytes()
+}
+
+func GetV2rayList() []byte {
+	slist := vp.GetProxyPool().GetV2rayServerList()
+	var rows []map[string]any
+	for _, vs := range slist {
+		pid := 0
+		if vs.GetExeCmd() != nil {
+			pid = vs.GetExeCmd().Process.Pid
+		}
+		jconf := vs.GetJsonConfig()
+		confile := jconf.GetFilepath()
+		runmode := "单节点模式"
+		if confile == "" {
+			runmode = "代理池模式"
+			confile = vp.ROUTING_RULES_FILE
+		}
+		data := map[string]any{
+			"pid":         pid,
+			"run_mode":    runmode,
+			"local_port":  vs.GetLocalPort(),
+			"config_file": confile,
+			"config_json": jconf.String(),
+		}
 		rows = append(rows, data)
 	}
 	result := NewListData(rows, len(rows))

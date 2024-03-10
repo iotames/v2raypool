@@ -267,7 +267,7 @@ func setV2rayConfigV4Inbounds(confv4 *V2rayConfigV4, inPort int, cf conf.Conf) {
 
 // getV2rayConfigV4 v2ray官方配置v4版本
 // inPort == 0时，启用gRPC，允许多个代理节点组成代理池。
-func getV2rayConfigV4(n V2rayNode, inPort int) io.Reader {
+func getV2rayConfigV4(n V2rayNode, inPort int) *JsonConfig {
 	var err error
 	cf := conf.GetConf()
 	vconf := V2rayConfigV4{}
@@ -284,28 +284,49 @@ func getV2rayConfigV4(n V2rayNode, inPort int) io.Reader {
 		panic(err)
 	}
 	var vconfb []byte
-
-	var f *os.File
-	if inPort == 0 {
-		vconfb, err = json.Marshal(vconf)
-	} else {
-		vconfb, err = json.MarshalIndent(vconf, "", "\t")
-	}
+	vconfb, err = json.MarshalIndent(vconf, "", "\t")
 	if err != nil {
 		panic(err)
 	}
-	if inPort > 0 {
-		f, err = os.OpenFile(V2RAY_CONFIG_FILE, os.O_TRUNC|os.O_CREATE|os.O_WRONLY, 0777)
-		if err != nil {
-			panic(err)
-		}
-		defer f.Close()
-		f.Write(vconfb)
-	}
+
+	// if inPort == 0 {
+	// 	vconfb, err = json.Marshal(vconf)
+	// } else {
+	// 	vconfb, err = json.MarshalIndent(vconf, "", "\t")
+	// }
+
 	fmt.Printf("\n---getV2rayConfigV4--Outbounds-len(%d)--v2ray.config=(%s)--\n", len(vconf.Outbounds), string(vconfb))
-	return bytes.NewReader(vconfb)
+	return NewJsonConfig(vconfb)
 }
 
-func getV2rayConfig(n V2rayNode, inPort int) io.Reader {
-	return getV2rayConfigV4(n, inPort)
+type JsonConfig struct {
+	content  []byte
+	filepath string
+}
+
+func NewJsonConfig(b []byte) *JsonConfig {
+	return &JsonConfig{
+		content: b,
+	}
+}
+func (j JsonConfig) GetFilepath() string {
+	return j.filepath
+}
+func (j *JsonConfig) SaveToFile(filepath string) error {
+	f, err := os.OpenFile(filepath, os.O_TRUNC|os.O_CREATE|os.O_WRONLY, 0777)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	_, err = f.Write(j.content)
+	if err == nil {
+		j.filepath = filepath
+	}
+	return err
+}
+func (j JsonConfig) Reader() io.Reader {
+	return bytes.NewReader(j.content)
+}
+func (j JsonConfig) String() string {
+	return string(j.content)
 }
