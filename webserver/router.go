@@ -261,7 +261,8 @@ func GetV2rayList() []byte {
 		runmode := "单节点模式"
 		if confile == "" {
 			runmode = "代理池模式"
-			confile = vp.ROUTING_RULES_FILE
+		} else {
+			confile = vp.ROUTING_RULES_FILE + " -> " + confile
 		}
 		data := map[string]any{
 			"pid":         pid,
