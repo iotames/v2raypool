@@ -299,20 +299,42 @@ func getV2rayConfigV4(n V2rayNode, inPort int) *JsonConfig {
 	return NewJsonConfig(vconfb)
 }
 
-type JsonConfig struct {
-	content  []byte
-	filepath string
-}
-
 func NewJsonConfig(b []byte) *JsonConfig {
 	return &JsonConfig{
 		content: b,
 	}
 }
+
+func NewJsonConfigFromFile(fpath string) *JsonConfig {
+	f, err := os.OpenFile(fpath, os.O_RDONLY, 0777)
+	if err != nil {
+		panic(err)
+	}
+	defer f.Close()
+	result := &JsonConfig{}
+	result.content, err = io.ReadAll(f)
+	if err != nil {
+		panic(err)
+	}
+	result.filepath = fpath
+	return result
+}
+
+type JsonConfig struct {
+	content  []byte
+	filepath string
+}
+
 func (j JsonConfig) GetFilepath() string {
 	return j.filepath
 }
+
+// SaveToFile 保存json内容到filepath文件。
+// 若 filepath 为空，则保存到默认 filepath
 func (j *JsonConfig) SaveToFile(filepath string) error {
+	if filepath == "" {
+		j.filepath = filepath
+	}
 	f, err := os.OpenFile(filepath, os.O_TRUNC|os.O_CREATE|os.O_WRONLY, 0777)
 	if err != nil {
 		return err
@@ -324,9 +346,15 @@ func (j *JsonConfig) SaveToFile(filepath string) error {
 	}
 	return err
 }
+
 func (j JsonConfig) Reader() io.Reader {
 	return bytes.NewReader(j.content)
 }
+
 func (j JsonConfig) String() string {
 	return string(j.content)
+}
+
+func (j JsonConfig) Decode(v any) error {
+	return json.Unmarshal(j.content, v)
 }

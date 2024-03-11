@@ -26,9 +26,8 @@ func GetProxyPool() *ProxyPool {
 }
 
 type ProxyPool struct {
-	serverList                     []*V2rayServer
+	serverMap                      map[int]*V2rayServer
 	startAt                        time.Time
-	cmd                            *exec.Cmd
 	activeCmd                      *exec.Cmd
 	activeNode                     ProxyNode
 	localPortStart                 int
@@ -42,22 +41,95 @@ type ProxyPool struct {
 }
 
 func NewProxyPool() *ProxyPool {
-	return &ProxyPool{lock: &sync.Mutex{}, speedMap: make(map[string]ProxyNodes)}
+	return &ProxyPool{lock: &sync.Mutex{}, speedMap: make(map[string]ProxyNodes), serverMap: make(map[int]*V2rayServer, 2)}
 }
+func (p ProxyPool) GetLocalPortRange() string {
+	return fmt.Sprintf("%d-%d", p.nodes[0].LocalPort, p.nodes[len(p.nodes)-1].LocalPort)
+}
+func (p ProxyPool) GetLocalPortList() (dl []int, err error) {
+	cf := conf.GetConf()
+	for _, v := range p.serverMap {
+		conf := V2rayConfigV4{}
+		err = v.jconf.Decode(&conf)
+		if err != nil {
+			return
+		}
+		for _, inb := range conf.Inbounds {
+			dl = append(dl, inb.Port)
+			if inb.Port == cf.V2rayApiPort {
+				for _, nd := range p.nodes {
+					dl = append(dl, nd.LocalPort)
+				}
+			}
+		}
+	}
+	return
+}
+
+func (p ProxyPool) CheckV2rayConfig(jconf JsonConfig) error {
+	vconf := V2rayConfigV4{}
+	err := jconf.Decode(&vconf)
+	if err != nil {
+		return err
+	}
+	lports, err := p.GetLocalPortList()
+	if err != nil {
+		return err
+	}
+	for _, port := range lports {
+		for _, inb := range vconf.Inbounds {
+			if port == inb.Port {
+				return fmt.Errorf("本地端口号重复:%d", port)
+			}
+		}
+	}
+	return nil
+}
+
+func (p *ProxyPool) AddV2rayServer(vs *V2rayServer) error {
+	pid := vs.GetExeCmd().Process.Pid
+	for k := range p.serverMap {
+		if k == pid {
+			return fmt.Errorf("PID(%d)重复", pid)
+		}
+	}
+	p.serverMap[pid] = vs
+	return nil
+}
+
+func (p *ProxyPool) DeleteV2rayServer(pid int) error {
+	v, ok := p.serverMap[pid]
+	if !ok {
+		return fmt.Errorf("v2ray server PID(%d)不存在", pid)
+	}
+	err := v.GetExeCmd().Process.Kill()
+	if err != nil {
+		return err
+	}
+	delete(p.serverMap, pid)
+	return nil
+}
+
 func (p ProxyPool) GetV2rayServerList() []*V2rayServer {
-	return p.serverList
+	var dl []*V2rayServer
+	for _, vs := range p.serverMap {
+		dl = append(dl, vs)
+	}
+	return dl
 }
+
 func (p ProxyPool) GetActiveNode() ProxyNode {
 	return p.activeNode
 }
+
 func (p *ProxyPool) StartV2rayPool() {
 	// -----SUCCESS--RunProxyPoolInit--Pid(13628)--cost(1.687s)--
 	vs := NewV2ray(p.v2rayPath)
-	err := vs.Start()
+	err := vs.Start("")
 	if err == nil {
-		p.cmd = vs.GetExeCmd()
-		p.serverList = []*V2rayServer{vs}
-		fmt.Printf("-----SUCCESS--RunProxyPoolInit--Pid(%d)--cost(%.3fs)--\n", p.cmd.Process.Pid, time.Since(p.startAt).Seconds())
+		pcmd := vs.GetExeCmd()
+		p.serverMap[pcmd.Process.Pid] = vs
+		fmt.Printf("-----SUCCESS--RunProxyPoolInit--Pid(%d)--cost(%.3fs)--\n", pcmd.Process.Pid, time.Since(p.startAt).Seconds())
 	} else {
 		fmt.Printf("-----FAIL--StartV2rayCoreFail-----cost(%.3fs)--\n", time.Since(p.startAt).Seconds())
 	}
@@ -490,23 +562,19 @@ func (p *ProxyPool) KillAllNodes() (total, runport, kill, fail int) {
 
 	p.UpdateAfterStopAll()
 	p.IsLock = false
-	p.cmd.Process.Kill()
-	if p.activeCmd != nil {
-		p.activeCmd.Process.Kill()
+	for _, vs := range p.serverMap {
+		vcmd := vs.GetExeCmd()
+		if vcmd != nil {
+			vcmd.Process.Kill()
+		}
 	}
 	return
 }
 func (p *ProxyPool) UnActiveNode(n ProxyNode) error {
-	var err error
 	// activePort := p.localPortStart - 1
-	if p.activeCmd != nil {
-		err = p.activeCmd.Process.Kill()
-		fmt.Printf("-----ActiveNode---KillCmdProcess(%d)--err(%v)----\n", p.activeCmd.Process.Pid, err)
-		if err != nil {
-			return err
-		}
-		p.activeCmd = nil
-		p.serverList = []*V2rayServer{p.serverList[0]}
+	err := p.killActiveNode()
+	if err != nil {
+		return err
 	}
 	if runtime.GOOS == "windows" {
 		if err := SetProxy(""); err == nil {
@@ -519,24 +587,34 @@ func (p *ProxyPool) UnActiveNode(n ProxyNode) error {
 	return err
 }
 
-func (p *ProxyPool) ActiveNode(n ProxyNode) error {
+func (p *ProxyPool) killActiveNode() error {
 	var err error
-	activePort := p.localPortStart - 1
 	if p.activeCmd != nil {
 		err = p.activeCmd.Process.Kill()
-		fmt.Printf("-----ActiveNode---KillCmdProcess(%d)--err(%v)----\n", p.activeCmd.Process.Pid, err)
+		fmt.Printf("-----killActiveNode--AfterKill--err(%v)--p.activeCmd(%v)--PID(%d)--ProcessState(%+v)---\n", err, p.activeCmd, p.activeCmd.Process.Pid, p.activeCmd.ProcessState)
 		if err != nil {
 			return err
 		}
+		delete(p.serverMap, p.activeCmd.Process.Pid)
 		p.activeCmd = nil
+	}
+	return nil
+}
+
+func (p *ProxyPool) ActiveNode(n ProxyNode) error {
+	var err error
+	activePort := p.localPortStart - 1
+	err = p.killActiveNode()
+	if err != nil {
+		return err
 	}
 	vs := NewV2ray(p.v2rayPath)
 	vs.SetPort(activePort).SetNode(n.v2rayNode)
-	err = vs.Start()
+	err = vs.Start("")
 	if err == nil {
 		p.activeCmd = vs.GetExeCmd()
-		p.serverList = []*V2rayServer{p.serverList[0], vs}
-		fmt.Printf("-----SUCCESS--ActiveNode--Index(%d)--LocalPort(%d)--Pid(%d)---RemoteAddr(%s)--\n", n.Index, activePort, p.activeCmd.Process.Pid, n.RemoteAddr)
+		p.serverMap[vs.cmd.Process.Pid] = vs
+		fmt.Printf("-----SUCCESS--ActiveNode--Index(%d)--LocalPort(%d)--Pid(%d)---RemoteAddr(%s)--ProcessState(%+v)---\n", n.Index, activePort, p.activeCmd.Process.Pid, n.RemoteAddr, p.activeCmd.ProcessState)
 		if runtime.GOOS == "windows" {
 			setPort := n.LocalPort
 			if !n.IsRunning() {

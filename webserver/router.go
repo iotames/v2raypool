@@ -1,7 +1,6 @@
 package webserver
 
 import (
-	// "github.com/iotames/glayui/component"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -47,6 +46,36 @@ func setRouter(s *web.EasyServer) {
 		ctx.Writer.Write(ActiveNode(dt.RemoteAddr))
 	})
 
+	s.AddHandler("POST", "/api/v2ray/run", func(ctx web.Context) {
+		val, err := getPostJsonField(ctx, "config_file")
+		if err != nil {
+			return
+		}
+		configFile, ok := val.(string)
+		if !ok {
+			result := BaseResult{Msg: "config_file必须为字符串", Code: 500}
+			ctx.Writer.Write(result.Bytes())
+			return
+		}
+		ctx.Writer.Write(RunV2ray(configFile, "启动成功"))
+	})
+
+	s.AddHandler("POST", "/api/v2ray/restart", func(ctx web.Context) {
+		dt := V2rayServerData{}
+		err := getPostJson(ctx, &dt)
+		if err != nil {
+			return
+		}
+		ctx.Writer.Write(RestartV2ray(dt))
+	})
+	s.AddHandler("POST", "/api/v2ray/delete", func(ctx web.Context) {
+		dt := V2rayServerData{}
+		err := getPostJson(ctx, &dt)
+		if err != nil {
+			return
+		}
+		ctx.Writer.Write(DeleteV2ray(dt))
+	})
 	s.AddHandler("POST", "/api/node/unactive", func(ctx web.Context) {
 		dt := vp.ProxyNode{}
 		err := getPostJson(ctx, &dt)
@@ -66,6 +95,22 @@ func setRouter(s *web.EasyServer) {
 		}
 		ctx.Writer.Write(UpdateConf(dt, conf.GetConf().EnvFile))
 	})
+}
+
+func getPostJsonField(ctx web.Context, field string) (val any, err error) {
+	dt := make(map[string]any)
+	err = getPostJson(ctx, &dt)
+	if err != nil {
+		return
+	}
+	var ok bool
+	val, ok = dt[field]
+	if !ok {
+		err = fmt.Errorf("post field %s not found", field)
+		result := BaseResult{Msg: err.Error(), Code: 400}
+		ctx.Writer.Write(result.Bytes())
+	}
+	return
 }
 
 func getPostJson(ctx web.Context, v any) error {
@@ -117,6 +162,7 @@ func UpdateConf(dt map[string]string, fpath string) []byte {
 	result.Success("设置成功，重启应用后生效。")
 	return result.Bytes()
 }
+
 func UnActiveNode(remoteAddr string) []byte {
 	var err error
 	pp := vp.GetProxyPool()
@@ -233,44 +279,6 @@ func GetNodes() []byte {
 			"test_at":     n.TestAt.Format("2006-01-02 15:04"),
 		}
 		// fmt.Printf("-----GetNodes---ndata(%+v)------\n", data)
-		rows = append(rows, data)
-	}
-	result := NewListData(rows, len(rows))
-	result.Code = 0
-	b, err := json.Marshal(result)
-	if err == nil {
-		return b
-	}
-	res := BaseResult{
-		Code: 500,
-		Msg:  err.Error(),
-	}
-	return res.Bytes()
-}
-
-func GetV2rayList() []byte {
-	slist := vp.GetProxyPool().GetV2rayServerList()
-	var rows []map[string]any
-	for _, vs := range slist {
-		pid := 0
-		if vs.GetExeCmd() != nil {
-			pid = vs.GetExeCmd().Process.Pid
-		}
-		jconf := vs.GetJsonConfig()
-		confile := jconf.GetFilepath()
-		runmode := "单节点模式"
-		if confile == "" {
-			runmode = "代理池模式"
-		} else {
-			confile = vp.ROUTING_RULES_FILE + " -> " + confile
-		}
-		data := map[string]any{
-			"pid":         pid,
-			"run_mode":    runmode,
-			"local_port":  vs.GetLocalPort(),
-			"config_file": confile,
-			"config_json": jconf.String(),
-		}
 		rows = append(rows, data)
 	}
 	result := NewListData(rows, len(rows))

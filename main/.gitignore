@@ -5,7 +5,8 @@ v2raypool
 *.exe
 *.log
 *.txt
-routing.rules.json
-v2ray.config.json
+*.json
+# routing.rules.json
+# v2ray.config.json
 # resource/
 runtime/
