@@ -262,6 +262,13 @@ func (p *ProxyPool) getSpeedNodes(key string) []ProxyNode {
 	}
 	return []ProxyNode{}
 }
+func (p ProxyPool) GetTestedDomainList() []string {
+	var dl []string
+	for k := range p.speedMap {
+		dl = append(dl, k)
+	}
+	return dl
+}
 func (p *ProxyPool) InitSubscribeData() *ProxyPool {
 	if p.localPortStart == 0 {
 		panic("please set localPortStart")

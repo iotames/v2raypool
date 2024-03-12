@@ -37,12 +37,26 @@
   </div>
 
   <script type="text/html" id="toolbarDemo">
-  <div class="layui-btn-container">
-    <i class="itable-top layui-icon layui-icon-set" style="color: #fc4706e8;" lay-on="settinglayer" id="setting"></i>
-    <i class="itable-top layui-icon layui-icon-play" style="color: green;" lay-event="startNodes" id="startproxynodes"></i>
-    <i class="itable-top layui-icon" style="color:deeppink" lay-event="testNodes" id="testproxynodes">⚡</i>
-    <i class="itable-top layui-icon layui-icon-refresh-3" style="color: #1E9FFF;" lay-event="refreshData" id="refreshdata"></i>
-    <button class="layui-btn layui-btn-sm" lay-on="v2raylist">v2ray</button>
+  <div class="layui-btn-container layui-row">
+
+    <div class="layui-form layui-col-xs3">
+      <select lay-filter="test_domain">
+        <option value="">测速过的域名</option>
+        <{% range .TestedDomainList %}>
+        <option value="<{% . %}>" <{%if strContains $.TestUrl . %}>selected<{%end%}> ><{% . %}></option>
+        <{% end %}>
+      </select>
+      
+    </div>
+  
+    <div class="layui-col-xs8">
+      <i class="itable-top layui-icon" style="color:deeppink" lay-event="testNodes" id="testproxynodes">⚡</i>
+      <i class="itable-top layui-icon layui-icon-play" style="color: green;" lay-event="startNodes" id="startproxynodes"></i>
+      <!-- <i class="itable-top layui-icon layui-icon-refresh-3" style="color: #1E9FFF;" lay-event="refreshData" id="refreshdata"></i> -->
+      <button class="layui-btn layui-btn-sm" lay-on="v2raylist">v2ray</button>
+      <!-- <i class="itable-top layui-icon layui-icon-set" style="color: #fc4706e8;" lay-on="settinglayer" id="setting"></i> -->
+    </div>
+
   </div>
 </script>
 
@@ -80,6 +94,14 @@
       var util = layui.util;
       var form = layui.form;
       var $ = layui.$;
+
+      form.on('select(test_domain)', function (data) {
+        // var value = data.value; // 获得被选中的值
+        // var elem = data.elem; // 获得 select 原始 DOM 对象
+        // var othis = data.othis; // 获得 select 元素被替换后的 jQuery 对象
+        // layer.msg(this.innerHTML + ' 的 value: ' + value); // this 为当前选中 <option> 元素对象
+        table.reloadData('test', {where:{domain: data.value}})
+      });
 
       // 事件
       util.on('lay-on', {
@@ -129,40 +151,7 @@
             }
           })
         },
-        'settinglayer': function () {
-          layer.open({
-            title: '系统设置(<{% .EnvFile %}>文件)',
-            type: 1,
-            area: ['50%', 'auto'],
-            content: $('#settinglayer'),
-            success: function (layero, index, that) {
-              // 对弹层中的表单进行初始化渲染
-              form.render();
-              // 表单提交事件
-              form.on('submit(demo-login)', function (data) {
-                var submitbtn = document.getElementById("setupdatebtn")
-                // submitbtn.innerText = "提交中"
-                var field = data.field; // 获取表单字段值
-                console.log(field)
-                postjson("/api/setting/update", field, function (dt) {
-                  layer.close(index)
-                  layer.msg(dt.msg);
-                  window.setTimeout(function () {
-                    window.location.reload();
-                  }, 3000)
-
-                }, function (dt) {
-                  // submitbtn.innerText = "提交失败"
-                  console.log(field)
-                  layer.alert(dt.msg, { icon: 2, title: dt.code + "错误" });
-                }, submitbtn)
-                // layer.close(index); // 关闭弹层
-                return false; // 阻止默认 form 跳转
-
-              });
-            }
-          });
-        }
+        'settinglayer': function () { }
       })
 
       // 创建渲染实例
@@ -203,7 +192,7 @@
               layer.alert(dt.msg, { icon: 2, title: dt.code + "错误" });
             })
             break;
-            case 'delete':
+          case 'delete':
             if (data.run_mode != "个性配置") {
               layer.msg("系统进程不可删除");
               return
@@ -215,10 +204,10 @@
               console.log(data)
               layer.alert(dt.msg, { icon: 2, title: dt.code + "错误" });
             })
-            break;            
+            break;
           case 'viewconf':
             layer.open({
-              title: '配置文件:' + data.config_file,
+              title: '配置内容',
               type: 1,
               area: ['50%', '60%'],
               content: '<code>' + util.escape(data.config_json) + '</code>'
@@ -232,7 +221,11 @@
         elem: '#test',
         url: '/api/nodes', // 此处为静态模拟数据，实际使用时需换成真实接口
         toolbar: '#toolbarDemo',
-        // defaultToolbar: ['filter', 'exports', 'print'],
+        defaultToolbar: ['filter', {
+          title: '基本设置',
+          layEvent: 'settinglayer',
+          icon: 'layui-icon-set'
+        }],
         escape: false,
         height: 'full-35', // 最大高度减去其他容器已占有的高度差
         // lineStyle: 'height: 95px;',
@@ -309,21 +302,55 @@
               interval = setInterval(function () {
                 console.log("-----setInterval--times:", times)
                 if (times > 0) {
-                  table.reload('test')
+                  table.reloadData('test')
                   btn.disabled = true;
-                  btn.innerText = ((times < 10 ? "0" + times : times) + "s启动中");
+                  // btn.innerText = ((times < 10 ? "0" + times : times) + "s启动中");
                   times--;
                 } else {
                   clearInterval(interval);
                   btn.disabled = false;
-                  btn.innerText = "启动代理池";
+                  // btn.innerText = "启动代理池";
                 }
-              }, 3000);
+              }, 1500);
             }, function (dt) {
               layer.alert(dt.msg, { icon: 2, title: dt.code + "错误" });
             }, btn)
             break;
-          case "refreshData": table.reload('test')
+          // case "refreshData": table.reload('test')
+          //   break;
+          case 'settinglayer':
+            layer.open({
+              title: '系统设置(<{% .EnvFile %}>文件)',
+              type: 1,
+              area: ['50%', 'auto'],
+              content: $('#settinglayer'),
+              success: function (layero, index, that) {
+                // 对弹层中的表单进行初始化渲染
+                form.render();
+                // 表单提交事件
+                form.on('submit(setsubmit)', function (data) {
+                  var submitbtn = document.getElementById("setupdatebtn")
+                  // submitbtn.innerText = "提交中"
+                  var field = data.field; // 获取表单字段值
+                  console.log(field)
+                  postjson("/api/setting/update", field, function (dt) {
+                    layer.close(index)
+                    layer.msg(dt.msg);
+                    window.setTimeout(function () {
+                      window.location.reload();
+                    }, 3000)
+
+                  }, function (dt) {
+                    // submitbtn.innerText = "提交失败"
+                    console.log(field)
+                    layer.alert(dt.msg, { icon: 2, title: dt.code + "错误" });
+                  }, submitbtn)
+                  // layer.close(index); // 关闭弹层
+                  return false; // 阻止默认 form 跳转
+
+                });
+              }
+            });
             break;
         };
       });
@@ -419,7 +446,6 @@
 
   <div id="settinglayer" style="display: none;">
     <div class="layui-form" lay-filter="filter-test-layer" style="margin: 16px;">
-      <!-- <div class="demo-login-container"> -->
 
       <div class="layui-form-item">
         <label class="layui-form-label">v2ray核心文件</label>
@@ -478,17 +504,15 @@
       </div>
 
       <div class="layui-form-item">
-        <button id="setupdatebtn" class="layui-btn" style="float: right;" lay-submit lay-filter="demo-login">提交</button>
+        <button id="setupdatebtn" class="layui-btn" style="float: right;" lay-submit lay-filter="setsubmit">提交</button>
       </div>
 
-      <!-- </div> -->
     </div>
   </div>
 
 
   <div id="addv2raylayer" style="display: none;">
     <div class="layui-form" lay-filter="filter-test-layer" style="margin: 16px;">
-      <!-- <div class="demo-login-container"> -->
 
       <div class="layui-form-item">
         <label class="layui-form-label">配置文件（*.json）</label>
@@ -501,7 +525,6 @@
         <button id="runv2ray" class="layui-btn" style="float: right;" lay-submit lay-filter="runv2ray">启动</button>
       </div>
 
-      <!-- </div> -->
     </div>
   </div>
 

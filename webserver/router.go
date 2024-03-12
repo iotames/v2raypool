@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"strconv"
+	"strings"
 
 	"github.com/iotames/glayui/gtpl"
 	"github.com/iotames/glayui/web"
@@ -16,12 +17,20 @@ import (
 func setRouter(s *web.EasyServer) {
 	tpl := gtpl.GetTpl()
 	tpl.SetResourceDirPath("resource")
+	err := tpl.AddFunc("strContains", strings.Contains)
+	if err != nil {
+		panic(err)
+	}
 
 	s.AddHandler("GET", "/", func(ctx web.Context) {
-		tpl.SetDataByTplFile("index.html", conf.GetConf(), ctx.Writer)
+		dt := HomePageData{Conf: conf.GetConf()}
+		pp := vp.GetProxyPool()
+		dt.TestedDomainList = pp.GetTestedDomainList()
+		tpl.SetDataByTplFile("index.html", dt, ctx.Writer)
 	})
 	s.AddHandler("GET", "/api/nodes", func(ctx web.Context) {
-		ctx.Writer.Write(GetNodes())
+		domain := ctx.Request.URL.Query().Get("domain")
+		ctx.Writer.Write(GetNodes(domain))
 	})
 	s.AddHandler("GET", "/api/v2ray/list", func(ctx web.Context) {
 		ctx.Writer.Write(GetV2rayList())
@@ -47,17 +56,12 @@ func setRouter(s *web.EasyServer) {
 	})
 
 	s.AddHandler("POST", "/api/v2ray/run", func(ctx web.Context) {
-		val, err := getPostJsonField(ctx, "config_file")
+		dt := V2rayServerData{}
+		err := getPostJson(ctx, &dt)
 		if err != nil {
 			return
 		}
-		configFile, ok := val.(string)
-		if !ok {
-			result := BaseResult{Msg: "config_file必须为字符串", Code: 500}
-			ctx.Writer.Write(result.Bytes())
-			return
-		}
-		ctx.Writer.Write(RunV2ray(configFile, "启动成功"))
+		ctx.Writer.Write(RunV2ray(dt.ConfigFile, "启动成功"))
 	})
 
 	s.AddHandler("POST", "/api/v2ray/restart", func(ctx web.Context) {
@@ -97,21 +101,21 @@ func setRouter(s *web.EasyServer) {
 	})
 }
 
-func getPostJsonField(ctx web.Context, field string) (val any, err error) {
-	dt := make(map[string]any)
-	err = getPostJson(ctx, &dt)
-	if err != nil {
-		return
-	}
-	var ok bool
-	val, ok = dt[field]
-	if !ok {
-		err = fmt.Errorf("post field %s not found", field)
-		result := BaseResult{Msg: err.Error(), Code: 400}
-		ctx.Writer.Write(result.Bytes())
-	}
-	return
-}
+// func getPostJsonField(ctx web.Context, field string) (val any, err error) {
+// 	dt := make(map[string]any)
+// 	err = getPostJson(ctx, &dt)
+// 	if err != nil {
+// 		return
+// 	}
+// 	var ok bool
+// 	val, ok = dt[field]
+// 	if !ok {
+// 		err = fmt.Errorf("post field %s not found", field)
+// 		result := BaseResult{Msg: err.Error(), Code: 400}
+// 		ctx.Writer.Write(result.Bytes())
+// 	}
+// 	return
+// }
 
 func getPostJson(ctx web.Context, v any) error {
 	postdata, err := io.ReadAll(ctx.Request.Body)
@@ -248,10 +252,12 @@ func TestNodes(testurl string) []byte {
 	return result.Bytes()
 }
 
-func GetNodes() []byte {
+func GetNodes(domain string) []byte {
 	pp := vp.GetProxyPool()
-	testDomain := miniutils.GetDomainByUrl(conf.GetConf().TestUrl)
-	nds := pp.GetNodes(testDomain)
+	if domain == "" {
+		domain = miniutils.GetDomainByUrl(conf.GetConf().TestUrl)
+	}
+	nds := pp.GetNodes(domain)
 	if len(nds) == 0 {
 		nds = pp.GetNodes("")
 	}
@@ -292,4 +298,9 @@ func GetNodes() []byte {
 		Msg:  err.Error(),
 	}
 	return res.Bytes()
+}
+
+type HomePageData struct {
+	conf.Conf
+	TestedDomainList []string
 }
