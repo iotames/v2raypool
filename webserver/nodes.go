@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/iotames/miniutils"
 	vp "github.com/iotames/v2raypool"
 	"github.com/iotames/v2raypool/conf"
 )
@@ -33,13 +32,13 @@ func UnActiveNode(remoteAddr string) []byte {
 	return result.Bytes()
 }
 
-func ActiveNode(remoteAddr string) []byte {
+func ActiveNode(remoteAddr string, globalProxy bool) []byte {
 	var err error
 	pp := vp.GetProxyPool()
 	ok := false
 	for _, nd := range pp.GetNodes("") {
 		if nd.RemoteAddr == remoteAddr {
-			err = pp.ActiveNode(nd)
+			err = pp.ActiveNode(nd, globalProxy)
 			ok = true
 			break
 		}
@@ -96,9 +95,9 @@ func TestNodes(testurl string) []byte {
 
 func GetNodes(domain string) []byte {
 	pp := vp.GetProxyPool()
-	if domain == "" {
-		domain = miniutils.GetDomainByUrl(conf.GetConf().TestUrl)
-	}
+	// if domain == "" {
+	// 	domain = miniutils.GetDomainByUrl(conf.GetConf().TestUrl)
+	// }
 	nds := pp.GetNodes(domain)
 	if len(nds) == 0 {
 		nds = pp.GetNodes("")

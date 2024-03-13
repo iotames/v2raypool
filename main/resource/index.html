@@ -104,7 +104,7 @@
         // var elem = data.elem; // 获得 select 原始 DOM 对象
         // var othis = data.othis; // 获得 select 元素被替换后的 jQuery 对象
         // layer.msg(this.innerHTML + ' 的 value: ' + value); // this 为当前选中 <option> 元素对象
-        table.reloadData('test', {where:{domain: data.value}})
+        table.reloadData('test', { where: { domain: data.value } })
       });
 
       // 事件
@@ -379,17 +379,62 @@
             if (data.is_active) {
               hintmsg = '取消[' + data.title + ']节点为系统代理吗？'
               posturl = "/api/node/unactive"
+              layer.confirm(hintmsg, function (index) {
+                postjson(posturl, { remote_addr: data.remote_addr }, function (dt) {
+                  layer.msg(dt.msg);
+                  table.reload('test')
+                }, function (dt) {
+                  layer.alert(dt.msg, { icon: 2, title: dt.code + "错误" });
+                })
+                console.log(data)
+                layer.close(index);
+              });
+
+            } else {
+
+              layer.open({
+                title: hintmsg,
+                type: 1,
+                area: ['30%', 'auto'],
+                content: $('#activenodelayer'),
+                success: function (layero, index, that) {
+                  // 对弹层中的表单进行初始化渲染
+                  form.render();
+                  // 表单提交事件
+                  form.on('submit(activenode)', function (fdt) {
+                    var submitbtn = document.getElementById("activenode")
+                    // submitbtn.innerText = "提交中"
+                    var field = fdt.field; // 获取表单字段
+                    var postdata = {
+                      remote_addr: data.remote_addr,
+                      global_proxy: true
+                    }
+                    if (field.global_proxy == "0") {
+                      postdata.global_proxy = false
+                    }
+                    console.log(field)
+                    postjson(posturl, postdata, function (dt) {
+                      layer.close(index)
+                      layer.msg(dt.msg);
+                      window.setTimeout(function () {
+                        // window.location.reload();
+                        table.reloadData('test')
+                      }, 500)
+
+                    }, function (dt) {
+                      // submitbtn.innerText = "提交失败"
+                      console.log(field)
+                      layer.alert(dt.msg, { icon: 2, title: dt.code + "错误" });
+                    }, submitbtn)
+                    // layer.close(index); // 关闭弹层
+                    return false; // 阻止默认 form 跳转
+
+                  });
+                }
+              });
+
             }
-            layer.confirm(hintmsg, function (index) {
-              postjson(posturl, { remote_addr: data.remote_addr }, function (dt) {
-                layer.msg(dt.msg);
-                table.reload('test')
-              }, function (dt) {
-                layer.alert(dt.msg, { icon: 2, title: dt.code + "错误" });
-              })
-              console.log(data)
-              layer.close(index);
-            });
+
             break;
         }
       });
@@ -411,6 +456,10 @@
     <{% tplinclude "add_v2ray_form.html" nil | println %}>
   </div>
 
+  <div id="activenodelayer" style="display: none;">
+    <{% tplinclude "active_node_form.html" nil | println %}>
+  </div>
 
 </body>
+
 </html>

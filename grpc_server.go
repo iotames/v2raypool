@@ -197,7 +197,7 @@ func (s ProxyPoolServer) ActiveProxyNode(ctx context.Context, req *g.ProxyNode) 
 	index := req.Index
 	for _, nd := range pp.GetNodes("") {
 		if nd.Index == int(index) {
-			err = pp.ActiveNode(nd)
+			err = pp.ActiveNode(nd, true)
 			break
 		}
 	}

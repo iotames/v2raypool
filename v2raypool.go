@@ -413,7 +413,7 @@ func (p *ProxyPool) TestAllForce() {
 	p.nodes.SortBySpeed()
 
 	if p.activeCmd == nil {
-		p.ActiveNode(p.nodes[0])
+		p.ActiveNode(p.nodes[0], true)
 	}
 	p.IsLock = false
 }
@@ -467,7 +467,7 @@ func (p *ProxyPool) TestAll() {
 	}
 	p.nodes.SortBySpeed()
 	if p.activeCmd == nil {
-		p.ActiveNode(p.nodes[0])
+		p.ActiveNode(p.nodes[0], true)
 	}
 	p.IsLock = false
 }
@@ -603,13 +603,18 @@ func (p *ProxyPool) killActiveNode() error {
 	return nil
 }
 
-func (p *ProxyPool) ActiveNode(n ProxyNode) error {
+// ActiveNode 激活一个节点作为系统代理。会新建一个v2ray线程来监听系统代理的入站端口。
+// globalProxy: windows可自动设置系统代理。true使用代理池节点的入站端口。false使用新v2ray线程的系统代理入站端口。
+func (p *ProxyPool) ActiveNode(n ProxyNode, globalProxy bool) error {
 	var err error
 	activePort := p.localPortStart - 1
-	err = p.killActiveNode()
-	if err != nil {
-		return err
+	if p.activeNode.RemoteAddr != "" {
+		err = p.UnActiveNode(p.activeNode)
+		if err != nil {
+			return err
+		}
 	}
+
 	vs := NewV2ray(p.v2rayPath)
 	vs.SetPort(activePort).SetNode(n.v2rayNode)
 	err = vs.Start("")
@@ -619,7 +624,7 @@ func (p *ProxyPool) ActiveNode(n ProxyNode) error {
 		fmt.Printf("-----SUCCESS--ActiveNode--Index(%d)--LocalPort(%d)--Pid(%d)---RemoteAddr(%s)--ProcessState(%+v)---\n", n.Index, activePort, p.activeCmd.Process.Pid, n.RemoteAddr, p.activeCmd.ProcessState)
 		if runtime.GOOS == "windows" {
 			sysProxyPort := n.LocalPort
-			if !n.IsRunning() {
+			if !globalProxy {
 				sysProxyPort = activePort
 			}
 			httproxy := fmt.Sprintf(`127.0.0.1:%d`, sysProxyPort)
