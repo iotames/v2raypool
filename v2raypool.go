@@ -168,9 +168,6 @@ func (p *ProxyPool) SetV2rayPath(path string) *ProxyPool {
 	p.v2rayPath = path
 	return p
 }
-func (p *ProxyPool) SetNodes(nds []ProxyNode) {
-	p.nodes = nds
-}
 
 func (p *ProxyPool) AddNode(n ProxyNode) {
 	// fmt.Printf("----Begin---AddNode(%+v)---\n", n)
@@ -486,14 +483,6 @@ func (p *ProxyPool) StartAll() error {
 	}
 	for _, n := range p.nodes {
 		if !n.IsRunning() {
-			// hasPid, killStat := n.KillPidByLocalPort()
-			// if hasPid > 0 {
-			// 	fmt.Printf("----StartAll----Find--LocalPort(%d)---HasPID(%d)---\n", n.LocalPort, hasPid)
-			// }
-			// if killStat != nil {
-			// 	panic(fmt.Errorf("---StartAll---killPidErr(%v)-----LocalPort(%d)----HasPID(%d)---", killStat, n.LocalPort, hasPid))
-			// }
-			// err = n.Start(p.v2rayPath)
 			err = n.AddToPool(c)
 			p.UpdateNode(n)
 			if err != nil {
@@ -629,11 +618,11 @@ func (p *ProxyPool) ActiveNode(n ProxyNode) error {
 		p.serverMap[vs.cmd.Process.Pid] = vs
 		fmt.Printf("-----SUCCESS--ActiveNode--Index(%d)--LocalPort(%d)--Pid(%d)---RemoteAddr(%s)--ProcessState(%+v)---\n", n.Index, activePort, p.activeCmd.Process.Pid, n.RemoteAddr, p.activeCmd.ProcessState)
 		if runtime.GOOS == "windows" {
-			setPort := n.LocalPort
+			sysProxyPort := n.LocalPort
 			if !n.IsRunning() {
-				setPort = activePort
+				sysProxyPort = activePort
 			}
-			httproxy := fmt.Sprintf(`127.0.0.1:%d`, setPort)
+			httproxy := fmt.Sprintf(`127.0.0.1:%d`, sysProxyPort)
 			if err = SetProxy(httproxy); err == nil {
 				fmt.Printf("设置代理服务器: %s 成功!\n", httproxy)
 			} else {
@@ -644,8 +633,26 @@ func (p *ProxyPool) ActiveNode(n ProxyNode) error {
 		fmt.Printf("-----FAIL--ActiveNode--StartV2rayCoreFail---LocalPort(%d)---RemoteAddr(%s)---\n", activePort, n.RemoteAddr)
 		return err
 	}
-	n.status = 1
-	// n.LocalPort = activePort
+
+	if !n.IsRunning() {
+		c := NewV2rayApiClientV5(p.getGrpcAddr())
+		err = c.Dial()
+		if err == nil {
+			defer c.Close()
+			err = n.AddToPool(c)
+			if err != nil {
+				return err
+			}
+			// n.status = 1
+			err = p.UpdateNode(n)
+			if err != nil {
+				return fmt.Errorf("active node update node err:%v", err)
+			}
+		} else {
+			return fmt.Errorf("active node err. v2ray grpc api dial err(%v)", err)
+		}
+	}
+
 	p.activeNode = n
 	return err
 }
