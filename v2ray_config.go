@@ -238,7 +238,7 @@ func setV2rayConfigV4Inbounds(confv4 *V2rayConfigV4, inPort int, cf conf.Conf) {
 			Tag:      TAG_INBOUND_API,
 		}
 		confv4.Inbounds = []V2rayInbound{inbdapi}
-		logger.Infof("-----setV2rayConfigV4Inbounds--inPort(%d)--inbdapi--port(%d)", inPort, inbdapi.Port)
+		logger.Debugf("-----setV2rayConfigV4Inbounds--inPort(%d)--inbdapi--V2rayApiPort(%d)", inPort, inbdapi.Port)
 	} else {
 		// https://www.v2fly.org/config/protocols/http.html#inboundconfigurationobject
 		inbd1 := V2rayInbound{
@@ -248,7 +248,7 @@ func setV2rayConfigV4Inbounds(confv4 *V2rayConfigV4, inPort int, cf conf.Conf) {
 			Settings: json.RawMessage(`{"allowTransparent":false,"timeout":30}`),
 			Tag:      "http_IN",
 		}
-		logger.Infof("-----setV2rayConfigV4Inbounds--inPort(%d)--inbd1--", inPort)
+		logger.Debugf("-----setV2rayConfigV4Inbounds--inPort(%d)--inbd1--", inPort)
 		confv4.Inbounds = []V2rayInbound{inbd1}
 	}
 

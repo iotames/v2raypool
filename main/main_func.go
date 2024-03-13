@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/iotames/miniutils"
 	vp "github.com/iotames/v2raypool"
 	"github.com/iotames/v2raypool/conf"
 	"github.com/iotames/v2raypool/webserver"
@@ -21,7 +22,10 @@ func runServer() {
 	go vp.RunServer()
 	time.Sleep(time.Second * 1)
 	s := webserver.NewWebServer(webPort)
-	// s.SetData("ENV_FILE", envFile)
+	err := miniutils.StartBrowserByUrl(fmt.Sprintf(`http://127.0.0.1:%d`, webPort))
+	if err != nil {
+		fmt.Println("StartBrowserByUrl error: " + err.Error())
+	}
 	s.ListenAndServe()
 }
 
@@ -35,7 +39,14 @@ func logStart() {
 	if err != nil {
 		panic(err)
 	}
-	lgpath := filepath.Join(vconf.RuntimeDir, "logs", "start.log")
+	logsdir := filepath.Join(vconf.RuntimeDir, "logs")
+	if !miniutils.IsPathExists(logsdir) {
+		err = miniutils.Mkdir(logsdir)
+		if err != nil {
+			panic(err)
+		}
+	}
+	lgpath := filepath.Join(logsdir, "start.log")
 	f, err = os.OpenFile(lgpath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0755)
 	if err != nil {
 		panic(err)

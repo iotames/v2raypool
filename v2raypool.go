@@ -133,6 +133,12 @@ func (p *ProxyPool) StartV2rayPool() {
 	} else {
 		fmt.Printf("-----FAIL--StartV2rayCoreFail-----cost(%.3fs)--\n", time.Since(p.startAt).Seconds())
 	}
+
+	if conf.GetConf().AutoStart {
+		// 自动启动所有代理节点。并测速。然后选择最快的节点作为系统代理。
+		p.StartAll()
+		p.TestAll()
+	}
 }
 
 func (p *ProxyPool) SetLocalPortStart(port int) *ProxyPool {

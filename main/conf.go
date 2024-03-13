@@ -82,6 +82,14 @@ func getEnvDefaultStr(key, defval string) string {
 	return v
 }
 
+func getEnvDefaultBool(key string, defval bool) bool {
+	v, ok := os.LookupEnv(key)
+	if !ok {
+		return defval
+	}
+	return strings.EqualFold(v, "true")
+}
+
 func getEnvDefaultInt(key string, defval int) int {
 	v, ok := os.LookupEnv(key)
 	if !ok {
@@ -116,6 +124,9 @@ const ENV_FILE_CONTENT = `# 设置 VP_ENV_FILE 环境变量，可更改配置文
 
 # 该目录存放程序运行时产生的文件
 VP_RUNTIME_DIR = "%s"
+
+# 傻瓜模式。当配置满足条件时，打开应用后自动启动系统代理。适合打包文件直接分享给小白使用。
+VP_AUTO_START = %t
 
 # Web服务器端口。设置为0可禁用Web面板
 VP_WEB_SERVER_PORT = %d
@@ -160,7 +171,7 @@ VP_V2RAY_API_PORT = %d
 //		return fmt.Sprintf(ENV_FILE_CONTENT, vconf.RuntimeDir, GrpcPort, vconf.V2rayPath, SubscribeUrl, SubscribeDataFile, HttpProxy)
 //	}
 func getAllConfEnvStrDefault() string {
-	return fmt.Sprintf(ENV_FILE_CONTENT, conf.DEFAULT_RUNTIME_DIR, conf.DEFAULT_WEB_SERVER_PORT, conf.DEFAULT_GRPC_PORT, conf.DEFAULT_V2RAY_PATH,
+	return fmt.Sprintf(ENV_FILE_CONTENT, conf.DEFAULT_RUNTIME_DIR, conf.DEFAULT_AUTO_START, conf.DEFAULT_WEB_SERVER_PORT, conf.DEFAULT_GRPC_PORT, conf.DEFAULT_V2RAY_PATH,
 		"", conf.DEFAULT_SUBSCRIBE_DATA_FILE, conf.DEFAULT_HTTP_PROXY, conf.DEFAULT_TEST_URL,
 		conf.DEFAULT_DIRECT_DOMAIN_LIST, conf.DEFAULT_DIRECT_IP_LIST, conf.DEFAULT_PROXY_DOMAIN_LIST, conf.DEFAULT_PROXY_IP_LIST, conf.DEFAULT_V2RAY_API_PORT,
 	)
@@ -170,6 +181,7 @@ func getConfByEnv() {
 	cf := conf.GetConf()
 	cf.EnvFile = envFile
 	cf.RuntimeDir = getEnvDefaultStr("VP_RUNTIME_DIR", conf.DEFAULT_RUNTIME_DIR)
+	cf.AutoStart = getEnvDefaultBool("VP_AUTO_START", conf.DEFAULT_AUTO_START)
 	cf.GrpcPort = getEnvDefaultInt("VP_GRPC_PORT", conf.DEFAULT_GRPC_PORT)
 	cf.V2rayPath = getEnvDefaultStr("VP_V2RAY_PATH", conf.DEFAULT_V2RAY_PATH)
 	cf.SubscribeUrl = getEnvDefaultStr("VP_SUBSCRIBE_URL", "")
