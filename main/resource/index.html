@@ -6,6 +6,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>V2rayPool控制面板</title>
   <link href="/static/layui/css/layui.css" rel="stylesheet">
+  <script src="/static/layui/layui.js"></script>
+  <script src='/static/js/request.js' type='text/javascript'></script>
 </head>
 
 <style>
@@ -24,7 +26,6 @@
 
 <body>
   <!-- HTML Content -->
-  <script src="/static/layui/layui.js"></script>
 
   <div style="padding: 16px;">
 
@@ -46,11 +47,11 @@
         <option value="<{% . %}>" <{%if strContains $.TestUrl . %}>selected<{%end%}> ><{% . %}></option>
         <{% end %}>
       </select>
-      
     </div>
   
     <div class="layui-col-xs8">
       <i class="itable-top layui-icon" style="color:deeppink" lay-event="testNodes" id="testproxynodes">⚡</i>
+      <!-- <button class="layui-btn layui-btn-sm" style="background-color: darkorange;" lay-event="testNodes" id="testproxynodes">测速</button> -->
       <button class="layui-btn layui-btn-sm layui-bg-purple" lay-event="startNodes" id="startproxynodes">启动</button>
       <!-- <i class="itable-top layui-icon layui-icon-play" style="color: green;" lay-event="startNodes" id="startproxynodes"></i> -->
       <!-- <i class="itable-top layui-icon layui-icon-refresh-3" style="color: #1E9FFF;" lay-event="refreshData" id="refreshdata"></i> -->
@@ -85,6 +86,8 @@
 </script>
 
   <script>
+    // import { postjson } from "./request.js";
+    // const postjson = require('./request');
     var showTips = function (msg, ele) {
       layer.tips(msg, ele);
     }
@@ -392,52 +395,6 @@
       });
     });
 
-    var postjson = function (posturl, postdata, success, fail, btn) {
-      var times = 5;
-      var interval;
-      if (btn != undefined) {
-        btn.disabled = true;
-      }
-      var xhr = new XMLHttpRequest();
-      xhr.open('post', posturl, true);
-      xhr.setRequestHeader('Content-Type', 'application/json');
-      xhr.send(JSON.stringify(postdata));
-      xhr.onreadystatechange = function () {
-        // btn.innerText = "提交onreadystatechange"
-        if (xhr.readyState === 4) {
-          if (xhr.status === 200) {
-            dt = JSON.parse(xhr.responseText)
-            if (dt.code == 200) {
-              interval = setInterval(function () {
-                if (times > 0) {
-                  if (btn != undefined) {
-                    btn.disabled = true;
-                  }
-                  times--;
-                } else {
-                  clearInterval(interval);
-                  if (btn != undefined) {
-                    btn.disabled = false;
-                  }
-                }
-              }, 1000);
-              success(dt)
-              // layer.msg(dt.msg);
-            } else {
-              if (btn != undefined) {
-                btn.disabled = false;
-              }
-              fail(dt)
-            }
-          } else {
-            if (btn != undefined) {
-              btn.disabled = false;
-            }
-          }
-        }
-      };
-    }
-
   </script>
 
   <div id="v2raylistlayer" style="display: none;">
@@ -446,92 +403,14 @@
 
 
   <div id="settinglayer" style="display: none;">
-    <div class="layui-form" lay-filter="filter-test-layer" style="margin: 16px;">
-
-      <div class="layui-form-item">
-        <label class="layui-form-label">v2ray核心文件</label>
-        <div class="layui-input-block">
-          <input type="text" name="VP_V2RAY_PATH" value="<{% .V2rayPath %}>" class="layui-input">
-        </div>
-      </div>
-
-      <div class="layui-form-item">
-        <label class="layui-form-label">系统代理地址</label>
-        <div class="layui-input-block">
-          <input type="text" name="VP_HTTP_PROXY" value="<{% .HttpProxy %}>" lay-verify="required" class="layui-input">
-        </div>
-      </div>
-
-      <div class="layui-form-item">
-        <label class="layui-form-label">Web端口</label>
-        <div class="layui-input-block">
-          <input type="text" name="VP_WEB_SERVER_PORT" value="<{% .WebServerPort %}>" class="layui-input">
-        </div>
-      </div>
-
-      <div class="layui-form-item">
-        <label class="layui-form-label">代理池gRPC端口</label>
-        <div class="layui-input-block">
-          <input type="text" name="VP_GRPC_PORT" value="<{% .GrpcPort %}>" class="layui-input">
-        </div>
-      </div>
-
-      <div class="layui-form-item">
-        <label class="layui-form-label">v2rayAPI端口(gRPC)</label>
-        <div class="layui-input-block">
-          <input type="text" name="VP_V2RAY_API_PORT" value="<{% .V2rayApiPort %}>" class="layui-input">
-        </div>
-      </div>
-
-      <div class="layui-form-item">
-        <label class="layui-form-label">测速地址</label>
-        <div class="layui-input-block">
-          <input type="text" name="VP_TEST_URL" value="<{% .TestUrl %}>" class="layui-input">
-        </div>
-      </div>
-
-      <div class="layui-form-item">
-        <label class="layui-form-label">订阅地址</label>
-        <div class="layui-input-block">
-          <input type="text" name="VP_SUBSCRIBE_URL" value="<{% .SubscribeUrl %}>" class="layui-input">
-        </div>
-      </div>
-
-      <div class="layui-form-item">
-        <label class="layui-form-label">订阅数据文件</label>
-        <div class="layui-input-block">
-          <input type="text" name="VP_SUBSCRIBE_DATA_FILE" value="<{% .SubscribeDataFile %}>" class="layui-input">
-        </div>
-      </div>
-
-      <div class="layui-form-item">
-        <button id="setupdatebtn" class="layui-btn" style="float: right;" lay-submit lay-filter="setsubmit">提交</button>
-      </div>
-
-    </div>
+    <{% tplinclude "setting_form.html" . | println %}>
   </div>
 
 
   <div id="addv2raylayer" style="display: none;">
-    <div class="layui-form" lay-filter="filter-test-layer" style="margin: 16px;">
-
-      <div class="layui-form-item">
-        <label class="layui-form-label">配置文件（*.json）</label>
-        <div class="layui-input-block">
-          <input type="text" name="config_file" placeholder="例: v2ray.config.json" value="" class="layui-input">
-        </div>
-      </div>
-
-      <div class="layui-form-item">
-        <button id="runv2ray" class="layui-btn" style="float: right;" lay-submit lay-filter="runv2ray">启动</button>
-      </div>
-
-    </div>
+    <{% tplinclude "add_v2ray_form.html" nil | println %}>
   </div>
 
 
-
-
 </body>
-
 </html>

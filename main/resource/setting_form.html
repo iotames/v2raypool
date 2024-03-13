@@ -1,0 +1,63 @@
+<div class="layui-form" lay-filter="filter-test-layer" style="margin: 16px;">
+
+    <div class="layui-form-item">
+      <label class="layui-form-label">v2ray核心文件</label>
+      <div class="layui-input-block">
+        <input type="text" name="VP_V2RAY_PATH" value="<{% .V2rayPath %}>" class="layui-input">
+      </div>
+    </div>
+
+    <div class="layui-form-item">
+      <label class="layui-form-label">系统代理地址</label>
+      <div class="layui-input-block">
+        <input type="text" name="VP_HTTP_PROXY" value="<{% .HttpProxy %}>" lay-verify="required" class="layui-input">
+      </div>
+    </div>
+
+    <div class="layui-form-item">
+      <label class="layui-form-label">Web端口</label>
+      <div class="layui-input-block">
+        <input type="text" name="VP_WEB_SERVER_PORT" value="<{% .WebServerPort %}>" class="layui-input">
+      </div>
+    </div>
+
+    <div class="layui-form-item">
+      <label class="layui-form-label">代理池gRPC端口</label>
+      <div class="layui-input-block">
+        <input type="text" name="VP_GRPC_PORT" value="<{% .GrpcPort %}>" class="layui-input">
+      </div>
+    </div>
+
+    <div class="layui-form-item">
+      <label class="layui-form-label">v2rayAPI端口(gRPC)</label>
+      <div class="layui-input-block">
+        <input type="text" name="VP_V2RAY_API_PORT" value="<{% .V2rayApiPort %}>" class="layui-input">
+      </div>
+    </div>
+
+    <div class="layui-form-item">
+      <label class="layui-form-label">测速地址</label>
+      <div class="layui-input-block">
+        <input type="text" name="VP_TEST_URL" value="<{% .TestUrl %}>" class="layui-input">
+      </div>
+    </div>
+
+    <div class="layui-form-item">
+      <label class="layui-form-label">订阅地址</label>
+      <div class="layui-input-block">
+        <input type="text" name="VP_SUBSCRIBE_URL" value="<{% .SubscribeUrl %}>" class="layui-input">
+      </div>
+    </div>
+
+    <div class="layui-form-item">
+      <label class="layui-form-label">订阅数据文件</label>
+      <div class="layui-input-block">
+        <input type="text" name="VP_SUBSCRIBE_DATA_FILE" value="<{% .SubscribeDataFile %}>" class="layui-input">
+      </div>
+    </div>
+
+    <div class="layui-form-item">
+      <button id="setupdatebtn" class="layui-btn" style="float: right;" lay-submit lay-filter="setsubmit">提交</button>
+    </div>
+
+  </div>
