@@ -100,31 +100,27 @@ func getRoutingRules(cf conf.Conf, inPort int) string {
 	} else {
 
 		if len(cf.DirectDomainList) > 0 || len(cf.DirectIpList) > 0 {
-			// 启用直连白名单
+			// 启用直连白名单.IP代理池模式不启用
+			rule1 := newRouteRule(TAG_OUTBOUND_DIRECT)
 			if len(cf.DirectDomainList) > 0 {
-				rule1 := newRouteRule(TAG_OUTBOUND_DIRECT)
 				rule1.Domains = cf.DirectDomainList
-				rules = append(rules, rule1)
 			}
 			if len(cf.DirectIpList) > 0 {
-				rule2 := newRouteRule(TAG_OUTBOUND_DIRECT)
-				rule2.Ip = cf.DirectIpList
-				rules = append(rules, rule2)
+				rule1.Ip = cf.DirectIpList
 			}
+			rules = append(rules, rule1)
 		}
 
 		if len(cf.ProxyDomainList) > 0 || len(cf.ProxyIpList) > 0 {
 			// 启用强制代理访问的白名单(IP代理池模式不启用)
+			rule2 := newRouteRule(TAG_OUTBOUND_ACTIVE)
 			if len(cf.ProxyDomainList) > 0 {
-				rule3 := newRouteRule(TAG_OUTBOUND_ACTIVE)
-				rule3.Domains = cf.ProxyDomainList
-				rules = append(rules, rule3)
+				rule2.Domains = cf.ProxyDomainList
 			}
 			if len(cf.ProxyIpList) > 0 {
-				rule4 := newRouteRule(TAG_OUTBOUND_ACTIVE)
-				rule4.Ip = cf.ProxyIpList
-				rules = append(rules, rule4)
+				rule2.Ip = cf.ProxyIpList
 			}
+			rules = append(rules, rule2)
 		}
 
 		rulestr := ""
@@ -289,12 +285,6 @@ func getV2rayConfigV4(n V2rayNode, inPort int) *JsonConfig {
 		panic(err)
 	}
 
-	// if inPort == 0 {
-	// 	vconfb, err = json.Marshal(vconf)
-	// } else {
-	// 	vconfb, err = json.MarshalIndent(vconf, "", "\t")
-	// }
-
 	fmt.Printf("\n---getV2rayConfigV4--Outbounds-len(%d)--v2ray.config=(%s)--\n", len(vconf.Outbounds), string(vconfb))
 	return NewJsonConfig(vconfb)
 }
@@ -337,7 +327,7 @@ func (j *JsonConfig) SetContent(v any) error {
 	case string:
 		j.content = []byte(vv)
 	default:
-		j.content, err = json.Marshal(v)
+		j.content, err = json.MarshalIndent(v, "", "\t")
 	}
 	return err
 }

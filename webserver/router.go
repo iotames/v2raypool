@@ -61,6 +61,7 @@ func setRouter(s *web.EasyServer) {
 		if err != nil {
 			return
 		}
+
 		ctx.Writer.Write(CopyV2ray(dt.OldConfigFile, dt.ConfigFile, dt.LocalPort))
 	})
 	s.AddHandler("POST", "/api/v2ray/restart", func(ctx web.Context) {
@@ -97,6 +98,15 @@ func setRouter(s *web.EasyServer) {
 			return
 		}
 		ctx.Writer.Write(UpdateConf(dt, conf.GetConf().EnvFile))
+	})
+
+	s.AddHandler("POST", "/api/v2ray/routing-rules/update", func(ctx web.Context) {
+		dt := RequestRoutingRules{}
+		err := getPostJson(ctx, &dt)
+		if err != nil {
+			return
+		}
+		ctx.Writer.Write(UpdateV2rayRoutingRules(dt))
 	})
 }
 

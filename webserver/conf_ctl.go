@@ -1,12 +1,46 @@
 package webserver
 
 import (
+	"os"
 	"strconv"
+	"strings"
 
+	"github.com/iotames/miniutils"
+	vp "github.com/iotames/v2raypool"
 	"github.com/iotames/v2raypool/conf"
 )
 
-// TODO 更改配置文件的路由规则
+// UpdateV2rayRoutingRules 更改配置文件的路由规则
+// 更改 .env文件。删除 routing.rules.json 文件。
+func UpdateV2rayRoutingRules(dt RequestRoutingRules) []byte {
+	// 更改 .env 文件
+	updatedt := make(map[string]string, 4)
+	updatedt["VP_DIRECT_DOMAIN_LIST"] = strings.Join(dt.DirectDomainList, ",")
+	updatedt["VP_DIRECT_IP_LIST"] = strings.Join(dt.DirectIpList, ",")
+	updatedt["VP_PROXY_DOMAIN_LIST"] = strings.Join(dt.ProxyDomainList, ",")
+	updatedt["VP_PROXY_IP_LIST"] = strings.Join(dt.ProxyIpList, ",")
+	cf := conf.GetConf()
+	err := conf.UpdateConf(updatedt, cf.EnvFile)
+	result := BaseResult{}
+	if err != nil {
+		result.Fail("更新失败:"+err.Error(), 500)
+		return result.Bytes()
+	}
+	cf.DirectDomainList = dt.DirectDomainList
+	cf.DirectIpList = dt.DirectIpList
+	cf.ProxyDomainList = dt.ProxyDomainList
+	cf.ProxyIpList = dt.ProxyIpList
+	conf.SetConf(cf)
+	if miniutils.IsPathExists(vp.ROUTING_RULES_FILE) {
+		err = os.Remove(vp.ROUTING_RULES_FILE)
+		if err != nil {
+			result.Fail("删除routing.rules.json文件失败:"+err.Error(), 500)
+			return result.Bytes()
+		}
+	}
+	result.Success("路由规则更新成功.请重新启用代理节点。")
+	return result.Bytes()
+}
 
 // UpdateConf 更改.env配置文件
 func UpdateConf(dt map[string]string, fpath string) []byte {
@@ -41,4 +75,11 @@ func UpdateConf(dt map[string]string, fpath string) []byte {
 	conf.SetConf(cf)
 	result.Success("设置成功，重启应用后生效。")
 	return result.Bytes()
+}
+
+type RequestRoutingRules struct {
+	DirectDomainList []string `json:"direct_domain_list"`
+	DirectIpList     []string `json:"direct_ip_list"`
+	ProxyDomainList  []string `json:"proxy_domain_list"`
+	ProxyIpList      []string `json:"proxy_ip_list"`
 }
