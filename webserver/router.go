@@ -55,14 +55,21 @@ func setRouter(s *web.EasyServer) {
 		}
 		ctx.Writer.Write(RunV2ray(dt.ConfigFile, "启动成功"))
 	})
-
+	s.AddHandler("POST", "/api/v2ray/copyrun", func(ctx web.Context) {
+		dt := V2rayServerData{}
+		err := getPostJson(ctx, &dt)
+		if err != nil {
+			return
+		}
+		ctx.Writer.Write(CopyV2ray(dt.OldConfigFile, dt.ConfigFile, dt.LocalPort))
+	})
 	s.AddHandler("POST", "/api/v2ray/restart", func(ctx web.Context) {
 		dt := V2rayServerData{}
 		err := getPostJson(ctx, &dt)
 		if err != nil {
 			return
 		}
-		ctx.Writer.Write(RestartV2ray(dt))
+		ctx.Writer.Write(RestartV2ray(dt.Pid, dt.ConfigFile))
 	})
 	s.AddHandler("POST", "/api/v2ray/delete", func(ctx web.Context) {
 		dt := V2rayServerData{}
@@ -70,7 +77,7 @@ func setRouter(s *web.EasyServer) {
 		if err != nil {
 			return
 		}
-		ctx.Writer.Write(DeleteV2ray(dt))
+		ctx.Writer.Write(DeleteV2ray(dt.Pid))
 	})
 	s.AddHandler("POST", "/api/node/unactive", func(ctx web.Context) {
 		dt := vp.ProxyNode{}

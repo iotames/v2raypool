@@ -329,6 +329,19 @@ func (j JsonConfig) GetFilepath() string {
 	return j.filepath
 }
 
+func (j *JsonConfig) SetContent(v any) error {
+	var err error
+	switch vv := v.(type) {
+	case []byte:
+		j.content = vv
+	case string:
+		j.content = []byte(vv)
+	default:
+		j.content, err = json.Marshal(v)
+	}
+	return err
+}
+
 // SaveToFile 保存json内容到filepath文件。
 // 若 filepath 为空，则保存到默认 filepath
 func (j *JsonConfig) SaveToFile(filepath string) error {

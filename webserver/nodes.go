@@ -32,6 +32,7 @@ func UnActiveNode(remoteAddr string) []byte {
 	return result.Bytes()
 }
 
+// ActiveNode 启用一个远程节点作为系统代理
 func ActiveNode(remoteAddr string, globalProxy bool) []byte {
 	var err error
 	pp := vp.GetProxyPool()

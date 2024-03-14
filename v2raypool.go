@@ -66,19 +66,28 @@ func (p ProxyPool) GetLocalPortList() (dl []int, err error) {
 	return
 }
 
+// CheckV2rayConfig 检查配置项。判断入站端口号是否被占用。
 func (p ProxyPool) CheckV2rayConfig(jconf JsonConfig) error {
 	vconf := V2rayConfigV4{}
 	err := jconf.Decode(&vconf)
 	if err != nil {
 		return err
 	}
+	var checkPorts []int
+	for _, inb := range vconf.Inbounds {
+		checkPorts = append(checkPorts, inb.Port)
+	}
+	return p.CheckLocalPort(checkPorts)
+}
+
+func (p ProxyPool) CheckLocalPort(checkPorts []int) error {
 	lports, err := p.GetLocalPortList()
 	if err != nil {
 		return err
 	}
 	for _, port := range lports {
-		for _, inb := range vconf.Inbounds {
-			if port == inb.Port {
+		for _, checkport := range checkPorts {
+			if port == checkport {
 				return fmt.Errorf("本地端口号重复:%d", port)
 			}
 		}

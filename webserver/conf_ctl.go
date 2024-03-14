@@ -6,6 +6,9 @@ import (
 	"github.com/iotames/v2raypool/conf"
 )
 
+// TODO 更改配置文件的路由规则
+
+// UpdateConf 更改.env配置文件
 func UpdateConf(dt map[string]string, fpath string) []byte {
 	err := conf.UpdateConf(dt, fpath)
 	result := BaseResult{}

@@ -80,6 +80,7 @@
   <script type="text/html" id="barV2ray">
   <div class="layui-clear-space">
     <i lay-event="viewconf" class="itable-top layui-icon layui-icon-set" style="color: #1E9FFF;"></i>
+    <i lay-event="copyrun"  class="{{= d.run_mode != "动态代理池" ? 'itable-top layui-icon layui-icon-file-b' : ''}}" style="color: #1E9FFF;"></i>
     <i lay-event="restart"  class="{{= d.run_mode == "个性配置" ? 'itable-top layui-icon layui-icon-refresh' : ''}}" style="color: #1E9FFF;"></i>
     <i lay-event="delete"  class="{{= d.run_mode == "个性配置" ? 'itable-top layui-icon layui-icon-delete' : ''}}" style="color: red;"></i>
   </div>
@@ -113,7 +114,7 @@
           layer.open({
             title: "添加v2ray服务",
             type: 1,
-            area: ['30%', '30%'],
+            area: ['50%', '50%'],
             content: $('#addv2raylayer'),
             success: (layero, index, that) => {
               form.render();
@@ -148,7 +149,7 @@
           layer.open({
             title: 'v2ray服务状态',
             type: 1,
-            area: ['50%', '50%'],
+            area: ['80%', '50%'],
             content: $('#v2raylistlayer'),
             success: (layero, index, that) => {
               table.reload('v2raylist')
@@ -172,7 +173,7 @@
           { field: 'run_mode', title: '类型', width: 100 },
           { field: 'local_ports', title: '本地端口', width: 160 },
           { field: 'config_file', title: '配置文件', width: 280 },
-          { fixed: 'right', title: '操作', width: 160, minWidth: 80, toolbar: '#barV2ray' }
+          { fixed: 'right', title: '操作', width: 180, minWidth: 80, toolbar: '#barV2ray' }
         ]],
         error: function (res, msg) {
           console.log(res, msg)
@@ -217,6 +218,41 @@
               content: '<code>' + util.escape(data.config_json) + '</code>'
             });
             break;
+          case 'copyrun':
+            layer.open({
+              title: '复制配置文件并运行',
+              type: 1,
+              area: ['50%', '50%'],
+              content: $('#copyrunlayer'),
+              success: function (layero, index, that) {
+                // 对弹层中的表单进行初始化渲染
+                form.val("copyv2ray", { old_config_file: data.config_file.replace('routing.rules.json -> ', '').trim() })
+                form.render();
+                // 表单提交事件
+                form.on('submit(copyv2ray)', function (fdt) {
+                  var submitbtn = document.getElementById("copyv2ray")
+                  // submitbtn.innerText = "提交中"
+                  var field = fdt.field; // 获取表单字段值
+                  field.local_port = parseInt(field.local_port)
+                  console.log(field)
+                  postjson("/api/v2ray/copyrun", field, function (dt) {
+                    layer.close(index)
+                    layer.msg(dt.msg);
+                    window.setTimeout(function () {
+                      table.reload('v2raylist')
+                    }, 1000)
+
+                  }, function (dt) {
+                    // submitbtn.innerText = "提交失败"
+                    console.log(field)
+                    layer.alert(dt.msg, { icon: 2, title: dt.code + "错误" });
+                  }, submitbtn)
+                  // layer.close(index); // 关闭弹层
+                  return false; // 阻止默认 form 跳转
+                });
+
+              }
+            })
         }
       })
 
@@ -458,6 +494,9 @@
 
   <div id="activenodelayer" style="display: none;">
     <{% tplinclude "active_node_form.html" nil | println %}>
+  </div>
+  <div id="copyrunlayer" style="display: none;">
+    <{% tplinclude "copy_v2ray_form.html" nil | println %}>
   </div>
 
 </body>

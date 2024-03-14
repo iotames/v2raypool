@@ -9,11 +9,49 @@ import (
 	"github.com/iotames/v2raypool/conf"
 )
 
-func DeleteV2ray(dt V2rayServerData) []byte {
+// CopyV2ray 复制一份v2ray的json配置文件。并更改入站端口号。
+func CopyV2ray(oldConFile, newConFile string, localPort int) []byte {
 	result := BaseResult{}
-	pid := dt.Pid
+	if !miniutils.IsPathExists(oldConFile) {
+		result.Fail(fmt.Sprintf("原文件%s不存在", oldConFile), 400)
+		return result.Bytes()
+	}
+	if miniutils.IsPathExists(newConFile) {
+		result.Fail(fmt.Sprintf("目标文件%s已存在，请更换文件名。", newConFile), 400)
+		return result.Bytes()
+	}
+	err := vp.GetProxyPool().CheckLocalPort([]int{localPort})
+	if err != nil {
+		result.Fail(err.Error(), 400)
+		return result.Bytes()
+	}
+	// 从原文件复制新文件
+	oldConf := vp.NewJsonConfigFromFile(oldConFile)
+	confv4 := vp.V2rayConfigV4{}
+	err = oldConf.Decode(&confv4)
+	if err != nil {
+		result.Fail(err.Error(), 500)
+		return result.Bytes()
+	}
+	confv4.Inbounds[0].Port = localPort
+	confv4.Inbounds = []vp.V2rayInbound{confv4.Inbounds[0]}
+	err = oldConf.SetContent(confv4)
+	if err != nil {
+		result.Fail(err.Error(), 500)
+		return result.Bytes()
+	}
+	err = oldConf.SaveToFile(newConFile)
+	if err != nil {
+		result.Fail(err.Error(), 500)
+		return result.Bytes()
+	}
+	return RunV2ray(newConFile, "复制启动成功")
+}
+
+func DeleteV2ray(pid int) []byte {
+	result := BaseResult{}
 	if pid == 0 {
-		result.Success("pid 不能为空")
+		result.Fail("pid 不能为空", 400)
 		return result.Bytes()
 	}
 	err := vp.GetProxyPool().DeleteV2rayServer(pid)
@@ -25,15 +63,15 @@ func DeleteV2ray(dt V2rayServerData) []byte {
 	return result.Bytes()
 }
 
-func RestartV2ray(dt V2rayServerData) []byte {
+func RestartV2ray(pid int, configFile string) []byte {
 	result := BaseResult{}
 	pp := vp.GetProxyPool()
-	err := pp.DeleteV2rayServer(dt.Pid)
+	err := pp.DeleteV2rayServer(pid)
 	if err != nil {
 		result.Fail(err.Error(), 500)
 		return result.Bytes()
 	}
-	return RunV2ray(dt.ConfigFile, "重启成功")
+	return RunV2ray(configFile, "重启成功")
 }
 
 func RunV2ray(fpath, msg string) []byte {
@@ -118,6 +156,8 @@ func GetV2rayList() []byte {
 }
 
 type V2rayServerData struct {
-	Pid        int    `json:"pid"`
-	ConfigFile string `json:"config_file"`
+	Pid           int    `json:"pid"`
+	LocalPort     int    `json:"local_port"`
+	OldConfigFile string `json:"old_config_file"`
+	ConfigFile    string `json:"config_file"`
 }
