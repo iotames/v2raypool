@@ -70,5 +70,8 @@ func main() {
 }
 
 func init() {
-	LoadEnv()
+	err := LoadEnv()
+	if err != nil {
+		panic(err)
+	}
 }

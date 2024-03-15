@@ -67,16 +67,19 @@ func (cf Conf) GetHttpProxyPort() int {
 	return port
 }
 
-func (cf Conf) UpdateSubscribeData(val string) {
+func (cf Conf) UpdateSubscribeData(val string) error {
 	val = strings.TrimSpace(val)
 	f, err := os.OpenFile(cf.SubscribeDataFile, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0777)
 	if err != nil {
-		panic(err)
+		// panic(err)
+		return err
 	}
 	_, err = f.WriteString(val)
 	if err != nil {
-		panic(err)
+		// panic(err)
+		return err
 	}
+	return nil
 }
 
 func (cf Conf) GetLogger() *miniutils.Logger {

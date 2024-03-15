@@ -24,15 +24,16 @@ func setEnvFile() {
 	}
 }
 
-func LoadEnv() {
+func LoadEnv() error {
+	var err error
 	setEnvFile()
 	efiles := initEnvFile()
 	fmt.Printf("------LoadEnv--env-files(%v)\n", efiles)
-	err := godotenv.Load(efiles...)
+	err = godotenv.Load(efiles...)
 	if err != nil {
-		panic(fmt.Errorf("godotenv.Load(%v)err(%v)", efiles, err))
+		return fmt.Errorf("godotenv.Load(%v)err(%v)", efiles, err)
 	}
-	getConfByEnv()
+	return getConfByEnv()
 }
 
 func initEnvFile() []string {
@@ -55,10 +56,10 @@ func initEnvFile() []string {
 		if err != nil {
 			panic(err)
 		}
+		fmt.Printf("Create file %s SUCCESS\n", conf.DEFAULT_ENV_FILE)
 	}
 
 	files = append(files, conf.DEFAULT_ENV_FILE)
-	fmt.Printf("Create file %s SUCCESS\n", conf.DEFAULT_ENV_FILE)
 	return files
 }
 
@@ -178,7 +179,7 @@ func getAllConfEnvStrDefault() string {
 	)
 }
 
-func getConfByEnv() {
+func getConfByEnv() error {
 	cf := conf.GetConf()
 	cf.EnvFile = envFile
 	cf.RuntimeDir = getEnvDefaultStr("VP_RUNTIME_DIR", conf.DEFAULT_RUNTIME_DIR)
@@ -204,7 +205,7 @@ func getConfByEnv() {
 	if cf.RuntimeDir == "" {
 		hitmsg += "RuntimeDir 配置项不能为空"
 		logger.Error(hitmsg)
-		panic("RuntimeDir can not be empty")
+		return fmt.Errorf("conf err: VP_RUNTIME_DIR could not be empty")
 	}
 	var err error
 	var finfo fs.FileInfo
@@ -223,7 +224,7 @@ func getConfByEnv() {
 		hitmsg += "请下载v2ray核心文件(https://github.com/v2fly/v2ray-core/releases)\n"
 		hitmsg += "下载后，请【删除或改名】默认配置文件(config.json)，防止错误读取"
 		logger.Error(hitmsg)
-		panic(err)
+		return err
 	}
 
 	if !miniutils.IsPathExists(cf.RuntimeDir) {
@@ -231,11 +232,12 @@ func getConfByEnv() {
 		err = os.Mkdir(cf.RuntimeDir, 0755)
 		if err != nil {
 			fmt.Printf("----runtime目录(%s)创建失败(%v)---\n", cf.RuntimeDir, err)
-			panic(err)
+			return err
 		}
 	}
 	if !miniutils.IsPathExists(cf.SubscribeDataFile) {
 		fmt.Printf("------创建SubscribeDataFile文件(%s)--\n", cf.SubscribeDataFile)
-		cf.UpdateSubscribeData("")
+		err = cf.UpdateSubscribeData("")
 	}
+	return err
 }

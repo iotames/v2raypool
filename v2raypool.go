@@ -307,7 +307,10 @@ func (p *ProxyPool) InitSubscribeData() *ProxyPool {
 
 			fmt.Printf("------InitSubscribeData----rawdt(%s)----\n", rawdt)
 			if rawdt != "" {
-				conf.GetConf().UpdateSubscribeData(rawdt)
+				err = conf.GetConf().UpdateSubscribeData(rawdt)
+				if err != nil {
+					panic(err)
+				}
 			}
 		}
 	}
@@ -335,7 +338,10 @@ func (p *ProxyPool) UpdateSubscribe() (total, add int) {
 		}
 	}
 	if srawdata != "" {
-		conf.GetConf().UpdateSubscribeData(srawdata)
+		err = conf.GetConf().UpdateSubscribeData(srawdata)
+		if err != nil {
+			panic(err)
+		}
 	}
 
 	vnds := ParseV2rayNodes(dt)

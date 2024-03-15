@@ -98,6 +98,31 @@ func getRoutingRules(cf conf.Conf, inPort int) string {
 		}
 
 	} else {
+		var f *os.File
+		var err error
+		if miniutils.IsPathExists(ROUTING_RULES_FILE) {
+			f, err = os.OpenFile(ROUTING_RULES_FILE, os.O_RDWR, 0777)
+			if err != nil {
+				panic(err)
+			}
+			defer f.Close()
+			// 优先读取 routing.rules.json 路由规则文件
+			rulesb, err = io.ReadAll(f)
+			if err != nil {
+				panic(err)
+			}
+			rulestr := strings.TrimSpace(string(rulesb))
+			if rulestr != "" {
+				return rulestr
+			}
+
+		} else {
+			f, err = os.OpenFile(ROUTING_RULES_FILE, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0777)
+			if err != nil {
+				panic(err)
+			}
+			defer f.Close()
+		}
 
 		if len(cf.DirectDomainList) > 0 || len(cf.DirectIpList) > 0 {
 			// 启用直连白名单.IP代理池模式不启用
@@ -121,31 +146,6 @@ func getRoutingRules(cf conf.Conf, inPort int) string {
 				rule2.Ip = cf.ProxyIpList
 			}
 			rules = append(rules, rule2)
-		}
-
-		rulestr := ""
-		var f *os.File
-		var err error
-		if miniutils.IsPathExists(ROUTING_RULES_FILE) {
-			f, err = os.OpenFile(ROUTING_RULES_FILE, os.O_RDWR, 0777)
-			if err != nil {
-				panic(err)
-			}
-			// 优先读取 routing.rules.json 路由规则文件
-			rulesb, err = io.ReadAll(f)
-			if err != nil {
-				panic(err)
-			}
-			rulestr = strings.TrimSpace(string(rulesb))
-		} else {
-			f, err = os.OpenFile(ROUTING_RULES_FILE, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0777)
-			if err != nil {
-				panic(err)
-			}
-		}
-		defer f.Close()
-		if rulestr != "" {
-			return rulestr
 		}
 
 		rulesb, err = json.MarshalIndent(rules, "", "\t")

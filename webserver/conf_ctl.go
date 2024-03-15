@@ -26,11 +26,13 @@ func UpdateV2rayRoutingRules(dt RequestRoutingRules) []byte {
 		result.Fail("更新失败:"+err.Error(), 500)
 		return result.Bytes()
 	}
+	// 更新配置
 	cf.DirectDomainList = dt.DirectDomainList
 	cf.DirectIpList = dt.DirectIpList
 	cf.ProxyDomainList = dt.ProxyDomainList
 	cf.ProxyIpList = dt.ProxyIpList
 	conf.SetConf(cf)
+	// 如存在 routing.rules.json 文件则删除。
 	if miniutils.IsPathExists(vp.ROUTING_RULES_FILE) {
 		err = os.Remove(vp.ROUTING_RULES_FILE)
 		if err != nil {
