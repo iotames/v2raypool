@@ -1,0 +1,51 @@
+<div class="layui-form layui-form-pane" lay-filter="filter-test-layer" style="margin: 16px;">
+
+  <form enctype='application/json'>
+    <div class="layui-form-item layui-form-text">
+      <label class="layui-form-label">直连域名</label>
+      <div class="layui-input-block">
+        <{% range .DirectDomainList %}>
+          <input type="text" name="direct_domain_list[]" value="<{% . %}>" class="layui-input">
+          <{% end %}>
+            <!-- <textarea placeholder="用半角英文的逗号,隔开每个域名" value="" class="layui-textarea"></textarea> -->
+      </div>
+    </div>
+
+    <div class="layui-form-item layui-form-text">
+      <label class="layui-form-label">直连IP</label>
+      <div class="layui-input-block">
+        <{% range .DirectIpList %}>
+          <input type="text" name="direct_ip_list[]" value="<{% . %}>" class="layui-input">
+          <{% end %}>
+            <!-- <textarea placeholder="用半角英文的逗号,隔开每个IP" value="" class="layui-textarea"></textarea> -->
+      </div>
+    </div>
+
+    <div class="layui-form-item layui-form-text">
+      <label class="layui-form-label">代理域名</label>
+      <div class="layui-input-block">
+        <{% range .ProxyDomainList %}>
+          <input type="text" name="proxy_domain_list[]" value="<{% . %}>" class="layui-input">
+          <{% end %}>
+            <!-- <textarea placeholder="用半角英文的逗号,隔开每个域名" value="" class="layui-textarea"></textarea> -->
+      </div>
+    </div>
+
+    <div class="layui-form-item layui-form-text">
+      <label class="layui-form-label">代理IP</label>
+      <div class="layui-input-block">
+        <{% range .ProxyIpList %}>
+          <input type="text" name="proxy_ip_list[]" value="<{% . %}>" class="layui-input">
+          <{% end %}>
+            <!-- <textarea placeholder="用半角英文的逗号,隔开每个IP" value="" class="layui-textarea"></textarea> -->
+      </div>
+    </div>
+
+    <div class="layui-form-item">
+      <button id="routingrulesbtn" class="layui-btn" style="float: right;" lay-submit
+        lay-filter="routingrules">提交</button>
+    </div>
+
+  </form>
+
+</div>

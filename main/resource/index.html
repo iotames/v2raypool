@@ -52,10 +52,12 @@
     <div class="layui-col-xs8">
       <i class="itable-top layui-icon" style="color:deeppink" lay-event="testNodes" id="testproxynodes">⚡</i>
       <!-- <button class="layui-btn layui-btn-sm" style="background-color: darkorange;" lay-event="testNodes" id="testproxynodes">测速</button> -->
-      <button class="layui-btn layui-btn-sm layui-bg-purple" lay-event="startNodes" id="startproxynodes">启动</button>
+      
       <!-- <i class="itable-top layui-icon layui-icon-play" style="color: green;" lay-event="startNodes" id="startproxynodes"></i> -->
       <!-- <i class="itable-top layui-icon layui-icon-refresh-3" style="color: #1E9FFF;" lay-event="refreshData" id="refreshdata"></i> -->
+      <button class="layui-btn layui-btn-sm layui-bg-blue" lay-on="routingrules">路由规则</button>
       <button class="layui-btn layui-btn-sm" lay-on="v2raylist">v2ray</button>
+      <button class="layui-btn layui-btn-sm layui-bg-purple" lay-event="startNodes" id="startproxynodes">启动</button>
       <!-- <i class="itable-top layui-icon layui-icon-set" style="color: #fc4706e8;" lay-on="settinglayer" id="setting"></i> -->
     </div>
 
@@ -156,7 +158,32 @@
             }
           })
         },
-        'settinglayer': function () { }
+        'routingrules': function(){
+          layer.open({
+            title: '路由分流规则设置',
+            type: 1,
+            area: ['80%', '80%'],
+            content: $('#routingruleslayer'),
+            success: (layero, index, that) => {
+              form.render();
+              form.on('submit(routingrules)', function (data) {
+                submitbtn = document.getElementById("routingrulesbtn")
+                var field = data.field;
+                console.log(field.direct_ip_list)
+                console.log(field)
+                postjson("/api/v2ray/routing-rules/update", field, function (dt) {
+                  layer.close(index)
+                  layer.msg(dt.msg);
+                  // table.reload('test')
+                }, function (dt) {
+                  console.log(field)
+                  layer.alert(dt.msg, { icon: 2, title: dt.code + "错误" });
+                }, submitbtn)
+              })
+            }
+          })
+        },
+        // 'settinglayer': function () { }
       })
 
       // 创建渲染实例
@@ -495,8 +522,13 @@
   <div id="activenodelayer" style="display: none;">
     <{% tplinclude "active_node_form.html" nil | println %}>
   </div>
+
   <div id="copyrunlayer" style="display: none;">
     <{% tplinclude "copy_v2ray_form.html" nil | println %}>
+  </div>
+
+  <div id="routingruleslayer" style="display: none;">
+    <{% tplinclude "routing_rules_form.html" . | println %}>
   </div>
 
 </body>

@@ -1,46 +1,49 @@
 package webserver
 
 import (
-	"os"
+	// "os"
 	"strconv"
-	"strings"
+	// "strings"
 
-	"github.com/iotames/miniutils"
-	vp "github.com/iotames/v2raypool"
+	// "github.com/iotames/miniutils"
+	// vp "github.com/iotames/v2raypool"
 	"github.com/iotames/v2raypool/conf"
 )
 
 // UpdateV2rayRoutingRules 更改配置文件的路由规则
 // 更改 .env文件。删除 routing.rules.json 文件。
 func UpdateV2rayRoutingRules(dt RequestRoutingRules) []byte {
-	// 更改 .env 文件
-	updatedt := make(map[string]string, 4)
-	updatedt["VP_DIRECT_DOMAIN_LIST"] = strings.Join(dt.DirectDomainList, ",")
-	updatedt["VP_DIRECT_IP_LIST"] = strings.Join(dt.DirectIpList, ",")
-	updatedt["VP_PROXY_DOMAIN_LIST"] = strings.Join(dt.ProxyDomainList, ",")
-	updatedt["VP_PROXY_IP_LIST"] = strings.Join(dt.ProxyIpList, ",")
-	cf := conf.GetConf()
-	err := conf.UpdateConf(updatedt, cf.EnvFile)
 	result := BaseResult{}
-	if err != nil {
-		result.Fail("更新失败:"+err.Error(), 500)
-		return result.Bytes()
-	}
-	// 更新配置
-	cf.DirectDomainList = dt.DirectDomainList
-	cf.DirectIpList = dt.DirectIpList
-	cf.ProxyDomainList = dt.ProxyDomainList
-	cf.ProxyIpList = dt.ProxyIpList
-	conf.SetConf(cf)
-	// 如存在 routing.rules.json 文件则删除。
-	if miniutils.IsPathExists(vp.ROUTING_RULES_FILE) {
-		err = os.Remove(vp.ROUTING_RULES_FILE)
-		if err != nil {
-			result.Fail("删除routing.rules.json文件失败:"+err.Error(), 500)
-			return result.Bytes()
-		}
-	}
-	result.Success("路由规则更新成功.请重新启用代理节点。")
+
+	// // 更改 .env 文件
+	// updatedt := make(map[string]string, 4)
+	// updatedt["VP_DIRECT_DOMAIN_LIST"] = strings.Join(dt.DirectDomainList, ",")
+	// updatedt["VP_DIRECT_IP_LIST"] = strings.Join(dt.DirectIpList, ",")
+	// updatedt["VP_PROXY_DOMAIN_LIST"] = strings.Join(dt.ProxyDomainList, ",")
+	// updatedt["VP_PROXY_IP_LIST"] = strings.Join(dt.ProxyIpList, ",")
+	// cf := conf.GetConf()
+	// err := conf.UpdateConf(updatedt, cf.EnvFile)
+	// if err != nil {
+	// 	result.Fail("更新失败:"+err.Error(), 500)
+	// 	return result.Bytes()
+	// }
+	// // 更新配置
+	// cf.DirectDomainList = dt.DirectDomainList
+	// cf.DirectIpList = dt.DirectIpList
+	// cf.ProxyDomainList = dt.ProxyDomainList
+	// cf.ProxyIpList = dt.ProxyIpList
+	// conf.SetConf(cf)
+	// // 如存在 routing.rules.json 文件则删除。
+	// if miniutils.IsPathExists(vp.ROUTING_RULES_FILE) {
+	// 	err = os.Remove(vp.ROUTING_RULES_FILE)
+	// 	if err != nil {
+	// 		result.Fail("删除routing.rules.json文件失败:"+err.Error(), 500)
+	// 		return result.Bytes()
+	// 	}
+	// }
+
+	// result.Success("路由规则更新成功.请重新启用代理节点。")
+	result.Success("功能开发中...")
 	return result.Bytes()
 }
 

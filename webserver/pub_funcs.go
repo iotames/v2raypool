@@ -3,6 +3,7 @@ package webserver
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"strings"
 
@@ -54,6 +55,7 @@ func getPostJson(ctx web.Context, v any) error {
 		ctx.Writer.Write(result.Bytes())
 		return err
 	}
+	fmt.Printf("--------postJsonData(%s)-------\n", string(postdata))
 	err = json.Unmarshal(postdata, v)
 	if err != nil {
 		result := BaseResult{Msg: err.Error(), Code: 500}
