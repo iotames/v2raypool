@@ -100,34 +100,45 @@ func (a V2rayApiClient) RemoveInbound(intag string) error {
 	return err
 }
 
+func getTransportStreamConfig(transproto string) (conf *internet.StreamConfig, err error) {
+	var transptl internet.TransportProtocol
+	var protoconf proto.Message
+	switch transproto {
+	case "ws", "websocket":
+		transptl = internet.TransportProtocol_WebSocket
+		protoconf = &websocket.Config{}
+	case "tcp":
+		transptl = internet.TransportProtocol_TCP
+		protoconf = &tcp.Config{}
+	default:
+		err = fmt.Errorf("outbound network or transport not support %s. only support ws or websocket", transproto)
+	}
+	if err != nil {
+		return
+	}
+	conf = &internet.StreamConfig{
+		Protocol: transptl,
+		TransportSettings: []*internet.TransportConfig{
+			{
+				Protocol: transptl,
+				Settings: serial.ToTypedMessage(protoconf),
+			},
+		},
+	}
+	return
+}
+
 func (a V2rayApiClient) AddOutboundByV2rayNode(nd V2rayNode, outag string) error {
 	if nd.Protocol != "vmess" {
 		return fmt.Errorf("outbound protocol not support %s. only support vmess", nd.Protocol)
 	}
-	transproto := nd.Net
-	var transptl internet.TransportProtocol
-	var protoconf proto.Message
-	if transproto == "ws" || transproto == "websocket" {
-		transptl = internet.TransportProtocol_WebSocket
-		protoconf = &websocket.Config{}
-	} else {
-		if transproto == "tcp" {
-			transptl = internet.TransportProtocol_TCP
-			protoconf = &tcp.Config{}
-		} else {
-			return fmt.Errorf("outbound network or transport not support %s. only support ws or websocket", transproto)
-		}
+	streamConf, err := getTransportStreamConfig(nd.Net)
+	if err != nil {
+		return err
 	}
+
 	outsendset := proxyman.SenderConfig{
-		StreamSettings: &internet.StreamConfig{
-			Protocol: transptl,
-			TransportSettings: []*internet.TransportConfig{
-				{
-					Protocol: transptl,
-					Settings: serial.ToTypedMessage(protoconf),
-				},
-			},
-		},
+		StreamSettings: streamConf,
 	}
 	if nd.Tls == "tls" {
 		outsendset.StreamSettings.SecurityType = serial.GetMessageType(&tls.Config{})
