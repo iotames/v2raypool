@@ -30,6 +30,7 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 
 	"github.com/v2fly/v2ray-core/v5/transport/internet"
+	"github.com/v2fly/v2ray-core/v5/transport/internet/tcp"
 	"github.com/v2fly/v2ray-core/v5/transport/internet/tls"
 	"github.com/v2fly/v2ray-core/v5/transport/internet/websocket"
 
@@ -110,7 +111,12 @@ func (a V2rayApiClient) AddOutboundByV2rayNode(nd V2rayNode, outag string) error
 		transptl = internet.TransportProtocol_WebSocket
 		protoconf = &websocket.Config{}
 	} else {
-		return fmt.Errorf("outbound network or transport not support %s. only support ws or websocket", transproto)
+		if transproto == "tcp" {
+			transptl = internet.TransportProtocol_TCP
+			protoconf = &tcp.Config{}
+		} else {
+			return fmt.Errorf("outbound network or transport not support %s. only support ws or websocket", transproto)
+		}
 	}
 	outsendset := proxyman.SenderConfig{
 		StreamSettings: &internet.StreamConfig{

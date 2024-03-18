@@ -499,12 +499,12 @@ func (p *ProxyPool) StartAll() error {
 	for _, n := range p.nodes {
 		if !n.IsRunning() {
 			err = n.AddToPool(c)
-			p.UpdateNode(n)
 			if err != nil {
 				logger := miniutils.GetLogger("")
-				logger.Errorf("------StartAll--err--AddToPool(%v)", err)
+				logger.Errorf("------StartAll--err--addr(%s)--AddToPool(%v)", n.RemoteAddr, err)
 				break
 			}
+			p.UpdateNode(n)
 		}
 	}
 	p.IsLock = false
