@@ -8,8 +8,9 @@ import (
 
 // "protocol":"vmess"
 type V2rayNode struct {
-	Protocol, Add, Host, Id, Net, Path, Port, Ps, Tls, Type string
-	V, Aid                                                  int
+	Protocol, Add, Host, Id, Net, Path, Ps, Tls, Type string
+	V, Aid                                            int
+	Port                                              any
 }
 
 type V2rayServer struct {

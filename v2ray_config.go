@@ -200,7 +200,7 @@ func setV2rayConfigV4Outbounds(confv4 *V2rayConfigV4, n V2rayNode) error {
 			return fmt.Errorf("outbounds protocol not support vless. TODO")
 		}
 		if n.Protocol == "vmess" {
-			outbd1.Settings = json.RawMessage(fmt.Sprintf(`{"vnext":[{"address":"%s","port":%s,"users":[{"id":"%s","security":"aes-128-gcm"}]}]}`, n.Add, n.Port, n.Id))
+			outbd1.Settings = json.RawMessage(fmt.Sprintf(`{"vnext":[{"address":"%s","port":%v,"users":[{"id":"%s","security":"aes-128-gcm"}]}]}`, n.Add, n.Port, n.Id))
 
 			// "streamSettings":{"network":"ws","security":"tls","tlsSettings":{"disableSystemRoot":false},"wsSettings":{"path":""},"xtlsSettings":{"disableSystemRoot":false}}
 			// network: "tcp" | "kcp" | "ws" | "http" | "domainsocket" | "quic" | "grpc". 默认值为 tcp
@@ -209,7 +209,7 @@ func setV2rayConfigV4Outbounds(confv4 *V2rayConfigV4, n V2rayNode) error {
 			if security == "" {
 				security = "none"
 			}
-			streamSet := fmt.Sprintf(`{"network":"%s","security":"%s","wsSettings":{"path":""}}`, networkset, security) // v4: network, v5: transport
+			streamSet := fmt.Sprintf(`{"network":"%s","security":"%s","wsSettings":{"path":"%s"}}`, networkset, security, n.Path) // v4: network, v5: transport
 			outbd1.StreamSetting = json.RawMessage(streamSet)
 			confv4.Outbounds = append(confv4.Outbounds, outbd1)
 			return nil

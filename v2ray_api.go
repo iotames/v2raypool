@@ -100,13 +100,13 @@ func (a V2rayApiClient) RemoveInbound(intag string) error {
 	return err
 }
 
-func getTransportStreamConfig(transproto string) (conf *internet.StreamConfig, err error) {
+func getTransportStreamConfig(transproto, path string) (conf *internet.StreamConfig, err error) {
 	var transptl internet.TransportProtocol
 	var protoconf proto.Message
 	switch transproto {
 	case "ws", "websocket":
 		transptl = internet.TransportProtocol_WebSocket
-		protoconf = &websocket.Config{}
+		protoconf = &websocket.Config{Path: path}
 	case "tcp":
 		transptl = internet.TransportProtocol_TCP
 		protoconf = &tcp.Config{}
@@ -132,7 +132,7 @@ func (a V2rayApiClient) AddOutboundByV2rayNode(nd V2rayNode, outag string) error
 	if nd.Protocol != "vmess" {
 		return fmt.Errorf("outbound protocol not support %s. only support vmess", nd.Protocol)
 	}
-	streamConf, err := getTransportStreamConfig(nd.Net)
+	streamConf, err := getTransportStreamConfig(nd.Net, nd.Path)
 	if err != nil {
 		return err
 	}
@@ -148,7 +148,17 @@ func (a V2rayApiClient) AddOutboundByV2rayNode(nd V2rayNode, outag string) error
 			}),
 		}
 	}
-	proxyport, _ := strconv.Atoi(nd.Port)
+
+	var proxyport int
+	switch pval := nd.Port.(type) {
+	case string:
+		proxyport, _ = strconv.Atoi(pval)
+	case float64:
+		proxyport = int(pval)
+	default:
+		return fmt.Errorf("err AddOutboundByV2rayNode 端口数据类型未知 port val(%v) type(%T)", nd.Port, nd.Port)
+	}
+
 	resp, err := a.c.AddOutbound(a.ctx, &pros.AddOutboundRequest{Outbound: &v5.OutboundHandlerConfig{
 		Tag:            outag,
 		SenderSettings: serial.ToTypedMessage(&outsendset),
@@ -176,7 +186,7 @@ func (a V2rayApiClient) AddOutboundByV2rayNode(nd V2rayNode, outag string) error
 		// 	UserLevel:      0,
 		// }),
 	}})
-	fmt.Printf("---AddOutbound(%s)--(%s:%s)--result(%s)--err(%v)--\n", outag, nd.Add, nd.Port, resp, err)
+	fmt.Printf("---AddOutbound(%s)--(%s:%v)-portType(%T)--result(%s)--err(%v)--\n", outag, nd.Add, nd.Port, nd.Port, resp, err)
 	return err
 }
 

@@ -36,7 +36,7 @@ func (p *ProxyNode) GetId() string {
 	return p.Id
 }
 func (p *ProxyNode) SetV2ray(n V2rayNode) *ProxyNode {
-	p.RemoteAddr = fmt.Sprintf("%s:%s", n.Add, n.Port)
+	p.RemoteAddr = fmt.Sprintf("%s:%v", n.Add, n.Port)
 	p.Id = p.RemoteAddr + ":" + n.Id
 	p.Title = n.Ps
 	p.Protocol = n.Protocol
