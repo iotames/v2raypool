@@ -6,6 +6,7 @@ v2raypool
 *.log
 *.txt
 *.json
+!sample_outbounds.json
 # routing.rules.json
 # v2ray.config.json
 # resource/

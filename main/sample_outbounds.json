@@ -1,0 +1,74 @@
+{
+    "outbounds": [
+        {
+            "protocol": "freedom",
+            "sendThrough": "0.0.0.0",
+            "tag": "DIRECT",
+            "settings": {},
+            "streamSettings": {}
+        },
+        {
+            "protocol": "shadowsocks",
+            "sendThrough": "0.0.0.0",
+            "tag": "TAG_ACTIVE_OUTBOUND",
+            "settings": {
+                "servers": [
+                    {
+                        "address": "hk15.your5501.com",
+                        "method": "aes-256-gcm",
+                        "password": "YourPassWord",
+                        "port": 9259
+                    }
+                ]
+            },
+            "proxySettings": {
+                "tag": "『your-HK-HongKong15ws』-dialer"
+            }
+        },
+        {
+            "tag": "『your-HK-HongKong15ws』-dialer",
+            "protocol": "freedom",
+            "settings": {
+                "domainStrategy": "AsIs",
+                "redirect": "hk15.your5501.com:9259"
+            },
+            "streamSettings": {
+                "network": "ws",
+                "wsSettings": {
+                    "path": "/",
+                    "headers": {
+                        "Host": "cloudflare.com"
+                    }
+                },
+                "sockopt": {}
+            },
+            "mux": {
+                "enabled": true,
+                "concurrency": 1
+            }
+        },
+        {
+            "protocol": "trojan",
+            "sendThrough": "0.0.0.0",
+            "tag": "TAG_ACTIVE_OUTBOUND",
+            "settings": {
+                "servers": [
+                    {
+                        "address": "h00kgaa3.hand992.com",
+                        "port": 50056,
+                        "password": "184xxxxx-9da0-4b4b-9452-53xxxxxxxxxx"
+                    }
+                ]
+            },
+            "streamSettings": {
+                "network": "tcp",
+                "security": "tls",
+                "tlsSettings": {
+                    "allowInsecure": false,
+                    "serverName": "hk3.networkspeed.info"
+                },
+                "sockopt": {}
+            }
+        }
+    ]
+}

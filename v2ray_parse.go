@@ -48,7 +48,19 @@ func parseNodeInfo(d string) (nd V2rayNode, err error) {
 			return
 		}
 		if nd.Protocol == "vless" {
-			err = fmt.Errorf("protocol not support vless")
+			err = fmt.Errorf("protocol not support vless://")
+			return
+		}
+		if nd.Protocol == "ssr" {
+			err = fmt.Errorf("v2ray protocol dot not support ssr://")
+			return
+		}
+		if nd.Protocol == "ss" {
+			err = fmt.Errorf("protocol not support ss://, TODO")
+			return
+		}
+		if nd.Protocol == "trojan" {
+			err = fmt.Errorf("protocol not support trojan://, TODO")
 			return
 		}
 
