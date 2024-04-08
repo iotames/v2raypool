@@ -58,16 +58,29 @@ jobs:
       
     - name: Build
       run: |
-        go build -v -o main/v2raypool -trimpath -ldflags "-s -w -buildid=" ./main
+        mkdir -p build_assets
+        go build -v -o build_assets/v2raypool -trimpath -ldflags "-s -w -buildid=" ./main
     
     - name: Rename Windows File
       if: matrix.goos == 'windows'
       run: |
-        cd ./main || exit 1
+        cd ./build_assets || exit 1
         mv v2raypool v2raypool.exe
 
+    - name: Download geo files
+      run: |
+        wget -O main/bin/geoip.dat "https://raw.githubusercontent.com/v2fly/geoip/release/geoip.dat"
+        wget -O main/bin/geoip-only-cn-private.dat "https://raw.githubusercontent.com/v2fly/geoip/release/geoip-only-cn-private.dat"
+        wget -O main/bin/geosite.dat "https://raw.githubusercontent.com/v2fly/domain-list-community/release/dlc.dat"
+
+    - name: Prepare package
+      run: |
+        cp -rv ./main/resource ./build_assets/
+        cp -rv ./main/bin ./build_assets/
+        touch ./build_assets/subscribe_data.txt
+
     - name: Package
-      run: tar zcvf ${{ steps.get_filename.outputs.ASSET_NAME }}.tar.gz ./main/v2raypool ./main/resource
+      run: tar zcvf ${{ steps.get_filename.outputs.ASSET_NAME }}.tar.gz ./build_assets
 
       # 上传附件
     - name: Upload file to Artifacts

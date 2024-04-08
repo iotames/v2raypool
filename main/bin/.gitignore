@@ -1,2 +1,5 @@
 *
 !.gitignore
+!v2ray.exe
+!v2ray_for_linux
+!v2ray_for_mac
