@@ -4,30 +4,35 @@
 name: CreateRelease
 
 on:
-  push:
-    tags:
-      - "v*"
+  release:
+    types: [created] # 表示在创建新的 Release 时触发
+  # push:
+  #   tags:
+  #     - "v*"
 
 jobs:
   build:
     strategy:
       matrix:
-        build: [macos, linux, windows]
-        include:
-          - build: macos
-            os: macos-latest
-            file-suf: ''
-          - build: linux
-            os: ubuntu-18.04
-            file-suf: ''
-          - build: windows
-            os: windows-latest
-            file-suf: '.exe'
+        goos: [linux, darwin, windows]
+        goarch: [amd64, 386]
+        # filesuf: ['.exe', '']
+        exclude:
+          - goarch: 386
+            goos: darwin
+          # - filesuf: ''
+          #   goos: windows
+          # - filesuf: '.exe'
+          #   goos: [linux, darwin]
     
     permissions: # 需要设置写权限才能自动发布
       contents: write
 
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
+    env:
+      GOOS: ${{ matrix.goos }}
+      GOARCH: ${{ matrix.goarch }}
+      CGO_ENABLED: 0
     steps:
     - uses: actions/checkout@master
     - name: Set up Go
@@ -40,39 +45,63 @@ jobs:
         go env -w GO111MODULE=on
         go env -w GOPROXY=https://goproxy.cn,direct
         go mod tidy
+    
+    - name: Get File Name
+      id: get_filename
+      run: |
+        export _NAME=v2raypool-${{ matrix.goos }}-${{ matrix.goarch }}
+        echo "GOOS: $GOOS, GOARCH: $GOARCH, RELEASE_NAME: $_NAME"
+        echo "ASSET_NAME=$_NAME" >> $GITHUB_OUTPUT
+        echo "ASSET_NAME=$_NAME" >> $GITHUB_ENV
       
     - name: Build
       run: |
-        CGO_ENABLED=0 go build -v -a -o main/v2raypool${{ matrix.file-suf }} ./main
+        go build -v -o main/v2raypool -trimpath -ldflags "-s -w -buildid=" ./main
+    
+    - name: Rename Windows File
+      if: matrix.goos == 'windows'
+      run: |
+        cd ./main || exit 1
+        mv v2raypool v2raypool.exe
 
-    - name: Package # TODO  tar (child): v2raypool-windows-refs/heads/master.tar.gz: Cannot open: No such file or directory
-      run: tar zcvf v2raypool-${{ matrix.build }}-${{ github.ref }}.tar.gz ./main/v2raypool${{ matrix.file-suf }} ./main/resource
+    - name: Package
+      run: tar zcvf ${{ steps.get_filename.outputs.ASSET_NAME }}.tar.gz ./main/v2raypool ./main/resource
 
       # 上传附件
-    - name: Upload Artifacts
+    - name: Upload file to Artifacts
       uses: actions/upload-artifact@v3
       with:
-        name: v2raypool-${{ matrix.build }}-${{ github.ref }}.tar.gz
-        path: v2raypool-${{ matrix.build }}-${{ github.ref }}.tar.gz
+        name: ${{ steps.get_filename.outputs.ASSET_NAME }}.tar.gz
+        path: ${{ steps.get_filename.outputs.ASSET_NAME }}.tar.gz    
 
-    - name: Create Release
-      id: create_release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    # - name: Create Release
+    #   id: create_release
+    #   uses: actions/create-release@v1
+    #   env:
+    #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    #   with:
+    #     tag_name: ${{ github.event.release.tag_name }}
+    #     release_name: Release ${{ github.ref }}
+    #     body: Please refer to [CHANGELOG.md](https://github.com/iotames/v2raypool/blob/master/CHANGELOG.md) for details.
+    #     draft: false
+    #     prerelease: false
+
+    - name: Upload files to GitHub release
+      uses: svenstaro/upload-release-action@v2
+      if: github.event_name == 'release'
       with:
-        tag_name: ${{ github.ref }}
-        release_name: Release ${{ github.ref }}
-        body: Please refer to [CHANGELOG.md](https://github.com/iotames/v2raypool/blob/master/CHANGELOG.md) for details.
-        draft: false
-        prerelease: false
-        
-    - name: Upload Release Asset
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: v2raypool-${{ matrix.build }}-${{ github.ref }}.tar.gz
-        asset_name: v2raypool-${{ matrix.build }}-${{ github.ref }}.tar.gz
-        asset_content_type: application/zip
+        repo_token: ${{ secrets.GITHUB_TOKEN }}
+        file_glob: true
+        file: ./${{ steps.get_filename.outputs.ASSET_NAME }}.tar.gz
+        tag: ${{ github.ref }}
+        overwrite: true
+
+    # - name: Upload Release Asset
+    #   uses: actions/upload-release-asset@v1
+    #   env:
+    #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    #   with:
+    #     upload_url: ${{ steps.create_release.outputs.upload_url }}
+    #     asset_path: ${{ steps.get_filename.outputs.ASSET_NAME }}.tar.gz
+    #     asset_name: ${{ steps.get_filename.outputs.ASSET_NAME }}.tar.gz
+    #     asset_content_type: application/zip

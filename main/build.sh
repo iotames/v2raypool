@@ -18,6 +18,6 @@ BuildArgs="-trimpath -ldflags \"-w -s -buildid= \
 -gcflags=\"all=-trimpath=${PWD}\" \
 -asmflags=\"all=-trimpath=${PWD}\""
 
-bash -c "GOOS=linux go build -o $LinuxFineName ${BuildArgs} ."
+sh -c "GOOS=linux go build -o $LinuxFineName ${BuildArgs} ."
 
-bash -c "GOOS=windows go build -o $WinFileName ${BuildArgs} ."
+sh -c "GOOS=windows go build -o $WinFileName ${BuildArgs} ."
