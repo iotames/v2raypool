@@ -13,6 +13,25 @@ on:
       - "v*"
 
 jobs:
+  create_release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        if: github.event_name == 'push'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: ${{ github.ref_name }}
+          body: Please refer to [CHANGELOG.md](https://github.com/iotames/v2raypool/blob/master/CHANGELOG.md) for details.
+          draft: false
+          prerelease: false
+
   build:
     strategy:
       matrix:
@@ -89,19 +108,6 @@ jobs:
         with:
           name: ${{ steps.get_filename.outputs.ASSET_NAME }}.tar.gz
           path: ${{ steps.get_filename.outputs.ASSET_NAME }}.tar.gz    
-
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
-        if: github.event_name == 'push'
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ github.ref }}
-          release_name: ${{ github.ref_name }}
-          body: Please refer to [CHANGELOG.md](https://github.com/iotames/v2raypool/blob/master/CHANGELOG.md) for details.
-          draft: false
-          prerelease: false
 
       - name: Upload files to GitHub release
         uses: svenstaro/upload-release-action@v2
