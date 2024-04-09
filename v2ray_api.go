@@ -58,6 +58,7 @@ func (a *V2rayApiClient) Dial() error {
 	var err error
 	a.conn, err = grpc.Dial(a.addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
+		fmt.Printf("------V2rayApiClient--Dial(%v)--\n", err)
 		return err
 	}
 	a.c = pros.NewHandlerServiceClient(a.conn)
@@ -90,6 +91,7 @@ func (a V2rayApiClient) AddInbound(inport net.Port, intag, protocol string) erro
 		}),
 		ProxySettings: serial.ToTypedMessage(proxySet),
 	}})
+	// rpc error: code = Unavailable desc = connection error: desc = "transport: Error while dialing: dial tcp 127.0.0.1:15491: connectex: No connection could be made because the target machine actively refused it."
 	fmt.Printf("---AddInbound(%s)--port(%d)--result(%s)--err(%v)--\n", intag, inport, resp, err)
 	return err
 }
@@ -188,18 +190,6 @@ func (a V2rayApiClient) AddOutboundByV2rayNode(nd V2rayNode, outag string) error
 	}})
 	fmt.Printf("---AddOutbound(%s)--(%s:%v)-portType(%T)--result(%s)--err(%v)--\n", outag, nd.Add, nd.Port, nd.Port, resp, err)
 	return err
-}
-
-func (a V2rayApiClient) AddOutbound(addr, port, nett, id, tls, outag string) error {
-	nd := V2rayNode{
-		Protocol: "vmess",
-		Add:      addr,
-		Port:     port,
-		Net:      nett,
-		Id:       id,
-		Tls:      tls,
-	}
-	return a.AddOutboundByV2rayNode(nd, outag)
 }
 
 func (a V2rayApiClient) RemoveOutbound(outag string) error {

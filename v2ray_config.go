@@ -23,6 +23,8 @@ const ROUTING_RULES_FILE = "routing.rules.json"
 // 只写文件，被 ROUTING_RULES_FILE 文件覆盖部分值(v2raypool)
 const V2RAY_CONFIG_FILE = "v2ray.config.json"
 
+const V2RAYPOOL_CONFIG_FILE = "v2raypool.config.json"
+
 // github.com/v2fly/v2ray-core/v5/infra/conf/v5cfg
 // 执行 ./v2ray run -c $configure_file_name -format jsonv5 命令以运行您的配置文件。
 

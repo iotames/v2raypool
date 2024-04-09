@@ -59,13 +59,24 @@ func (v *V2rayServer) setExeCmd(configFile string) {
 	// https://www.v2fly.org/v5/config/overview.html
 	// 默认为v4配置格式。添加命令参数 "-format", "jsonv5" 后，才是v5的配置
 	if configFile == "" {
-		v.cmd = exec.Command(v.v2rayPath, "run")
 		v.jconf = getV2rayConfigV4(v.selectNode, v.localPort)
-		v.cmd.Stdin = v.jconf.Reader()
+		if v.localPort > 0 {
+			configFile = V2RAY_CONFIG_FILE
+		} else {
+			configFile = V2RAYPOOL_CONFIG_FILE
+		}
+		err := v.jconf.SaveToFile(configFile)
+		if err != nil {
+			fmt.Printf("--------V2rayServer.setExeCmd()--jsonFileSaveFail(%v)--", err)
+		}
+		// v5.7使用标准输入读取配置正常，v5.14.1则出现BUG。故一律使用配置文件读取配置
+		// v.cmd = exec.Command(v.v2rayPath, "run")
+		// v.cmd.Stdin = v.jconf.Reader()
 	} else {
-		v.cmd = exec.Command(v.v2rayPath, "run", "-c", configFile)
 		v.jconf = NewJsonConfigFromFile(configFile)
 	}
+	// v5.7使用标准输入读取配置正常，v5.14.1则出现BUG。故一律使用配置文件读取配置
+	v.cmd = exec.Command(v.v2rayPath, "run", "-c", configFile)
 	// cmd.Stdout = os.Stdout
 	v.cmd.Stderr = os.Stderr
 }
@@ -76,13 +87,7 @@ func (v *V2rayServer) Start(configFile string) error {
 	v.setExeCmd(configFile)
 	err := v.cmd.Start()
 	if err == nil {
-		if v.localPort > 0 {
-			err1 := v.jconf.SaveToFile(V2RAY_CONFIG_FILE)
-			if err1 != nil {
-				fmt.Printf("--------V2rayServer.Start()--jsonFileSaveFail(%v)--", err1)
-			}
-		}
-		fmt.Printf("----v2ray-Start(%s)--Pid(%d)---\n", configFile, v.cmd.Process.Pid)
+		fmt.Printf("--SUCCESS--Start(%s)-v2ray-Pid(%d)---\n", configFile, v.cmd.Process.Pid)
 	}
 	return err
 }

@@ -19,8 +19,11 @@ func main() {
 	flag.Parse()
 	var err error
 	c := vp.NewV2rayApiClientV5(saddr)
-	if c.Dial() == nil {
+	err = c.Dial()
+	if err == nil {
 		defer c.Close()
+	} else {
+		panic(err)
 	}
 	if addin != "" {
 		args := strings.Split(addin, ",")
@@ -78,7 +81,15 @@ func main() {
 		}
 		nett = "ws"
 		fmt.Println("-----", addr, port, nett, id, tls, outag)
-		err = c.AddOutbound(addr, port, nett, id, tls, outag)
+		nd := vp.V2rayNode{
+			Protocol: "vmess",
+			Add:      addr,
+			Port:     port,
+			Net:      nett,
+			Id:       id,
+			Tls:      tls,
+		}
+		err = c.AddOutboundByV2rayNode(nd, outag)
 		if err != nil {
 			panic(err)
 		}

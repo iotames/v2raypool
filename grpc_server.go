@@ -272,7 +272,6 @@ func RunServer() {
 
 func RunProxyPoolGrpcServer() {
 	lisAddr := fmt.Sprintf(":%d", conf.GetConf().GrpcPort)
-	fmt.Printf("---listenAddr(%s)---\n", lisAddr)
 	lis, err := net.Listen("tcp", lisAddr)
 	if err != nil {
 		fmt.Printf("failed to listen: %v", err)
@@ -281,8 +280,10 @@ func RunProxyPoolGrpcServer() {
 	s := grpc.NewServer()
 	g.RegisterProxyPoolServiceServer(s, ProxyPoolServer{})
 
-	fmt.Printf("SUCCESS: gRPC Server Listening At(%+v)\n", lis.Addr())
 	if err := s.Serve(lis); err != nil {
-		fmt.Printf("failed to serve: %v", err)
+		err = fmt.Errorf("failed to start grpc server: %v", err)
+		panic(err)
+	} else {
+		fmt.Printf("SUCCESS: gRPC Server Listening At(%+v)\n", lis.Addr())
 	}
 }

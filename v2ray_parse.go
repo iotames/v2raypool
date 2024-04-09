@@ -30,7 +30,7 @@ func ParseV2rayNodes(data string) []V2rayNode {
 
 func parseNodeInfo(d string) (nd V2rayNode, err error) {
 	ninfo := strings.Split(d, "://")
-	if len(ninfo) == 2 {
+	if len(ninfo) > 1 {
 		var b []byte
 		nd.Protocol = ninfo[0]
 		if nd.Protocol == "vmess" {
