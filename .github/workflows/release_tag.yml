@@ -14,6 +14,7 @@ on:
 
 jobs:
   create_release:
+    if: github.event_name == 'push'
     name: Create Release
     runs-on: ubuntu-latest
     steps:
@@ -33,6 +34,8 @@ jobs:
           prerelease: false
 
   build:
+    # if: github.event_name == 'release'
+    # needs: create_release
     strategy:
       matrix:
         goos: [linux, darwin, windows]
@@ -111,7 +114,6 @@ jobs:
 
       - name: Upload files to GitHub release
         uses: svenstaro/upload-release-action@v2
-        if: github.event_name == 'release'
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file_glob: true
