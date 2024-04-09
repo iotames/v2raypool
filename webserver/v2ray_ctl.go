@@ -104,6 +104,7 @@ func RunV2ray(fpath, msg string) []byte {
 }
 
 func GetV2rayList() []byte {
+	cf := conf.GetConf()
 	pp := vp.GetProxyPool()
 	slist := pp.GetV2rayServerList()
 	var rows []map[string]any
@@ -117,21 +118,27 @@ func GetV2rayList() []byte {
 		localPorts := ""
 		runmode := "个性配置"
 		vports := vs.GetLocalPortList()
+
+		vapiport := cf.V2rayApiPort
+		sysport := cf.GetHttpProxyPort()
 		for i, port := range vports {
+			if port == vapiport {
+				runmode = "动态代理池"
+			}
+			if port == sysport {
+				runmode = "系统代理"
+			}
 			addStr := fmt.Sprintf("%d", port)
 			if i > 0 {
 				addStr = "," + addStr
 			}
 			localPorts += addStr
 		}
-		if confile == "" {
-			runmode = "动态代理池"
+		if runmode == "动态代理池" {
 			localPorts += "," + pp.GetLocalPortRange()
-		} else {
-			if vs.GetLocalPort() > 0 {
-				runmode = "系统代理"
-				confile = vp.ROUTING_RULES_FILE + " -> " + confile
-			}
+		}
+		if runmode == "系统代理" {
+			confile = vp.ROUTING_RULES_FILE + " -> " + confile
 		}
 		data := map[string]any{
 			"pid":         pid,

@@ -37,7 +37,7 @@
 
   </div>
 
-  <script type="text/html" id="toolbarDemo">
+<script type="text/html" id="toolbarDemo">
   <div class="layui-btn-container layui-row">
 
     <div class="layui-form layui-col-xs3">
@@ -55,37 +55,29 @@
       
       <!-- <i class="itable-top layui-icon layui-icon-play" style="color: green;" lay-event="startNodes" id="startproxynodes"></i> -->
       <!-- <i class="itable-top layui-icon layui-icon-refresh-3" style="color: #1E9FFF;" lay-event="refreshData" id="refreshdata"></i> -->
-      <button class="layui-btn layui-btn-sm layui-bg-blue" lay-on="routingrules">路由规则</button>
+      
       <button class="layui-btn layui-btn-sm" lay-on="v2raylist">v2ray</button>
       <button class="layui-btn layui-btn-sm layui-bg-purple" lay-event="startNodes" id="startproxynodes">启动</button>
       <button class="layui-btn layui-btn-sm" lay-on="subscribe">订阅</button>
+      <button class="layui-btn layui-btn-sm layui-bg-blue" lay-on="routingrules">路由规则</button>
       <!-- <i class="itable-top layui-icon layui-icon-set" style="color: #fc4706e8;" lay-on="settinglayer" id="setting"></i> -->
     </div>
 
   </div>
 </script>
 
-  <script type="text/html" id="toolbarV2ray">
+<script type="text/html" id="toolbarV2ray">
   <div class="layui-btn-container">
     <button class="layui-btn layui-btn-sm" lay-on="addv2ray"><i class="layui-icon layui-icon-add-1"></i>v2ray</button>
   </div>
 </script>
 
-  <script type="text/html" id="barDemo">
+<script type="text/html" id="barDemo">
   <div class="layui-clear-space">
     <!-- <a class="layui-btn layui-btn-xs" lay-event="edit">编辑</a> -->
     <a class="layui-btn layui-btn-xs {{= d.is_active ? 'layui-bg-purple' : 'layui-bg-blue' }}" lay-event="active">
       {{= d.is_active ? '已启用' : '启用' }}
     </a>
-  </div>
-</script>
-
-  <script type="text/html" id="barV2ray">
-  <div class="layui-clear-space">
-    <i lay-event="viewconf" class="itable-top layui-icon layui-icon-set" style="color: #1E9FFF;"></i>
-    <i lay-event="copyrun"  class="{{= d.run_mode != "动态代理池" ? 'itable-top layui-icon layui-icon-file-b' : ''}}" style="color: #1E9FFF;"></i>
-    <i lay-event="restart"  class="{{= d.run_mode == "个性配置" ? 'itable-top layui-icon layui-icon-refresh' : ''}}" style="color: #1E9FFF;"></i>
-    <i lay-event="delete"  class="{{= d.run_mode == "个性配置" ? 'itable-top layui-icon layui-icon-delete' : ''}}" style="color: red;"></i>
   </div>
 </script>
 
@@ -113,52 +105,6 @@
 
       // 事件
       util.on('lay-on', {
-        'addv2ray': () => {
-          layer.open({
-            title: "添加v2ray服务",
-            type: 1,
-            area: ['50%', '50%'],
-            content: $('#addv2raylayer'),
-            success: (layero, index, that) => {
-              form.render();
-              form.on('submit(runv2ray)', function (data) {
-                submitbtn = document.getElementById("runv2ray")
-                var field = data.field;
-                console.log(field)
-                postjson("/api/v2ray/run", field, function (dt) {
-                  layer.close(index)
-                  layer.msg(dt.msg);
-                  table.reload('v2raylist')
-                }, function (dt) {
-                  console.log(field)
-                  layer.alert(dt.msg, { icon: 2, title: dt.code + "错误" });
-                }, submitbtn)
-
-                // $.ajax({
-                //   url: "/api/v2ray/run",
-                //   data: field,
-                //   type: "post",
-                //   dataType: "json",
-                //   headers: { 'Content-Type': 'application/json;charset=utf-8' }, //接口json格式
-                //   success: function (data) {},
-                //   error: function (data) {}
-                // })
-
-              })
-            }
-          })
-        },
-        'v2raylist': () => {
-          layer.open({
-            title: 'v2ray服务状态',
-            type: 1,
-            area: ['80%', '50%'],
-            content: $('#v2raylistlayer'),
-            success: (layero, index, that) => {
-              table.reload('v2raylist')
-            }
-          })
-        },
         'routingrules': function(){
           layer.open({
             title: '路由分流规则设置',
@@ -181,6 +127,17 @@
                   layer.alert(dt.msg, { icon: 2, title: dt.code + "错误" });
                 }, submitbtn)
               })
+            }
+          })
+        },
+        'v2raylist': () => {
+          layer.open({
+            title: 'v2ray服务状态',
+            type: 1,
+            area: ['80%', '80%'],
+            content: $('#v2raylistlayer'),
+            success: (layero, index, that) => {
+              table.reload('v2raylist')
             }
           })
         },
@@ -207,103 +164,6 @@
               })
             }
           })
-        }
-      })
-
-      // 创建渲染实例
-      table.render({
-        elem: '#v2raylist',
-        url: '/api/v2ray/list', // 此处为静态模拟数据，实际使用时需换成真实接口
-        toolbar: '#toolbarV2ray',
-        escape: false,
-        // totalRow: true, // 开启合计行
-        // page: true,
-        cols: [[
-          { type: "numbers", fixed: 'left' }, // field: "layid",  title: "序号",
-          { field: 'pid', title: 'PID', width: 100 },
-          { field: 'run_mode', title: '类型', width: 100 },
-          { field: 'local_ports', title: '本地端口', width: 160 },
-          { field: 'config_file', title: '配置文件', width: 280 },
-          { fixed: 'right', title: '操作', width: 180, minWidth: 80, toolbar: '#barV2ray' }
-        ]],
-        error: function (res, msg) {
-          console.log(res, msg)
-        }
-      });
-
-      table.on('tool(v2raylist)', function (obj) {
-        var data = obj.data; // 获得当前行数据
-        // console.log(obj)
-        switch (obj.event) {
-          case 'restart':
-            if (data.run_mode != "个性配置") {
-              layer.msg("系统进程不可重启");
-              return
-            }
-            postjson("/api/v2ray/restart", data, function (dt) {
-              layer.msg(dt.msg);
-              table.reload('v2raylist')
-            }, function (dt) {
-              console.log(data)
-              layer.alert(dt.msg, { icon: 2, title: dt.code + "错误" });
-            })
-            break;
-          case 'delete':
-            if (data.run_mode != "个性配置") {
-              layer.msg("系统进程不可删除");
-              return
-            }
-            postjson("/api/v2ray/delete", data, function (dt) {
-              layer.msg(dt.msg);
-              table.reload('v2raylist')
-            }, function (dt) {
-              console.log(data)
-              layer.alert(dt.msg, { icon: 2, title: dt.code + "错误" });
-            })
-            break;
-          case 'viewconf':
-            layer.open({
-              title: '配置内容',
-              type: 1,
-              area: ['50%', '60%'],
-              content: '<code>' + util.escape(data.config_json) + '</code>'
-            });
-            break;
-          case 'copyrun':
-            layer.open({
-              title: '复制配置文件并运行',
-              type: 1,
-              area: ['50%', '50%'],
-              content: $('#copyrunlayer'),
-              success: function (layero, index, that) {
-                // 对弹层中的表单进行初始化渲染
-                form.val("copyv2ray", { old_config_file: data.config_file.replace('routing.rules.json -> ', '').trim() })
-                form.render();
-                // 表单提交事件
-                form.on('submit(copyv2ray)', function (fdt) {
-                  var submitbtn = document.getElementById("copyv2ray")
-                  // submitbtn.innerText = "提交中"
-                  var field = fdt.field; // 获取表单字段值
-                  field.local_port = parseInt(field.local_port)
-                  console.log(field)
-                  postjson("/api/v2ray/copyrun", field, function (dt) {
-                    layer.close(index)
-                    layer.msg(dt.msg);
-                    window.setTimeout(function () {
-                      table.reload('v2raylist')
-                    }, 1000)
-
-                  }, function (dt) {
-                    // submitbtn.innerText = "提交失败"
-                    console.log(field)
-                    layer.alert(dt.msg, { icon: 2, title: dt.code + "错误" });
-                  }, submitbtn)
-                  // layer.close(index); // 关闭弹层
-                  return false; // 阻止默认 form 跳转
-                });
-
-              }
-            })
         }
       })
 
@@ -529,15 +389,11 @@
 
   </script>
 
-  <div id="v2raylistlayer" style="display: none;">
-    <table class="layui-hide" id="v2raylist" lay-filter="v2raylist"></table>
-  </div>
-
-
   <div id="settinglayer" style="display: none;">
     <{% tplinclude "setting_form.html" . | println %}>
   </div>
 
+  <{% tplinclude "v2raylist.html" . | println %}>
 
   <div id="addv2raylayer" style="display: none;">
     <{% tplinclude "add_v2ray_form.html" nil | println %}>
