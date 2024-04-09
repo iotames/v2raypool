@@ -1,0 +1,17 @@
+[Unit]
+Description=V2ray ProxyPool
+Documentation=https://github.com/iotames/v2raypool
+After=network.target
+
+[Service]
+User=root
+WorkingDirectory=/root/v2raypool/main
+ExecStart=/root/v2raypool/main/v2raypool
+Restart=on-failure
+RestartSec=300
+TimeoutStopSec=10
+StandardOutput=file:/root/v2raypool/main/output.log
+StandardError=file:/root/v2raypool/main/output.err.log
+
+[Install]
+WantedBy=multi-user.target

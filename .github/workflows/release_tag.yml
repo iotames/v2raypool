@@ -8,9 +8,9 @@ on:
     types:
       - prereleased
       - released
-  # push:
-  #   tags:
-  #     - "v*"
+  push:
+    tags:
+      - "v*"
 
 jobs:
   build:
@@ -18,14 +18,9 @@ jobs:
       matrix:
         goos: [linux, darwin, windows]
         goarch: [amd64, 386]
-        # filesuf: ['.exe', '']
         exclude:
           - goarch: 386
             goos: darwin
-          # - filesuf: ''
-          #   goos: windows
-          # - filesuf: '.exe'
-          #   goos: [linux, darwin]
     
     permissions: # 需要设置写权限才能自动发布
       contents: write
@@ -36,87 +31,94 @@ jobs:
       GOARCH: ${{ matrix.goarch }}
       CGO_ENABLED: 0
     steps:
-    - uses: actions/checkout@master
-    - name: Set up Go
-      uses: actions/setup-go@v4
-      with:
-        go-version: '1.22.x'
-        
-    - name: Install dependencies
-      run: |
-        go env -w GO111MODULE=on
-        go env -w GOPROXY=https://goproxy.cn,direct
-        go mod tidy
-    
-    - name: Get File Name
-      id: get_filename
-      run: |
-        export _NAME=v2raypool-${{ matrix.goos }}-${{ matrix.goarch }}
-        echo "GOOS: $GOOS, GOARCH: $GOARCH, RELEASE_NAME: $_NAME"
-        echo "ASSET_NAME=$_NAME" >> $GITHUB_OUTPUT
-        echo "ASSET_NAME=$_NAME" >> $GITHUB_ENV
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.22.x'
+          
+      - name: Install dependencies
+        run: |
+          go env -w GO111MODULE=on
+          go env -w GOPROXY=https://goproxy.cn,direct
+          go mod tidy
       
-    - name: Build
-      run: |
-        mkdir -p build_assets
-        go build -v -o build_assets/v2raypool -trimpath -ldflags "-s -w -buildid=" ./main
-    
-    - name: Rename Windows File
-      if: matrix.goos == 'windows'
-      run: |
-        cd ./build_assets || exit 1
-        mv v2raypool v2raypool.exe
+      - name: Get File Name
+        id: get_filename
+        run: |
+          export _NAME=v2raypool-${{ matrix.goos }}-${{ matrix.goarch }}
+          echo "GOOS: $GOOS, GOARCH: $GOARCH, RELEASE_NAME: $_NAME"
+          echo "ASSET_NAME=$_NAME" >> $GITHUB_OUTPUT
+          echo "ASSET_NAME=$_NAME" >> $GITHUB_ENV
+        
+      - name: Build
+        run: |
+          mkdir -p build_assets
+          go build -v -o build_assets/v2raypool -trimpath -ldflags "-s -w -buildid=" ./main
+      
+      - name: Rename Windows File
+        if: matrix.goos == 'windows'
+        run: |
+          cd ./build_assets || exit 1
+          mv v2raypool v2raypool.exe
 
-    - name: Download geo files
-      run: |
-        wget -O main/bin/geoip.dat "https://raw.githubusercontent.com/v2fly/geoip/release/geoip.dat"
-        wget -O main/bin/geoip-only-cn-private.dat "https://raw.githubusercontent.com/v2fly/geoip/release/geoip-only-cn-private.dat"
-        wget -O main/bin/geosite.dat "https://raw.githubusercontent.com/v2fly/domain-list-community/release/dlc.dat"
+      - name: Download geo files
+        run: |
+          wget -O main/bin/geoip.dat "https://raw.githubusercontent.com/v2fly/geoip/release/geoip.dat"
+          wget -O main/bin/geoip-only-cn-private.dat "https://raw.githubusercontent.com/v2fly/geoip/release/geoip-only-cn-private.dat"
+          wget -O main/bin/geosite.dat "https://raw.githubusercontent.com/v2fly/domain-list-community/release/dlc.dat"
 
-    - name: Prepare package
-      run: |
-        cp -rv ./main/resource ./build_assets/
-        cp -rv ./main/bin ./build_assets/
-        touch ./build_assets/subscribe_data.txt
+      - name: Prepare package
+        run: |
+          cp -rv ./main/resource ./build_assets/
+          cp -rv ./main/bin ./build_assets/
+          touch ./build_assets/subscribe_data.txt
 
-    - name: Package
-      run: tar zcvf ${{ steps.get_filename.outputs.ASSET_NAME }}.tar.gz ./build_assets
+      - name: Prepare package for Linux
+        if: matrix.goos == 'linux'
+        run: cp -rv ./release/config/systemd ./build_assets/
+          
+      - name: Package
+        run: tar zcvf ${{ steps.get_filename.outputs.ASSET_NAME }}.tar.gz ./build_assets
 
-      # 上传附件
-    - name: Upload file to Artifacts
-      uses: actions/upload-artifact@v3
-      with:
-        name: ${{ steps.get_filename.outputs.ASSET_NAME }}.tar.gz
-        path: ${{ steps.get_filename.outputs.ASSET_NAME }}.tar.gz    
+        # 上传附件
+      - name: Upload file to Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ steps.get_filename.outputs.ASSET_NAME }}.tar.gz
+          path: ${{ steps.get_filename.outputs.ASSET_NAME }}.tar.gz    
 
-    # - name: Create Release
-    #   id: create_release
-    #   uses: actions/create-release@v1
-    #   env:
-    #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    #   with:
-    #     tag_name: ${{ github.event.release.tag_name }}
-    #     release_name: Release ${{ github.ref }}
-    #     body: Please refer to [CHANGELOG.md](https://github.com/iotames/v2raypool/blob/master/CHANGELOG.md) for details.
-    #     draft: false
-    #     prerelease: false
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        if: github.event_name == 'push'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: ${{ github.ref_name }}
+          body: Please refer to [CHANGELOG.md](https://github.com/iotames/v2raypool/blob/master/CHANGELOG.md) for details.
+          draft: false
+          prerelease: false
 
-    - name: Upload files to GitHub release
-      uses: svenstaro/upload-release-action@v2
-      if: github.event_name == 'release'
-      with:
-        repo_token: ${{ secrets.GITHUB_TOKEN }}
-        file_glob: true
-        file: ./${{ steps.get_filename.outputs.ASSET_NAME }}.tar.gz
-        tag: ${{ github.ref }}
-        overwrite: true
+      - name: Upload files to GitHub release
+        uses: svenstaro/upload-release-action@v2
+        if: github.event_name == 'release'
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file_glob: true
+          file: ./${{ steps.get_filename.outputs.ASSET_NAME }}.tar.gz
+          tag: ${{ github.ref }}
+          overwrite: true
 
-    # - name: Upload Release Asset
-    #   uses: actions/upload-release-asset@v1
-    #   env:
-    #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    #   with:
-    #     upload_url: ${{ steps.create_release.outputs.upload_url }}
-    #     asset_path: ${{ steps.get_filename.outputs.ASSET_NAME }}.tar.gz
-    #     asset_name: ${{ steps.get_filename.outputs.ASSET_NAME }}.tar.gz
-    #     asset_content_type: application/zip
+      # - name: Upload Release Asset
+      #   uses: actions/upload-release-asset@v1
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #   with:
+      #     upload_url: ${{ steps.create_release.outputs.upload_url }}
+      #     asset_path: ${{ steps.get_filename.outputs.ASSET_NAME }}.tar.gz
+      #     asset_name: ${{ steps.get_filename.outputs.ASSET_NAME }}.tar.gz
+      #     asset_content_type: application/zip
