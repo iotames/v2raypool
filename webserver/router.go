@@ -38,6 +38,9 @@ func setRouter(s *web.EasyServer) {
 	s.AddHandler("POST", "/api/nodes/start", func(ctx web.Context) {
 		ctx.Writer.Write(StartNodes())
 	})
+	s.AddHandler("POST", "/api/nodes/subscribe", func(ctx web.Context) {
+		ctx.Writer.Write(UpdateSubscribe())
+	})
 	s.AddHandler("POST", "/api/node/active", func(ctx web.Context) {
 		dt := RequestActiveNode{}
 		err := getPostJson(ctx, &dt)

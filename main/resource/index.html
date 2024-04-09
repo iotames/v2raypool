@@ -33,7 +33,7 @@
       V2rayPool控制面板
     </h2>
 
-    <table class="layui-hide" id="test" lay-filter="test"></table>
+    <table class="layui-hide" id="nodeslist" lay-filter="nodeslist"></table>
 
   </div>
 
@@ -58,6 +58,7 @@
       <button class="layui-btn layui-btn-sm layui-bg-blue" lay-on="routingrules">路由规则</button>
       <button class="layui-btn layui-btn-sm" lay-on="v2raylist">v2ray</button>
       <button class="layui-btn layui-btn-sm layui-bg-purple" lay-event="startNodes" id="startproxynodes">启动</button>
+      <button class="layui-btn layui-btn-sm" lay-on="subscribe">订阅</button>
       <!-- <i class="itable-top layui-icon layui-icon-set" style="color: #fc4706e8;" lay-on="settinglayer" id="setting"></i> -->
     </div>
 
@@ -107,7 +108,7 @@
         // var elem = data.elem; // 获得 select 原始 DOM 对象
         // var othis = data.othis; // 获得 select 元素被替换后的 jQuery 对象
         // layer.msg(this.innerHTML + ' 的 value: ' + value); // this 为当前选中 <option> 元素对象
-        table.reloadData('test', { where: { domain: data.value } })
+        table.reloadData('nodeslist', { where: { domain: data.value } })
       });
 
       // 事件
@@ -174,7 +175,7 @@
                 postjson("/api/v2ray/routing-rules/update", field, function (dt) {
                   layer.close(index)
                   layer.msg(dt.msg);
-                  // table.reload('test')
+                  // table.reload('nodeslist')
                 }, function (dt) {
                   console.log(field)
                   layer.alert(dt.msg, { icon: 2, title: dt.code + "错误" });
@@ -183,7 +184,30 @@
             }
           })
         },
-        // 'settinglayer': function () { }
+        'subscribe': function () {
+          layer.open({
+            title: "更新订阅",
+            type: 1,
+            area: ['60%', '50%'],
+            content: $('#subscribelayer'),
+            success: (layero, index, that) => {
+              form.render();
+              form.on('submit(updatesubscribe)', function (data) {
+                submitbtn = document.getElementById("updatesubscribe")
+                var field = data.field;
+                console.log(field)
+                postjson("/api/nodes/subscribe", field, function (dt) {
+                  layer.close(index)
+                  layer.msg(dt.msg);
+                  table.reload('nodeslist')
+                }, function (dt) {
+                  console.log(field)
+                  layer.alert(dt.msg, { icon: 2, title: dt.code + "错误" });
+                }, submitbtn)
+              })
+            }
+          })
+        }
       })
 
       // 创建渲染实例
@@ -285,7 +309,7 @@
 
       // 创建渲染实例
       table.render({
-        elem: '#test',
+        elem: '#nodeslist',
         url: '/api/nodes', // 此处为静态模拟数据，实际使用时需换成真实接口
         toolbar: '#toolbarDemo',
         defaultToolbar: ['filter', {
@@ -323,7 +347,7 @@
       });
 
       // 工具栏事件
-      table.on('toolbar(test)', function (obj) {
+      table.on('toolbar(nodeslist)', function (obj) {
         var id = obj.config.id;
         var checkStatus = table.checkStatus(id);
         var othis = lay(this);
@@ -342,7 +366,7 @@
                 interval = setInterval(function () {
                   console.log("-----setInterval--times:", times)
                   if (times > 0) {
-                    table.reload('test')
+                    table.reload('nodeslist')
                     btn.disabled = true;
                     btn.innerText = ((times < 10 ? "0" + times : times) + "s测速中");
                     times--;
@@ -369,7 +393,7 @@
               interval = setInterval(function () {
                 console.log("-----setInterval--times:", times)
                 if (times > 0) {
-                  table.reloadData('test')
+                  table.reloadData('nodeslist')
                   btn.disabled = true;
                   // btn.innerText = ((times < 10 ? "0" + times : times) + "s启动中");
                   times--;
@@ -383,7 +407,7 @@
               layer.alert(dt.msg, { icon: 2, title: dt.code + "错误" });
             }, btn)
             break;
-          // case "refreshData": table.reload('test')
+          // case "refreshData": table.reload('nodeslist')
           //   break;
           case 'settinglayer':
             layer.open({
@@ -423,7 +447,7 @@
       });
 
       // 触发单元格工具事件
-      table.on('tool(test)', function (obj) { // 双击 toolDouble
+      table.on('tool(nodeslist)', function (obj) { // 双击 toolDouble
         var data = obj.data; // 获得当前行数据
         // console.log(obj)
         switch (obj.event) {
@@ -445,7 +469,7 @@
               layer.confirm(hintmsg, function (index) {
                 postjson(posturl, { remote_addr: data.remote_addr }, function (dt) {
                   layer.msg(dt.msg);
-                  table.reload('test')
+                  table.reload('nodeslist')
                 }, function (dt) {
                   layer.alert(dt.msg, { icon: 2, title: dt.code + "错误" });
                 })
@@ -481,7 +505,7 @@
                       layer.msg(dt.msg);
                       window.setTimeout(function () {
                         // window.location.reload();
-                        table.reloadData('test')
+                        table.reloadData('nodeslist')
                       }, 500)
 
                     }, function (dt) {
@@ -529,6 +553,10 @@
 
   <div id="routingruleslayer" style="display: none;">
     <{% tplinclude "routing_rules_form.html" . | println %}>
+  </div>
+
+  <div id="subscribelayer" style="display: none;">
+    <{% tplinclude "subscribe.html" . | println %}>
   </div>
 
 </body>

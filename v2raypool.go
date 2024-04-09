@@ -327,16 +327,35 @@ func (p *ProxyPool) UpdateSubscribe() (total, add int) {
 	var dt string
 	var err error
 	var srawdata string
-	for _, n := range p.nodes {
-		if n.IsRunning() {
-			localAddr := p.GetLocalAddr(n)
-			dt, srawdata, err = parseSubscribeByUrl(p.subscribeUrl, localAddr)
-			fmt.Printf("---UpdateSubscribe--UseProxy(%s)Title(%s)--Err(%v)--ParseV2rayNodes(%s)---\n", localAddr, n.Title, err, dt)
-			if err == nil {
-				break
+
+	if p.subscribeUrl == "" {
+		fmt.Printf("---WARNING--subscribeUrl is empty----\n")
+		return
+	}
+
+	dt, srawdata, err = parseSubscribeByUrl(p.subscribeUrl, "")
+	if err != nil {
+		fmt.Printf("---UpdateSubscribe-parseSubscribeByUrl-err(%v)--RetryByProxy-\n", err)
+		for _, n := range p.nodes {
+			if n.IsRunning() {
+				localAddr := p.GetLocalAddr(n)
+				dt, srawdata, err = parseSubscribeByUrl(p.subscribeUrl, localAddr)
+				fmt.Printf("---UpdateSubscribe--UseProxy(%s)Title(%s)--Err(%v)--ParseV2rayNodes(%s)---\n", localAddr, n.Title, err, dt)
+				if err == nil {
+					fmt.Printf("---SUCCESS--UpdateSubscribe--parseSubscribeByUrl----\n")
+					break
+				}
 			}
 		}
 	}
+
+	vnds := ParseV2rayNodes(dt)
+	total = len(vnds)
+	if total == 0 {
+		fmt.Printf("---WARNING--proxy nodes count empty----\n")
+		return
+	}
+
 	if srawdata != "" {
 		err = conf.GetConf().UpdateSubscribeData(srawdata)
 		if err != nil {
@@ -344,11 +363,6 @@ func (p *ProxyPool) UpdateSubscribe() (total, add int) {
 		}
 	}
 
-	vnds := ParseV2rayNodes(dt)
-	total = len(vnds)
-	if total == 0 {
-		return
-	}
 	oldLen := len(p.nodes)
 	oldNodesMap := make(map[string]ProxyNode, oldLen)
 	for _, oldn := range p.nodes {

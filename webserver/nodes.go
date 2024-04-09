@@ -57,6 +57,18 @@ func ActiveNode(remoteAddr string, globalProxy bool) []byte {
 	return result.Bytes()
 }
 
+func UpdateSubscribe() []byte {
+	pp := vp.GetProxyPool()
+	total, add := pp.UpdateSubscribe()
+	result := BaseResult{}
+	if total == 0 {
+		result.Fail("更新订阅失败。节点数(0)", 500)
+		return result.Bytes()
+	}
+	result.Success(fmt.Sprintf("更新订阅成功。节点数(%d)，新增节点(%d)", total, add))
+	return result.Bytes()
+}
+
 func StartNodes() []byte {
 	result := BaseResult{}
 	pp := vp.GetProxyPool()
