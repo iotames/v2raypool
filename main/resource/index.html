@@ -22,6 +22,10 @@
     filter: alpha(opacity=80);
     color: #eee9e9;
   }
+
+  .layui-form-pane .layui-form-label {
+    background-color: #72bd6a7b
+  }
 </style>
 
 <body>
@@ -37,7 +41,7 @@
 
   </div>
 
-<script type="text/html" id="toolbarDemo">
+  <script type="text/html" id="toolbarDemo">
   <div class="layui-btn-container layui-row">
 
     <div class="layui-form layui-col-xs3">
@@ -66,13 +70,13 @@
   </div>
 </script>
 
-<script type="text/html" id="toolbarV2ray">
+  <script type="text/html" id="toolbarV2ray">
   <div class="layui-btn-container">
     <button class="layui-btn layui-btn-sm" lay-on="addv2ray"><i class="layui-icon layui-icon-add-1"></i>v2ray</button>
   </div>
 </script>
 
-<script type="text/html" id="barDemo">
+  <script type="text/html" id="barDemo">
   <div class="layui-clear-space">
     <!-- <a class="layui-btn layui-btn-xs" lay-event="edit">编辑</a> -->
     <a class="layui-btn layui-btn-xs {{= d.is_active ? 'layui-bg-purple' : 'layui-bg-blue' }}" lay-event="active">
@@ -105,9 +109,9 @@
 
       // 事件
       util.on('lay-on', {
-        'routingrules': function(){
+        'routingrules': function () {
           layer.open({
-            title: '路由分流规则设置',
+            title: '<strong>路由分流规则</strong>(配置文件: default.env -> .env )',
             type: 1,
             area: ['80%', '80%'],
             content: $('#routingruleslayer'),
@@ -395,25 +399,25 @@
 
   <{% tplinclude "v2raylist.html" . | println %}>
 
-  <div id="addv2raylayer" style="display: none;">
-    <{% tplinclude "add_v2ray_form.html" nil | println %}>
-  </div>
+    <div id="addv2raylayer" style="display: none;">
+      <{% tplinclude "add_v2ray_form.html" nil | println %}>
+    </div>
 
-  <div id="activenodelayer" style="display: none;">
-    <{% tplinclude "active_node_form.html" nil | println %}>
-  </div>
+    <div id="activenodelayer" style="display: none;">
+      <{% tplinclude "active_node_form.html" nil | println %}>
+    </div>
 
-  <div id="copyrunlayer" style="display: none;">
-    <{% tplinclude "copy_v2ray_form.html" nil | println %}>
-  </div>
+    <div id="copyrunlayer" style="display: none;">
+      <{% tplinclude "copy_v2ray_form.html" nil | println %}>
+    </div>
 
-  <div id="routingruleslayer" style="display: none;">
-    <{% tplinclude "routing_rules_form.html" . | println %}>
-  </div>
+    <div id="routingruleslayer" style="display: none;">
+      <{% tplinclude "routing_rules_form.html" . | println %}>
+    </div>
 
-  <div id="subscribelayer" style="display: none;">
-    <{% tplinclude "subscribe.html" . | println %}>
-  </div>
+    <div id="subscribelayer" style="display: none;">
+      <{% tplinclude "subscribe.html" . | println %}>
+    </div>
 
 </body>
 
