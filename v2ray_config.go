@@ -224,7 +224,7 @@ func setV2rayConfigV4Outbounds(confv4 *V2rayConfigV4, n V2rayNode) error {
 // setV2rayConfigV4Inbounds 入站配置
 func setV2rayConfigV4Inbounds(confv4 *V2rayConfigV4, inPort int, cf conf.Conf) {
 	inAddr := "0.0.0.0" // "127.0.0.1" 仅允许本地访问
-	logger := miniutils.GetLogger("")
+	logger := cf.GetLogger()
 
 	if inPort == 0 {
 		// inPort == 0时，启用gRPC，允许多个代理节点组成代理池。
@@ -239,11 +239,16 @@ func setV2rayConfigV4Inbounds(confv4 *V2rayConfigV4, inPort int, cf conf.Conf) {
 		logger.Debugf("-----setV2rayConfigV4Inbounds--inPort(%d)--inbdapi--V2rayApiPort(%d)", inPort, inbdapi.Port)
 	} else {
 		// https://www.v2fly.org/config/protocols/http.html#inboundconfigurationobject
+		inset1 := `{"allowTransparent":false,"timeout":30}`
+		protcl := cf.GetHttpProxyProtocol()
+		if protcl == "socks" {
+			inset1 = `{"auth":"noauth","ip":"127.0.0.1","udp":true}`
+		}
 		inbd1 := V2rayInbound{
-			Protocol: "http", // socket
+			Protocol: protcl,
 			Port:     inPort,
 			Listen:   inAddr,
-			Settings: json.RawMessage(`{"allowTransparent":false,"timeout":30}`),
+			Settings: json.RawMessage(inset1),
 			Tag:      "http_IN",
 		}
 		logger.Debugf("-----setV2rayConfigV4Inbounds--inPort(%d)--inbd1--", inPort)
@@ -255,7 +260,7 @@ func setV2rayConfigV4Inbounds(confv4 *V2rayConfigV4, inPort int, cf conf.Conf) {
 	// v4.33.0 及更早版本: 默认值 127.0.0.1。
 	// inSet := fmt.Sprintf(`{"auth":"noauth","udp":true,"ip":"%s"}`, inAddr)
 	// inbd2 := V2rayInbound{
-	// 	Protocol: "socket",
+	// 	Protocol: "socks",
 	// 	Port:     inPort, // 端口号相同会冲突
 	// 	Listen:   inAddr,
 	// 	Settings: json.RawMessage(inSet),

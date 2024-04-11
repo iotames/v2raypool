@@ -26,6 +26,7 @@ func GetProxyPool() *ProxyPool {
 }
 
 type ProxyPool struct {
+	cf                             conf.Conf
 	serverMap                      map[int]*V2rayServer
 	startAt                        time.Time
 	activeCmd                      *exec.Cmd
@@ -402,6 +403,7 @@ func (p *ProxyPool) SetLocalAddr(n *ProxyNode, port int) string {
 	} else {
 		n.LocalPort = port
 	}
+	// 本地入站协议一律使用http
 	n.localAddr = fmt.Sprintf("http://127.0.0.1:%d", n.LocalPort)
 	return n.localAddr
 }
@@ -426,7 +428,7 @@ func (p *ProxyPool) testOneNode(n *ProxyNode, i int) bool {
 func (p *ProxyPool) TestAllForce() {
 	p.IsLock = true
 	runcount := 0
-	logger := miniutils.GetLogger("")
+	logger := p.cf.GetLogger()
 	for i, n := range p.nodes {
 		if n.IsRunning() {
 			runcount++
@@ -514,7 +516,7 @@ func (p *ProxyPool) StartAll() error {
 		if !n.IsRunning() {
 			err = n.AddToPool(c)
 			if err != nil {
-				logger := miniutils.GetLogger("")
+				logger := p.cf.GetLogger()
 				logger.Errorf("------StartAll--err--addr(%s)--AddToPool(%v)", n.RemoteAddr, err)
 				break
 			}
@@ -702,10 +704,9 @@ func proxyPoolInit() {
 		panic("subscribe url can not be empty.订阅地址不能为空")
 	}
 	port := cf.GetHttpProxyPort()
-	// 程序退出后，还会存在端口占用
-	// port := 11080
 
 	pp := GetProxyPool()
+	pp.cf = cf
 	pp.SetV2rayPath(cf.V2rayPath).
 		SetTestUrl(cf.TestUrl).
 		SetSubscribeRawData(subscribeRawData).

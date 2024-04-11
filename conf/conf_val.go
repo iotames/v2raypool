@@ -52,19 +52,33 @@ func (cf Conf) GetSubscribeData() string {
 	}
 	return strings.TrimSpace(string(b))
 }
-
-func (cf Conf) GetHttpProxyPort() int {
-	portSplit := strings.Split(cf.HttpProxy, ":")
-	lensp := len(portSplit)
+func (cf Conf) HttpProxySplit() []string {
+	spt := strings.Split(cf.HttpProxy, ":")
+	lensp := len(spt)
 	if lensp != 3 {
-		panic(fmt.Errorf("HttpProxy设置不正确(%s).例:%s", cf.HttpProxy, DEFAULT_HTTP_PROXY))
+		panic(fmt.Errorf("HttpProxy(%s)设置不正确.例:%s", cf.HttpProxy, DEFAULT_HTTP_PROXY))
 	}
-	portStr := portSplit[lensp-1]
+	protcl := spt[0]
+	okprotcls := []string{"http"} // , "socks"
+	if miniutils.GetIndexOf(protcl, okprotcls) == -1 {
+		panic(fmt.Errorf("HttpProxy(%s)设置不正确. Protocol Only Support: %v", cf.HttpProxy, okprotcls))
+	}
+	return spt
+}
+func (cf Conf) GetHttpProxyPort() int {
+	spt := cf.HttpProxySplit()
+	portStr := spt[2]
 	port, err := strconv.Atoi(portStr)
 	if err != nil {
-		panic(fmt.Errorf("HttpProxy设置不正确(%s).端口号必须为整数.例:%s", cf.HttpProxy, DEFAULT_HTTP_PROXY))
+		panic(fmt.Errorf("HttpProxy(%s)设置不正确.端口号必须为整数.例:%s", cf.HttpProxy, DEFAULT_HTTP_PROXY))
 	}
 	return port
+}
+
+// GetHttpProxyProtocol. get SystemProxy Inbound Protocol By HttpProxy. Only Support http and socks
+func (cf Conf) GetHttpProxyProtocol() string {
+	spt := strings.Split(cf.HttpProxy, ":")
+	return spt[0]
 }
 
 func (cf Conf) UpdateSubscribeData(val string) error {

@@ -46,6 +46,7 @@ func (p *ProxyNode) SetV2ray(n V2rayNode) *ProxyNode {
 
 func (p *ProxyNode) AddToPool(c *V2rayApiClient) error {
 	tag := getProxyNodeTag(p.Index)
+	// 本地入站协议一律使用http
 	err := c.AddInbound(net.Port(p.LocalPort), tag, "http")
 	if err != nil {
 		return err
@@ -137,7 +138,7 @@ func (p ProxyNode) IsOk() bool {
 	return time.Since(p.TestAt) < time.Hour*24
 }
 
-// // {"add":"jp6.v2u9.top","host":"","id":"0999AE93-1330-4A75-DBC1-0DD545F7DD60","net":"ws","path":"","port":"41444","ps":"u9un-v2-JP-Tokyo6(1)","tls":"","v":2,"aid":0,"type":"none"}
+// // {"add":"jp6.xxx.top","host":"","id":"0999AE93-1330-4A75-DBC1-0DD545F7DD60","net":"ws","path":"","port":"41444","ps":"xxx-v2-JP-Tokyo6(1)","tls":"","v":2,"aid":0,"type":"none"}
 // protocol, add, port id, net
 
 type ProxyNodes []ProxyNode

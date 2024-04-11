@@ -6,7 +6,7 @@
 
 - 提供通用gRPC控制接口，参看数据定义文件 `v2raypool.proto`
 
-[在线文档](https://iotames.github.io/v2raypool/)
+[项目文档](https://iotames.github.io/v2raypool/)
 
 ![WebUI面板](screenshot.jpg)
 
@@ -220,7 +220,7 @@ vmess://eyJhZGQiOiAic2VydmVyMzEuYmVoZXNodGJhbmVoLmNvbSIsICJhaWQiOiAwLCAiaG9zdCI6
 4. `vmess` 节点信息再次经过 `BASE64解码` 后，解析为JSON字符串格式。如下所示:
 
 ```
-{"add":"us0.u9v2v2.top","host":"","id":"93EA57CE-EA21-7240-EE7F-317F4A6A8B65","net":"ws","path":"","port":"444","ps":"u9un-v2-US-LosAngeles0","tls":"","type":"none","v":2,"aid":0}
+{"add":"us0.xxx.top","host":"","id":"93EA57CE-EA21-7240-EE7F-317F4A6A8B65","net":"ws","path":"","port":"444","ps":"xxx-v2-US-LosAngeles0","tls":"","type":"none","v":2,"aid":0}
 ```
 
 如下节点会解析失败:
