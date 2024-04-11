@@ -9,5 +9,5 @@
 - 使用gRPC接口控制和WebUI网页交互
 - 支持 json 和 protobuf 数据格式
 
-[GitHub](https://github.com/iotames/v2raypool/)
 [Get Started](#简介)
+[GitHub](https://github.com/iotames/v2raypool/)
