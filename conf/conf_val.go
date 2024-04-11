@@ -52,6 +52,7 @@ func (cf Conf) GetSubscribeData() string {
 	}
 	return strings.TrimSpace(string(b))
 }
+
 func (cf Conf) HttpProxySplit() []string {
 	spt := strings.Split(cf.HttpProxy, ":")
 	lensp := len(spt)
@@ -59,12 +60,13 @@ func (cf Conf) HttpProxySplit() []string {
 		panic(fmt.Errorf("HttpProxy(%s)设置不正确.例:%s", cf.HttpProxy, DEFAULT_HTTP_PROXY))
 	}
 	protcl := spt[0]
-	okprotcls := []string{"http"} // , "socks"
+	okprotcls := []string{"http", "socks", "socks5"}
 	if miniutils.GetIndexOf(protcl, okprotcls) == -1 {
 		panic(fmt.Errorf("HttpProxy(%s)设置不正确. Protocol Only Support: %v", cf.HttpProxy, okprotcls))
 	}
 	return spt
 }
+
 func (cf Conf) GetHttpProxyPort() int {
 	spt := cf.HttpProxySplit()
 	portStr := spt[2]
@@ -76,8 +78,10 @@ func (cf Conf) GetHttpProxyPort() int {
 }
 
 // GetHttpProxyProtocol. get SystemProxy Inbound Protocol By HttpProxy. Only Support http and socks
+// curl --proxy socks5://127.0.0.1:30000 https://httpbin.org/get -v
+// curl --proxy http://127.0.0.1:30000 https://httpbin.org/get -v
 func (cf Conf) GetHttpProxyProtocol() string {
-	spt := strings.Split(cf.HttpProxy, ":")
+	spt := cf.HttpProxySplit()
 	return spt[0]
 }
 

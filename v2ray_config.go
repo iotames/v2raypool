@@ -241,6 +241,9 @@ func setV2rayConfigV4Inbounds(confv4 *V2rayConfigV4, inPort int, cf conf.Conf) {
 		// https://www.v2fly.org/config/protocols/http.html#inboundconfigurationobject
 		inset1 := `{"allowTransparent":false,"timeout":30}`
 		protcl := cf.GetHttpProxyProtocol()
+		if protcl == "socks5" {
+			protcl = "socks"
+		}
 		if protcl == "socks" {
 			inset1 = `{"auth":"noauth","ip":"127.0.0.1","udp":true}`
 		}

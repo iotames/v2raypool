@@ -46,8 +46,12 @@ func (p *ProxyNode) SetV2ray(n V2rayNode) *ProxyNode {
 
 func (p *ProxyNode) AddToPool(c *V2rayApiClient) error {
 	tag := getProxyNodeTag(p.Index)
-	// 本地入站协议一律使用http
-	err := c.AddInbound(net.Port(p.LocalPort), tag, "http")
+	cf := getConf()
+	protcl := cf.GetHttpProxyProtocol()
+	if protcl == "socks5" {
+		protcl = "socks"
+	}
+	err := c.AddInbound(net.Port(p.LocalPort), tag, protcl)
 	if err != nil {
 		return err
 	}

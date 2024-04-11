@@ -26,7 +26,6 @@ func GetProxyPool() *ProxyPool {
 }
 
 type ProxyPool struct {
-	cf                             conf.Conf
 	serverMap                      map[int]*V2rayServer
 	startAt                        time.Time
 	activeCmd                      *exec.Cmd
@@ -48,7 +47,7 @@ func (p ProxyPool) GetLocalPortRange() string {
 	return fmt.Sprintf("%d-%d", p.nodes[0].LocalPort, p.nodes[len(p.nodes)-1].LocalPort)
 }
 func (p ProxyPool) GetLocalPortList() (dl []int, err error) {
-	cf := conf.GetConf()
+	cf := getConf()
 	for _, v := range p.serverMap {
 		conf := V2rayConfigV4{}
 		err = v.jconf.Decode(&conf)
@@ -403,8 +402,11 @@ func (p *ProxyPool) SetLocalAddr(n *ProxyNode, port int) string {
 	} else {
 		n.LocalPort = port
 	}
-	// 本地入站协议一律使用http
-	n.localAddr = fmt.Sprintf("http://127.0.0.1:%d", n.LocalPort)
+	protcl := getConf().GetHttpProxyProtocol()
+	if protcl == "socks" {
+		protcl = "socks5"
+	}
+	n.localAddr = fmt.Sprintf("%s://127.0.0.1:%d", protcl, n.LocalPort)
 	return n.localAddr
 }
 
@@ -428,7 +430,7 @@ func (p *ProxyPool) testOneNode(n *ProxyNode, i int) bool {
 func (p *ProxyPool) TestAllForce() {
 	p.IsLock = true
 	runcount := 0
-	logger := p.cf.GetLogger()
+	logger := getConf().GetLogger()
 	for i, n := range p.nodes {
 		if n.IsRunning() {
 			runcount++
@@ -516,7 +518,7 @@ func (p *ProxyPool) StartAll() error {
 		if !n.IsRunning() {
 			err = n.AddToPool(c)
 			if err != nil {
-				logger := p.cf.GetLogger()
+				logger := getConf().GetLogger()
 				logger.Errorf("------StartAll--err--addr(%s)--AddToPool(%v)", n.RemoteAddr, err)
 				break
 			}
@@ -693,11 +695,15 @@ func (p *ProxyPool) ActiveNode(n ProxyNode, globalProxy bool) error {
 	return err
 }
 
+func getConf() conf.Conf {
+	return conf.GetConf()
+}
+
 // proxyPoolInit 初始化代理池
 // 在schedule中更新订阅
 // https://cloud.tencent.com/developer/article/1564128
 func proxyPoolInit() {
-	cf := conf.GetConf()
+	cf := getConf()
 	subscribeRawData := cf.GetSubscribeData()
 	if cf.SubscribeUrl == "" {
 		// subscribeRawData == ""
@@ -706,7 +712,6 @@ func proxyPoolInit() {
 	port := cf.GetHttpProxyPort()
 
 	pp := GetProxyPool()
-	pp.cf = cf
 	pp.SetV2rayPath(cf.V2rayPath).
 		SetTestUrl(cf.TestUrl).
 		SetSubscribeRawData(subscribeRawData).
