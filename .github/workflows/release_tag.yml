@@ -7,7 +7,7 @@ on:
   release:
     types:
       - prereleased
-      - released
+      # - released
   push:
     tags:
       - "v*"
@@ -29,9 +29,9 @@ jobs:
         with:
           tag_name: ${{ github.ref }}
           release_name: ${{ github.ref_name }}
-          body: Please refer to [CHANGELOG.md](https://github.com/iotames/v2raypool/blob/master/CHANGELOG.md) for details.
+          body: 请移步 [CHANGELOG.md](https://github.com/iotames/v2raypool/blob/master/CHANGELOG.md) 查看更多详情.
           draft: false
-          prerelease: false
+          prerelease: true
 
   build:
     # if: github.event_name == 'release'

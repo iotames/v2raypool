@@ -1,6 +1,6 @@
 ## 简介
 
-- 同时接入多个v2ray节点，暴露多个本地IP端口，组成简单的IP代理池服务。可供爬虫等程序调用。
+- 同时接入多个v2ray节点，使用多个本地端口，组成简单的IP代理池服务。可供爬虫等程序调用。
 
 - 可以选一个节点设为系统代理，作为普通的v2ray客户端使用。
 
@@ -8,7 +8,7 @@
 
 [项目文档](https://iotames.github.io/v2raypool/)
 
-![WebUI面板](screenshot.jpg)
+![WebUI面板](https://github.com/iotames/v2raypool/raw/master/screenshot.jpg)
 
 Windows代理设置: `网络和Internet` -> `代理` -> `手动设置代理`
 
@@ -70,16 +70,15 @@ VP_V2RAY_PATH 配置项错误，找不到可执行文件。
 
 设置代理节点的订阅源地址，请更改 `.env` 文件的 `VP_SUBSCRIBE_URL` 配置项，配置值为http网络地址。
 
-若网络地址访问异常，可使用 `VP_SUBSCRIBE_DATA_FILE` 配置项。设法查看订阅地址的响应结果，并存入文件。
-
-`VP_HTTP_PROXY` 配置项，可设置一个http开头的代理地址，供系统代理使用。在 `gRPC客户端` 使用 `--activeproxynode` 命令可启用一个节点使用该端口。
+若网络地址访问异常，可使用 `VP_SUBSCRIBE_DATA_FILE` 配置项。设法查看订阅地址的响应结果，并存入文件 `subscribe_data.txt`。
 
 
 ### 5. 运行服务端和客户端
 
 5.1 服务端
 
-可执行文件直接运行，启动 `gRPC` 服务端
+可执行文件直接运行，会启动 `gRPC` 和 `WebUI` 服务端。
+如果是首次运行，会自动生成 `.env` 和 `default.env` 配置文件。
 
 ```
 # linux 或 mac 执行 ./v2raypool
@@ -109,11 +108,10 @@ v2raypool.exe --stopproxynodes
 
 `WebUI` 网页面板: [http://127.0.0.1:8087](http://127.0.0.1:8087)
 
-### 6. 配置systemd系统服务(Linux)
+### 6. Linux配置systemd系统服务(可选)
 
-使用环境变量 `VP_ENV_FILE` 定义环境变量配置文件的路径。不设置默认为 `.env`
-
-使用Linux自带的systemctl命令管理 `v2raypool`。
+Linux平台通过配置 `v2raypool.service` ，可使用 `systemctl` 系统命令来管理 `v2raypool`。
+可使用环境变量 `VP_ENV_FILE` 定义配置文件的路径。不设置默认为 `.env`
 
 1. 新建 `v2raypool.service` 文件：
 
@@ -136,7 +134,7 @@ RestartSec=300
 # KillSignal=SIGQUIT
 TimeoutStopSec=10
 StandardOutput=file:/root/v2raypool/main/output.log
-# StandardError=file:/root/qddns/output.err.log
+StandardError=file:/root/v2raypool/main/output.err.log
 
 [Install]
 WantedBy=multi-user.target
@@ -182,6 +180,7 @@ VP_GRPC_PORT = 50051
 VP_V2RAY_PATH = "bin/v2ray.exe"
 
 # 代理节点订阅地址
+# 支持 http:// 和 socks5:// 协议
 VP_SUBSCRIBE_URL = ""
 
 # 若订阅地址无法直接访问，可指定订阅数据文件，数据文件内容为访问订阅地址获取的原始数据。
@@ -260,7 +259,7 @@ IP匹配规则:
 - `GeoIP`：
 形如 `geoip:cn` 为正向匹配，即为匹配「中国大陆 IP 地址」。后面跟双字符国家或地区代码，支持所有可以上网的国家和地区。
 
-形如 `geoip:!cn`` 为反向匹配，即为匹配「非中国大陆 IP 地址」。后面跟双字符国家或地区代码，支持所有可以上网的国家和地区。
+形如 `geoip:!cn` 为反向匹配，即为匹配「非中国大陆 IP 地址」。后面跟双字符国家或地区代码，支持所有可以上网的国家和地区。
 
 特殊值：`geoip:private`（V2Ray 3.5+），包含所有私有地址，如 `127.0.0.1`。
 

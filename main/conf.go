@@ -148,7 +148,7 @@ VP_SUBSCRIBE_URL = "%s"
 VP_SUBSCRIBE_DATA_FILE = "%s"
 
 # 设置HTTP代理，代理池每个节点的本地端口号，往后开始累加。为防止与常用端口冲突，尽量设大点。
-# 支持http和socks5入站协议
+# 支持 http:// 和 socks5:// 协议
 VP_HTTP_PROXY = "%s"
 
 # 节点测速的URL
