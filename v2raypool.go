@@ -2,6 +2,7 @@ package v2raypool
 
 import (
 	"fmt"
+	"strings"
 
 	"os/exec"
 	"runtime"
@@ -656,11 +657,29 @@ func (p *ProxyPool) ActiveNode(n ProxyNode, globalProxy bool) error {
 		p.serverMap[vs.cmd.Process.Pid] = vs
 		fmt.Printf("-----SUCCESS--ActiveNode--Index(%d)--LocalPort(%d)--Pid(%d)---RemoteAddr(%s)--ProcessState(%+v)---\n", n.Index, activePort, p.activeCmd.Process.Pid, n.RemoteAddr, p.activeCmd.ProcessState)
 		if runtime.GOOS == "windows" {
-			sysProxyPort := n.LocalPort
-			if !globalProxy {
-				sysProxyPort = activePort
+			addrsplit := strings.Split(n.localAddr, `://`)
+			protcl := addrsplit[0]
+			if protcl == "socks5" {
+				protcl = "socks"
 			}
-			httproxy := fmt.Sprintf(`127.0.0.1:%d`, sysProxyPort)
+			httproxy := addrsplit[1] // 全局代理
+			lip := strings.Split(httproxy, `:`)[0]
+			if !globalProxy {
+				// 使用路由规则智能分流
+				httproxy = fmt.Sprintf(`%s:%d`, lip, activePort)
+			}
+
+			// if protcl == "http" {
+			// 	httproxy = strings.ReplaceAll(httproxy, lip, "http://localhost")
+			// }
+
+			if protcl == "socks" {
+				// windows系统代理设置为socks协议后网页浏览有BUG
+				// TODO 拆分HttpProxy配置为HTTP协议端口，SOCKS协议端口。 使用HTTP端口为系统代理
+				httproxy = `socks=` + httproxy
+			}
+
+			// http://localhost:30000 or 127.0.0.1:30000 or socks=127.0.0.1:30001
 			if err = SetProxy(httproxy); err == nil {
 				fmt.Printf("设置代理服务器: %s 成功!\n", httproxy)
 			} else {

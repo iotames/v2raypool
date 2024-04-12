@@ -29,14 +29,15 @@ const DEFAULT_PROXY_DOMAIN_LIST = "geosite:google"
 const DEFAULT_PROXY_IP_LIST = "geoip:!cn"
 
 type Conf struct {
-	TestUrl                                                      string
-	EnvFile                                                      string
-	RuntimeDir                                                   string
-	AutoStart                                                    bool
-	GrpcPort, V2rayApiPort, WebServerPort                        int
-	V2rayPath                                                    string
-	SubscribeUrl                                                 string
-	SubscribeDataFile                                            string
+	TestUrl                               string
+	EnvFile                               string
+	RuntimeDir                            string
+	AutoStart                             bool
+	GrpcPort, V2rayApiPort, WebServerPort int
+	V2rayPath                             string
+	SubscribeUrl                          string
+	SubscribeDataFile                     string
+	// TODO 拆分HttpProxy配置为HTTP协议端口，SOCKS协议端口。 使用HTTP端口为系统代理
 	HttpProxy                                                    string
 	DirectDomainList, DirectIpList, ProxyDomainList, ProxyIpList []string
 }
