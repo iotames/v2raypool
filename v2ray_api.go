@@ -75,12 +75,18 @@ func (a V2rayApiClient) AddInbound(inport net.Port, intag, protocol string) erro
 	protocol = strings.ToLower(protocol)
 	if protocol == "http" {
 		proxySet = &http.ServerConfig{
-			// AllowTransparent: true,
-			UserLevel: 0,
+			AllowTransparent: false,
+			Timeout:          30,
+			// UserLevel: 0,
 		}
 	}
 	if protocol == "socks" {
-		proxySet = &socks.ServerConfig{UserLevel: 0}
+		proxySet = &socks.ServerConfig{
+			AuthType:   socks.AuthType_NO_AUTH,
+			UdpEnabled: true,
+			// Address:    net.NewIPOrDomain(net.AnyIP),
+			// UserLevel:  0,
+		}
 	}
 
 	resp, err := a.c.AddInbound(a.ctx, &pros.AddInboundRequest{Inbound: &v5.InboundHandlerConfig{

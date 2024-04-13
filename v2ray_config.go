@@ -245,7 +245,8 @@ func setV2rayConfigV4Inbounds(confv4 *V2rayConfigV4, inPort int, cf conf.Conf) {
 			protcl = "socks"
 		}
 		if protcl == "socks" {
-			inset1 = `{"auth":"noauth","ip":"127.0.0.1","udp":true}`
+			// inset1 = `{"auth":"noauth","ip":"127.0.0.1","udp":true}`
+			inset1 = `{"auth":"noauth","udp":true}`
 		}
 		inbd1 := V2rayInbound{
 			Protocol: protcl,

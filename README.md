@@ -99,6 +99,9 @@ v2raypool.exe --getproxynodes
 # 测速(测速基准使用https://www.google.com)。测速结束后，会自动选择最快的节点作为系统代理节点。
 v2raypool.exe --testproxynodes
 
+# 指定已测速过的域名，按速度从快到慢，查看代理节点信息
+v2raypool.exe --getproxynodesbydomain=www.google.com
+
 # 根据索引值激活某个节点为系统代理的端口（--getproxynodes 查看索引值，系统代理端口从VP_HTTP_PROXY的值读取）
 v2raypool.exe --activeproxynode=16
 

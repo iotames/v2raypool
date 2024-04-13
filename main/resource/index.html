@@ -37,7 +37,20 @@
       V2rayPool控制面板
     </h2>
 
-    <table class="layui-hide" id="nodeslist" lay-filter="nodeslist"></table>
+    <div class="layui-tab layui-tab-card">
+      <ul class="layui-tab-title">
+        <li class="layui-this">动态代理池</li>
+        <li>v2ray列表</li>
+      </ul>
+      <div class="layui-tab-content">
+        <div class="layui-tab-item layui-show">
+          <table class="layui-hide" id="nodeslist" lay-filter="nodeslist"></table>
+        </div>
+        <div class="layui-tab-item">
+          <{% tplinclude "v2raylist.html" . | println %}>
+        </div>
+      </div>
+    </div>
 
   </div>
 
@@ -54,13 +67,13 @@
     </div>
   
     <div class="layui-col-xs8">
-      <i class="itable-top layui-icon" style="color:deeppink" lay-event="testNodes" id="testproxynodes">⚡</i>
-      <!-- <button class="layui-btn layui-btn-sm" style="background-color: darkorange;" lay-event="testNodes" id="testproxynodes">测速</button> -->
-      
+
+      <!-- <i class="itable-top layui-icon" style="color:deeppink" lay-event="testNodes" id="testproxynodes">⚡</i> -->      
       <!-- <i class="itable-top layui-icon layui-icon-play" style="color: green;" lay-event="startNodes" id="startproxynodes"></i> -->
       <!-- <i class="itable-top layui-icon layui-icon-refresh-3" style="color: #1E9FFF;" lay-event="refreshData" id="refreshdata"></i> -->
       
-      <button class="layui-btn layui-btn-sm" lay-on="v2raylist">v2ray</button>
+      <!-- <button class="layui-btn layui-btn-sm" lay-on="v2raylist">v2ray</button> -->
+      <button class="layui-btn layui-btn-sm layui-bg-red" lay-event="testNodes" id="testproxynodes">测速</button>
       <button class="layui-btn layui-btn-sm layui-bg-purple" lay-event="startNodes" id="startproxynodes">启动</button>
       <button class="layui-btn layui-btn-sm" lay-on="subscribe">订阅</button>
       <button class="layui-btn layui-btn-sm layui-bg-blue" lay-on="routingrules">路由规则</button>
@@ -134,17 +147,17 @@
             }
           })
         },
-        'v2raylist': () => {
-          layer.open({
-            title: 'v2ray服务状态',
-            type: 1,
-            area: ['80%', '80%'],
-            content: $('#v2raylistlayer'),
-            success: (layero, index, that) => {
-              table.reload('v2raylist')
-            }
-          })
-        },
+        // 'v2raylist': () => {
+        //   layer.open({
+        //     title: 'v2ray服务状态',
+        //     type: 1,
+        //     area: ['80%', '80%'],
+        //     content: $('#v2raylistlayer'),
+        //     success: (layero, index, that) => {
+        //       table.reload('v2raylist')
+        //     }
+        //   })
+        // },
         'subscribe': function () {
           layer.open({
             title: "更新订阅",
@@ -393,11 +406,9 @@
 
   </script>
 
-  <div id="settinglayer" style="display: none;">
-    <{% tplinclude "setting_form.html" . | println %}>
-  </div>
-
-  <{% tplinclude "v2raylist.html" . | println %}>
+    <div id="settinglayer" style="display: none;">
+      <{% tplinclude "setting_form.html" . | println %}>
+    </div>
 
     <div id="addv2raylayer" style="display: none;">
       <{% tplinclude "add_v2ray_form.html" nil | println %}>

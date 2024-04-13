@@ -63,60 +63,6 @@ func (p *ProxyNode) AddToPool(c *V2rayApiClient) error {
 	return err
 }
 
-// func (p *ProxyNode) Active(localPort int, c *V2rayApiClient) error {
-// 	err := c.AddInbound(net.Port(localPort), TAG_OUTBOUND_ACTIVE, "http")
-// 	if err != nil {
-// 		return err
-// 	}
-// 	err = c.AddOutboundByV2rayNode(p.v2rayNode, TAG_OUTBOUND_ACTIVE)
-// 	if err != nil {
-// 		return err
-// 	}
-// 	p.status = 1
-// 	return err
-// }
-
-// func (p *ProxyNode) UnActive(c *V2rayApiClient) error {
-// 	err := c.RemoveOutbound(TAG_OUTBOUND_ACTIVE)
-// 	if err != nil {
-// 		return err
-// 	}
-// 	err = c.RemoveInbound(TAG_OUTBOUND_ACTIVE)
-// 	if err != nil {
-// 		return err
-// 	}
-// 	return err
-// }
-
-// func (p *ProxyNode) Start(path string) (err error) {
-// 	v := NewV2ray(path, p.LocalPort)
-// 	p.cmd, err = v.SetPort(p.LocalPort).SetNode(p.v2rayNode).Start()
-// 	if p.cmd != nil {
-// 		p.status = 1
-// 	}
-// 	fmt.Printf("\n---StartV2rayNode--i(%d)--Addr(%s)--Title(%s)--err(%v)---\n", p.Index, p.RemoteAddr, p.Title, err)
-// 	return
-// }
-
-// func (p *ProxyNode) KillPidByLocalPort() (hasPid int, killResult error) {
-
-// 	hasPid = miniutils.GetPidByPort(p.LocalPort)
-// 	if hasPid > 0 {
-// 		fmt.Printf("---proxyNode---KillPidByLocalPort(%d)---PID(%d)---\n", p.LocalPort, hasPid)
-// 		killResult = miniutils.KillPid(fmt.Sprintf("%d", hasPid))
-// 		return
-// 	}
-// 	return
-// }
-
-// func (p *ProxyNode) Stop() error {
-// 	err := p.cmd.Process.Kill()
-// 	if err == nil {
-// 		p.status = 0
-// 	}
-// 	return err
-// }
-
 func (p *ProxyNode) Remove(c *V2rayApiClient, tag string) error {
 	if tag == "" {
 		tag = p.GetId()
