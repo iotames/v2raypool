@@ -44,14 +44,6 @@ func (v V2rayServer) GetV2rayConfigV4() V2rayConfigV4 {
 	v.jconf.Decode(&vconf)
 	return vconf
 }
-func (v V2rayServer) GetLocalPortList() []int {
-	var result []int
-	vconf := v.GetV2rayConfigV4()
-	for _, in := range vconf.Inbounds {
-		result = append(result, in.Port)
-	}
-	return result
-}
 func (v V2rayServer) GetExeCmd() *exec.Cmd {
 	return v.cmd
 }
@@ -62,6 +54,19 @@ func (v *V2rayServer) setExeCmd(configFile string) {
 		v.jconf = getV2rayConfigV4(v.selectNode, v.localPort)
 		if v.localPort > 0 {
 			configFile = V2RAY_CONFIG_FILE
+			// 再额外添加一个socks端口或http端口
+			vconf := v.GetV2rayConfigV4()
+			inbd1 := vconf.Inbounds[0]
+			proto2 := "socks"
+			if inbd1.Protocol == "socks" {
+				proto2 = "http"
+			}
+			inbd2 := newV2rayInboundV4(proto2, v.localPort-1)
+			vconf.Inbounds = []V2rayInbound{inbd1, inbd2}
+			err := v.jconf.SetContent(vconf)
+			if err != nil {
+				panic(err)
+			}
 		} else {
 			configFile = V2RAYPOOL_CONFIG_FILE
 		}

@@ -117,25 +117,28 @@ func GetV2rayList() []byte {
 		confile := jconf.GetFilepath()
 		localPorts := ""
 		runmode := "个性配置"
-		vports := vs.GetLocalPortList()
 
 		vapiport := cf.V2rayApiPort
 		sysport := cf.GetHttpProxyPort()
-		for i, port := range vports {
+
+		for i, inbd := range vs.GetV2rayConfigV4().Inbounds {
+			port := inbd.Port
+			proto := inbd.Protocol
 			if port == vapiport {
+				proto = "grpc"
 				runmode = "动态代理池"
 			}
+			addStr := fmt.Sprintf("%s:%d", proto, port)
 			if port == sysport {
 				runmode = "系统代理"
 			}
-			addStr := fmt.Sprintf("%d", port)
 			if i > 0 {
-				addStr = "," + addStr
+				addStr = ", " + addStr
 			}
 			localPorts += addStr
 		}
 		if runmode == "动态代理池" {
-			localPorts += "," + pp.GetLocalPortRange()
+			localPorts += fmt.Sprintf(", %s:%s", cf.GetHttpProxyProtocol(), pp.GetLocalPortRange())
 		}
 		if runmode == "系统代理" {
 			confile = vp.ROUTING_RULES_FILE + " -> " + confile

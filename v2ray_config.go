@@ -92,9 +92,9 @@ func getRoutingRules(cf conf.Conf, inPort int) string {
 	if inPort == 0 {
 		// 启用 v2ray 内置的基于 gRPC 协议的  API
 		rules = append(rules, V2rayRouteRule{Type: "field", InboundTag: []string{TAG_INBOUND_API}, OutboundTag: TAG_OUTBOUND_API})
-		// IP代理池模式时，启用每个出站和入站一对一映射规则。池子上线为100个
-		for i := 0; i < 100; i++ {
-			tag := getProxyNodeTag(i)
+		// IP代理池模式时，启用每个出站和入站一对一映射规则。
+		for _, nd := range GetProxyPool().GetNodes("") {
+			tag := getProxyNodeTag(nd.Index)
 			// 添加路由规则，相同标签的每一个出站和入站一一对应
 			rules = append(rules, V2rayRouteRule{Type: "field", InboundTag: []string{tag}, OutboundTag: tag})
 		}
@@ -221,44 +221,25 @@ func setV2rayConfigV4Outbounds(confv4 *V2rayConfigV4, n V2rayNode) error {
 	return nil
 }
 
-// setV2rayConfigV4Inbounds 入站配置
-func setV2rayConfigV4Inbounds(confv4 *V2rayConfigV4, inPort int, cf conf.Conf) {
+func newV2rayInboundV4(proto string, inPort int) V2rayInbound {
 	inAddr := "0.0.0.0" // "127.0.0.1" 仅允许本地访问
-	logger := cf.GetLogger()
-
-	if inPort == 0 {
-		// inPort == 0时，启用gRPC，允许多个代理节点组成代理池。
-		inbdapi := V2rayInbound{
-			Listen:   "127.0.0.1",
-			Port:     cf.V2rayApiPort,
-			Protocol: "dokodemo-door",
-			Settings: json.RawMessage(`{"address": "127.0.0.1"}`),
-			Tag:      TAG_INBOUND_API,
-		}
-		confv4.Inbounds = []V2rayInbound{inbdapi}
-		logger.Debugf("-----setV2rayConfigV4Inbounds--inPort(%d)--inbdapi--V2rayApiPort(%d)", inPort, inbdapi.Port)
-	} else {
-		// https://www.v2fly.org/config/protocols/http.html#inboundconfigurationobject
-		inset1 := `{"allowTransparent":false,"timeout":30}`
-		protcl := cf.GetHttpProxyProtocol()
-		if protcl == "socks5" {
-			protcl = "socks"
-		}
-		if protcl == "socks" {
-			// inset1 = `{"auth":"noauth","ip":"127.0.0.1","udp":true}`
-			inset1 = `{"auth":"noauth","udp":true}`
-		}
-		inbd1 := V2rayInbound{
-			Protocol: protcl,
-			Port:     inPort,
-			Listen:   inAddr,
-			Settings: json.RawMessage(inset1),
-			Tag:      "http_IN",
-		}
-		logger.Debugf("-----setV2rayConfigV4Inbounds--inPort(%d)--inbd1--", inPort)
-		confv4.Inbounds = []V2rayInbound{inbd1}
+	if proto == "socks5" {
+		proto = "socks"
 	}
-
+	intag := "http_IN"
+	inset1 := `{"allowTransparent":false,"timeout":30}`
+	if proto == "socks" {
+		// inset1 = `{"auth":"noauth","ip":"127.0.0.1","udp":true}`
+		intag = "socks_IN"
+		inset1 = `{"auth":"noauth","udp":true}`
+	}
+	return V2rayInbound{
+		Protocol: proto,
+		Port:     inPort,
+		Listen:   inAddr,
+		Settings: json.RawMessage(inset1),
+		Tag:      intag,
+	}
 	// ip: address:	SOCKS5 通过 UDP ASSOCIATE 命令建立 UDP 会话。服务端在对客户端发来的该命令的回复中，指定客户端发包的目标地址。
 	// v4.34.0+: 默认值为空，此时对于通过本地回环 IPv4/IPv6 连接的客户端，回复对应的回环 IPv4/IPv6 地址；对于非本机的客户端，回复当前入站的监听地址。
 	// v4.33.0 及更早版本: 默认值 127.0.0.1。
@@ -270,6 +251,31 @@ func setV2rayConfigV4Inbounds(confv4 *V2rayConfigV4, inPort int, cf conf.Conf) {
 	// 	Settings: json.RawMessage(inSet),
 	// 	Tag: "socks_IN",
 	// }
+}
+
+// setV2rayConfigV4Inbounds 入站配置
+func setV2rayConfigV4Inbounds(confv4 *V2rayConfigV4, inPort int, cf conf.Conf) {
+	logger := cf.GetLogger()
+
+	if inPort == 0 {
+		// inPort == 0 时，启用gRPC，允许多个代理节点组成代理池。
+		inbdapi := V2rayInbound{
+			Listen:   "0.0.0.0", // "127.0.0.1" 仅允许本地访问
+			Port:     cf.V2rayApiPort,
+			Protocol: "dokodemo-door",
+			Settings: json.RawMessage(`{"address": "127.0.0.1"}`),
+			Tag:      TAG_INBOUND_API,
+		}
+		confv4.Inbounds = []V2rayInbound{inbdapi}
+		logger.Debugf("-----setV2rayConfigV4Inbounds--inPort(%d)--inbdapi--V2rayApiPort(%d)", inPort, inbdapi.Port)
+	} else {
+		// https://www.v2fly.org/config/protocols/http.html#inboundconfigurationobject
+		protcl := cf.GetHttpProxyProtocol()
+		inbd1 := newV2rayInboundV4(protcl, inPort)
+		logger.Debugf("-----setV2rayConfigV4Inbounds--inPort(%d)--inbd1--", inPort)
+		confv4.Inbounds = []V2rayInbound{inbd1}
+	}
+
 }
 
 // getV2rayConfigV4 v2ray官方配置v4版本

@@ -37,7 +37,7 @@
       V2rayPool控制面板
     </h2>
 
-    <div class="layui-tab layui-tab-card">
+    <div class="layui-tab layui-tab-card" lay-filter="v2raytab">
       <ul class="layui-tab-title">
         <li class="layui-this">动态代理池</li>
         <li>v2ray列表</li>
@@ -111,6 +111,13 @@
       var util = layui.util;
       var form = layui.form;
       var $ = layui.$;
+      var element = layui.element;
+      // tab 切换事件
+      element.on('tab(v2raytab)', function(data){
+        if (data.index == 1){
+          table.reload('v2raylist')
+        }
+      });
 
       form.on('select(test_domain)', function (data) {
         // var value = data.value; // 获得被选中的值
