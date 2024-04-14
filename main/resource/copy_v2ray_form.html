@@ -31,7 +31,7 @@
       <div class="layui-input-block">
         <select name="inbound_protocol" >
           <option value="http" <{% if eq "http" .GetHttpProxyProtocol %}>selected<{%end%}> >http</option>
-          <option value="socks" <{% if ne "http" .GetHttpProxyProtocol %}>selected<{%end%}> >socks</option>
+          <option value="socks" <{% if ne "http" .GetHttpProxyProtocol %}>selected<{%end%}> >socks(socks5)</option>
         </select>
         <!-- <input type="text" name="inbound_protocol" placeholder="新入站端口协议" value="<{% .GetHttpProxyProtocol %}>" class="layui-input"> -->
       </div>

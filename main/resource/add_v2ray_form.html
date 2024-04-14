@@ -10,7 +10,7 @@
         <div class="layui-form-item">
           <label class="layui-form-label">配置文件</label>
           <div class="layui-input-block">
-            <input type="text" name="config_file" placeholder="例: v2ray.config.json" value="" class="layui-input">
+            <input type="text" name="config_file" placeholder="启动新v2ray服务的配置文件。 例: v2ray.config1.json" value="" class="layui-input">
           </div>
         </div>
         <div class="layui-form-item">
@@ -21,7 +21,98 @@
     </div>
 
     <div class="layui-tab-item">
-      开发中
+
+
+      <div class="layui-form layui-form-pane" lay-filter="copyv2ray" style="margin: 16px;">
+  
+          <div class="layui-form-item">
+            <label class="layui-form-label">配置文件</label>
+            <div class="layui-input-block">
+              <input type="text" name="config_file" placeholder="保存为配置文件。例: v2ray.config3.json" value="" class="layui-input">
+            </div>
+          </div>
+      
+          <div class="layui-form-item">
+            <label class="layui-form-label">全局代理</label>
+            <div class="layui-input-block">
+              <input type="checkbox" name="global_proxy" title="开启|关闭" lay-skin="switch" >
+            </div>
+          </div>
+
+
+
+          <div class="layui-card">
+            <div class="layui-card-header">本地入站配置</div>
+            <div class="layui-card-body">
+              <div class="layui-form-item">
+
+                <div class="layui-inline">
+                  <label class="layui-form-label">入站协议</label>
+                  <div class="layui-input-block">
+                    <select name="inbound_protocol" >
+                      <option value="http" selected>http</option>
+                      <option value="socks">socks(socks5)</option>
+                    </select>
+                  </div>
+                </div>
+              
+                <div class="layui-inline">
+                  <label class="layui-form-label">入站端口</label>
+                  <div class="layui-input-block">
+                    <input type="text" name="local_port" placeholder="不可与原有的冲突" value="" class="layui-input">
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </div>
+
+
+          <div class="layui-card">
+            <div class="layui-card-header">远程出站节点配置</div>
+            <div class="layui-card-body">
+
+              <div class="layui-form-item">
+                <label class="layui-form-label">协议</label>
+                <div class="layui-input-block" style="width: 90px;">
+                  <select name="inbound_protocol" >
+                    <option value="vmess" selected>vmess</option>
+                    <option value="ss">ss</option>
+                    <option value="trojan">trojan</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="layui-form-item">
+                <div class="layui-inline">
+                  <label class="layui-form-label">地址</label>
+                  <div class="layui-input-block">
+                    <input type="text" name="addr" placeholder="填域名或IP" value="" class="layui-input">
+                  </div>
+                </div>
+
+                <div class="layui-inline">
+                  <label class="layui-form-label">端口</label>
+                  <div class="layui-input-block">
+                    <input type="text" name="port" placeholder="" value="" class="layui-input">
+                  </div>
+                </div>
+              </div>
+              
+              <!---account-password-network--security--->
+              <!--// {"add":"hk6.xxx.top","host":"","id":"93EA57CE-EA21-7240-EE7F-XXXXXXXXXXXX","net":"ws","path":"","port":"444","ps":"xxx-v2-HK-HongKong6","tls":"tls","v":2,"aid":0, "type":"none"}-->
+
+            </div>
+          </div>
+
+      
+          <div class="layui-form-item">
+            <button id="runv2raynode" class="layui-btn" style="float: right;" lay-submit lay-filter="runv2raynode">开发中</button>
+          </div>
+      
+      </div>
+
+
     </div>
 
   </div>
