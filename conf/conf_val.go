@@ -54,6 +54,10 @@ func (cf Conf) GetSubscribeData() string {
 	return strings.TrimSpace(string(b))
 }
 
+func (cf Conf) GetOkInboundProtocols() []string {
+	return []string{"http", "socks", "socks5"}
+}
+
 func (cf Conf) HttpProxySplit() []string {
 	spt := strings.Split(cf.HttpProxy, ":")
 	lensp := len(spt)
@@ -61,7 +65,7 @@ func (cf Conf) HttpProxySplit() []string {
 		panic(fmt.Errorf("HttpProxy(%s)设置不正确.例:%s", cf.HttpProxy, DEFAULT_HTTP_PROXY))
 	}
 	protcl := spt[0]
-	okprotcls := []string{"http", "socks", "socks5"}
+	okprotcls := cf.GetOkInboundProtocols()
 	if miniutils.GetIndexOf(protcl, okprotcls) == -1 {
 		panic(fmt.Errorf("HttpProxy(%s)设置不正确. Protocol Only Support: %v", cf.HttpProxy, okprotcls))
 	}

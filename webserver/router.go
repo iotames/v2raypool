@@ -2,6 +2,7 @@ package webserver
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/iotames/glayui/web"
 
@@ -64,8 +65,11 @@ func setRouter(s *web.EasyServer) {
 		if err != nil {
 			return
 		}
-
-		ctx.Writer.Write(CopyV2ray(dt.OldConfigFile, dt.ConfigFile, dt.LocalPort))
+		globalProxy := false
+		if strings.EqualFold(dt.GlobalProxy, "on") {
+			globalProxy = true
+		}
+		ctx.Writer.Write(CopyV2ray(dt.OldConfigFile, dt.ConfigFile, dt.InboundProtocol, dt.LocalPort, globalProxy))
 	})
 	s.AddHandler("POST", "/api/v2ray/restart", func(ctx web.Context) {
 		dt := V2rayServerData{}

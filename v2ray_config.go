@@ -221,7 +221,7 @@ func setV2rayConfigV4Outbounds(confv4 *V2rayConfigV4, n V2rayNode) error {
 	return nil
 }
 
-func newV2rayInboundV4(proto string, inPort int) V2rayInbound {
+func NewV2rayInboundV4(proto string, inPort int) V2rayInbound {
 	inAddr := "0.0.0.0" // "127.0.0.1" 仅允许本地访问
 	if proto == "socks5" {
 		proto = "socks"
@@ -271,7 +271,7 @@ func setV2rayConfigV4Inbounds(confv4 *V2rayConfigV4, inPort int, cf conf.Conf) {
 	} else {
 		// https://www.v2fly.org/config/protocols/http.html#inboundconfigurationobject
 		protcl := cf.GetHttpProxyProtocol()
-		inbd1 := newV2rayInboundV4(protcl, inPort)
+		inbd1 := NewV2rayInboundV4(protcl, inPort)
 		logger.Debugf("-----setV2rayConfigV4Inbounds--inPort(%d)--inbd1--", inPort)
 		confv4.Inbounds = []V2rayInbound{inbd1}
 	}

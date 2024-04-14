@@ -10,7 +10,8 @@ import (
 )
 
 // CopyV2ray 复制一份v2ray的json配置文件。并更改入站端口号。
-func CopyV2ray(oldConFile, newConFile string, localPort int) []byte {
+func CopyV2ray(oldConFile, newConFile, protocol string, localPort int, globalProxy bool) []byte {
+	cf := conf.GetConf()
 	result := BaseResult{}
 	if !miniutils.IsPathExists(oldConFile) {
 		result.Fail(fmt.Sprintf("原文件%s不存在", oldConFile), 400)
@@ -19,6 +20,17 @@ func CopyV2ray(oldConFile, newConFile string, localPort int) []byte {
 	if miniutils.IsPathExists(newConFile) {
 		result.Fail(fmt.Sprintf("目标文件%s已存在，请更换文件名。", newConFile), 400)
 		return result.Bytes()
+	}
+	if localPort == 0 {
+		result.Fail("本地入站端口不能为空", 400)
+		return result.Bytes()
+	}
+	if miniutils.GetIndexOf(protocol, cf.GetOkInboundProtocols()) == -1 {
+		result.Fail("入站协议不正确", 400)
+		return result.Bytes()
+	}
+	if protocol == "socks5" {
+		protocol = "socks"
 	}
 	err := vp.GetProxyPool().CheckLocalPort([]int{localPort})
 	if err != nil {
@@ -33,8 +45,19 @@ func CopyV2ray(oldConFile, newConFile string, localPort int) []byte {
 		result.Fail(err.Error(), 500)
 		return result.Bytes()
 	}
-	confv4.Inbounds[0].Port = localPort
-	confv4.Inbounds = []vp.V2rayInbound{confv4.Inbounds[0]}
+	confv4.Inbounds = []vp.V2rayInbound{vp.NewV2rayInboundV4(protocol, localPort)}
+	if globalProxy {
+		confv4.Routing = nil
+		var newoutbds []vp.V2rayOutbound
+		for _, outbdn := range confv4.Outbounds {
+			if outbdn.Protocol == "freedom" || outbdn.Tag == "DIRECT" {
+				continue
+			}
+			newoutbds = append(newoutbds, outbdn)
+		}
+		confv4.Outbounds = newoutbds
+	}
+
 	err = oldConf.SetContent(confv4)
 	if err != nil {
 		result.Fail(err.Error(), 500)
@@ -166,8 +189,10 @@ func GetV2rayList() []byte {
 }
 
 type V2rayServerData struct {
-	Pid           int    `json:"pid"`
-	LocalPort     int    `json:"local_port"`
-	OldConfigFile string `json:"old_config_file"`
-	ConfigFile    string `json:"config_file"`
+	Pid             int    `json:"pid"`
+	InboundProtocol string `json:"inbound_protocol"`
+	LocalPort       int    `json:"local_port"`
+	OldConfigFile   string `json:"old_config_file"`
+	ConfigFile      string `json:"config_file"`
+	GlobalProxy     string `json:"global_proxy"`
 }

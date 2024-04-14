@@ -15,6 +15,29 @@
     </div>
 
     <div class="layui-form-item">
+      <label class="layui-form-label">全局代理</label>
+      <!-- <label class="layui-form-label">分流模式</label> -->
+      <div class="layui-input-block">
+        <input type="checkbox" name="global_proxy" title="开启|关闭" lay-skin="switch" >
+        <!-- <select name="global_proxy" >
+          <option value=false selected>路由分流</option>
+          <option value=true>全局代理</option>
+        </select> -->
+      </div>
+    </div>
+
+    <div class="layui-form-item">
+      <label class="layui-form-label">新入站协议</label>
+      <div class="layui-input-block">
+        <select name="inbound_protocol" >
+          <option value="http" <{% if eq "http" .GetHttpProxyProtocol %}>selected<{%end%}> >http</option>
+          <option value="socks" <{% if ne "http" .GetHttpProxyProtocol %}>selected<{%end%}> >socks</option>
+        </select>
+        <!-- <input type="text" name="inbound_protocol" placeholder="新入站端口协议" value="<{% .GetHttpProxyProtocol %}>" class="layui-input"> -->
+      </div>
+    </div>
+
+    <div class="layui-form-item">
       <label class="layui-form-label">新入站端口</label>
       <div class="layui-input-block">
         <input type="text" name="local_port" placeholder="填写新的本地端口号，不可与原有的冲突" value="" class="layui-input">
