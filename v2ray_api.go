@@ -178,8 +178,11 @@ func (a V2rayApiClient) AddOutboundByV2rayNode(nd V2rayNode, outag string) error
 					User: []*protocol.User{
 						{
 							Account: serial.ToTypedMessage(&vmess.Account{
-								Id:      nd.Id,
-								AlterId: uint32(nd.Aid),
+								Id: nd.Id,
+								AlterId: func() uint32 {
+									aid, _ := strconv.ParseUint(nd.Aid.String(), 10, 32)
+									return uint32(aid)
+								}(),
 								SecuritySettings: &protocol.SecurityConfig{
 									Type: protocol.SecurityType_AES128_GCM,
 								},

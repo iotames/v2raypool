@@ -1,6 +1,7 @@
 package v2raypool
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
@@ -9,7 +10,7 @@ import (
 // "protocol":"vmess"
 type V2rayNode struct {
 	Protocol, Add, Host, Id, Net, Path, Ps, Tls, Type string
-	V, Aid                                            int
+	V, Aid                                            json.Number
 	Port                                              any
 }
 
