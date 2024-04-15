@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"strconv"
@@ -84,7 +85,7 @@ func main() {
 		nd := vp.V2rayNode{
 			Protocol: "vmess",
 			Add:      addr,
-			Port:     port,
+			Port:     json.Number(port),
 			Net:      nett,
 			Id:       id,
 			Tls:      tls,
