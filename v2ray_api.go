@@ -156,15 +156,9 @@ func (a V2rayApiClient) AddOutboundByV2rayNode(nd V2rayNode, outag string) error
 			}),
 		}
 	}
-
-	var proxyport int
-	switch pval := nd.Port.(type) {
-	case string:
-		proxyport, _ = strconv.Atoi(pval)
-	case float64:
-		proxyport = int(pval)
-	default:
-		return fmt.Errorf("err AddOutboundByV2rayNode 端口数据类型未知 port val(%v) type(%T)", nd.Port, nd.Port)
+	proxyport, err := nd.Port.Int64()
+	if err != nil {
+		return fmt.Errorf("err AddOutboundByV2rayNode 端口数据解析错误 port val(%v)--err(%v)", nd.Port, err)
 	}
 
 	resp, err := a.c.AddOutbound(a.ctx, &pros.AddOutboundRequest{Outbound: &v5.OutboundHandlerConfig{

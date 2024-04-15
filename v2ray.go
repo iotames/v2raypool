@@ -10,8 +10,7 @@ import (
 // "protocol":"vmess"
 type V2rayNode struct {
 	Protocol, Add, Host, Id, Net, Path, Ps, Tls, Type string
-	V, Aid                                            json.Number
-	Port                                              any
+	V, Aid, Port                                      json.Number
 }
 
 type V2rayServer struct {
