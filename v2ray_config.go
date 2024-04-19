@@ -44,6 +44,8 @@ type V2rayOutbound struct {
 	Settings    json.RawMessage `json:"settings"` // 视协议不同而不同。详见每个协议中的 OutboundConfigurationObject
 	// "streamSettings":{"network":"%s","tlsSettings":{"disableSystemRoot":false},"wsSettings":{"path":""},"xtlsSettings":{"disableSystemRoot":false}}
 	StreamSetting json.RawMessage `json:"streamSettings"`
+	ProxySettings json.RawMessage `json:"proxySettings"`
+	Mux           json.RawMessage `json:"mux"`
 }
 
 type V2rayConfigV5 struct {
@@ -214,6 +216,26 @@ func setV2rayConfigV4Outbounds(confv4 *V2rayConfigV4, n V2rayNode) error {
 			streamSet := fmt.Sprintf(`{"network":"%s","security":"%s","wsSettings":{"path":"%s"}}`, networkset, security, n.Path) // v4: network, v5: transport
 			outbd1.StreamSetting = json.RawMessage(streamSet)
 			confv4.Outbounds = append(confv4.Outbounds, outbd1)
+			return nil
+		}
+		if n.Protocol == "ss" || n.Protocol == "shadowsocks" {
+			settingstr := fmt.Sprintf(`"servers":[{"address":"%s","method":"%s","password":"%s","port":%s}]`, n.Add, n.Type, n.Id, n.Port)
+			outbd1.Settings = json.RawMessage(settingstr)
+			proxysetTag := fmt.Sprintf("%s-dialer", outbd1.Tag)
+			outbd1.ProxySettings = json.RawMessage(fmt.Sprintf(`{"tag":"%s"}`, proxysetTag))
+			outbd2 := V2rayOutbound{
+				Protocol: "freedom",
+				Tag:      proxysetTag,
+				Settings: json.RawMessage(fmt.Sprintf(`{"domainStrategy": "AsIs","redirect": "%s:%s"}`, n.Add, n.Port)),
+				Mux:      json.RawMessage(`{"enabled":true,"concurrency":1}`),
+			}
+			security := n.Tls
+			if security == "" {
+				security = "none"
+			}
+			streamSet2 := fmt.Sprintf(`{"network":"%s","security":"%s","wsSettings":{"path":"%s","headers":{"Host":"cloudflare.com"}},"sockopt":{}}`, networkset, security, n.Path) // v4: network, v5: transport
+			outbd2.StreamSetting = json.RawMessage(streamSet2)
+			confv4.Outbounds = append(confv4.Outbounds, outbd1, outbd2)
 			return nil
 		}
 		return fmt.Errorf("outbounds protocol not support %s", n.Protocol)

@@ -56,7 +56,48 @@ func parseNodeInfo(d string) (nd V2rayNode, err error) {
 			return
 		}
 		if nd.Protocol == "ss" {
-			err = fmt.Errorf("protocol not support ss://, TODO")
+			pwdsplit := strings.Split(ninfo[1], "@")
+			pwdinfo := pwdsplit[0]
+			b, err = base64.StdEncoding.DecodeString(pwdinfo)
+			if err != nil {
+				err = fmt.Errorf("parseNodeInfo err(%v) for ss:// base64 DecodeString", err)
+				return
+			}
+			pwdsplit2 := strings.Split(string(b), ":")
+			method := pwdsplit2[0]
+			password := pwdsplit2[1]
+			addrsplit := strings.Split(pwdsplit[1], `/?`)
+			addrsplit2 := strings.Split(addrsplit[0], `:`)
+			args := strings.Split(addrsplit[1], `;`)
+			for _, arg := range args {
+				if strings.Contains(arg, "=") {
+					argsplit := strings.Split(arg, "=")
+					argval := argsplit[1]
+					// plugin=v2ray-plugin
+					if argsplit[0] == "mode" {
+						if argval == "websocket" {
+							argval = "ws"
+						}
+						nd.Net = argval
+					}
+					if argsplit[0] == "path" {
+						nd.Path = argval
+					}
+					// if argsplit[0] == "mux"{
+					// 	// mux=true
+					// }
+				}
+				if strings.Contains(arg, "#") {
+					nd.Ps = strings.Replace(arg, "#", "", 1)
+				}
+				if arg == "tls" {
+					nd.Tls = "tls"
+				}
+			}
+			nd.Add = addrsplit2[0]
+			nd.Port = json.Number(addrsplit2[1])
+			nd.Type = method
+			nd.Id = password
 			return
 		}
 		if nd.Protocol == "trojan" {

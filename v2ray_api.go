@@ -25,7 +25,10 @@ import (
 	"github.com/v2fly/v2ray-core/v5/proxy/http"
 	"github.com/v2fly/v2ray-core/v5/proxy/socks"
 	"github.com/v2fly/v2ray-core/v5/proxy/vmess"
-	"github.com/v2fly/v2ray-core/v5/proxy/vmess/outbound"
+
+	// "github.com/v2fly/v2ray-core/v5/proxy/shadowsocks"
+	// "github.com/v2fly/v2ray-core/v5/proxy/shadowsocks2022"
+	vmessOutbound "github.com/v2fly/v2ray-core/v5/proxy/vmess/outbound"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
@@ -138,7 +141,9 @@ func getTransportStreamConfig(transproto, path string) (conf *internet.StreamCon
 
 func (a V2rayApiClient) AddOutboundByV2rayNode(nd V2rayNode, outag string) error {
 	if nd.Protocol != "vmess" {
-		return fmt.Errorf("outbound protocol not support %s. only support vmess", nd.Protocol)
+		if nd.Protocol != "ss" && nd.Protocol != "shadowsocks" {
+			return fmt.Errorf("outbound protocol not support %s. only support vmess, ss, shadowsocks", nd.Protocol)
+		}
 	}
 	streamConf, err := getTransportStreamConfig(nd.Net, nd.Path)
 	if err != nil {
@@ -160,11 +165,9 @@ func (a V2rayApiClient) AddOutboundByV2rayNode(nd V2rayNode, outag string) error
 	if err != nil {
 		return fmt.Errorf("err AddOutboundByV2rayNode 端口数据解析错误 port val(%v)--err(%v)", nd.Port, err)
 	}
-
-	resp, err := a.c.AddOutbound(a.ctx, &pros.AddOutboundRequest{Outbound: &v5.OutboundHandlerConfig{
-		Tag:            outag,
-		SenderSettings: serial.ToTypedMessage(&outsendset),
-		ProxySettings: serial.ToTypedMessage(&outbound.Config{
+	var proxySet proto.Message
+	if nd.Protocol == "vmess" {
+		proxySet = &vmessOutbound.Config{
 			Receiver: []*protocol.ServerEndpoint{
 				{
 					Address: net.NewIPOrDomain(net.DomainAddress(nd.Add)),
@@ -185,7 +188,16 @@ func (a V2rayApiClient) AddOutboundByV2rayNode(nd V2rayNode, outag string) error
 					},
 				},
 			},
-		}),
+		}
+	}
+	// if nd.Protocol == "shadowsocks" || nd.Protocol == "ss" {
+	// 	// proxySet = nil TODO
+	// }
+
+	resp, err := a.c.AddOutbound(a.ctx, &pros.AddOutboundRequest{Outbound: &v5.OutboundHandlerConfig{
+		Tag:            outag,
+		SenderSettings: serial.ToTypedMessage(&outsendset),
+		ProxySettings:  serial.ToTypedMessage(proxySet),
 		// ProxySettings: serial.ToTypedMessage(&freedom.Config{
 		// 	DomainStrategy: freedom.Config_AS_IS,
 		// 	UserLevel:      0,
