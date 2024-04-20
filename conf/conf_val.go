@@ -13,7 +13,7 @@ import (
 )
 
 const DEFAULT_ENV_FILE = "default.env"
-const DEFAULT_TEST_URL = "https://www.google.com"
+const DEFAULT_TEST_URL = "https://www.google.com/"
 const DEFAULT_AUTO_START = false
 const DEFAULT_RUNTIME_DIR = "runtime"
 const DEFAULT_WEB_SERVER_PORT = 8087

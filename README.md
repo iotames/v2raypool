@@ -90,11 +90,14 @@ v2raypool.exe
 `gRPC` 客户端交互命令:
 
 ```
-# 启动v2ray代理池
+# 启动v2ray代理池，激活所有代理节点。
 v2raypool.exe --startproxynodes
 
 # 查看v2ray代理池信息(包括：本地代理端口号，测速结果，运行状态，测速时间，节点名，节点索引)
 v2raypool.exe --getproxynodes
+
+# 临时设置默认的URL测速地址。默认为 .env 文件中 VP_TEST_URL 配置项的值。
+v2raypool.exe --setproxytesturl
 
 # 测速(测速基准使用https://www.google.com)。测速结束后，会自动选择最快的节点作为系统代理节点。
 v2raypool.exe --testproxynodes
@@ -102,8 +105,11 @@ v2raypool.exe --testproxynodes
 # 指定已测速过的域名，按速度从快到慢，查看代理节点信息
 v2raypool.exe --getproxynodesbydomain=www.google.com
 
-# 根据索引值激活某个节点为系统代理的端口（--getproxynodes 查看索引值，系统代理端口从VP_HTTP_PROXY的值读取）
+# 根据索引值激活某个节点为系统代理的端口（--getproxynodes 命令可查看索引值，系统代理端口从VP_HTTP_PROXY的值读取）
 v2raypool.exe --activeproxynode=16
+
+# 更新订阅。更新节点的同时，也会更新 subscribe_data.txt 数据文件
+v2raypool.exe --updateproxynodes
 
 # 停止所有节点
 v2raypool.exe --stopproxynodes
