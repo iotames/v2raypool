@@ -1,6 +1,6 @@
 <!-- ![logo](_media/icon.svg) -->
 
-# V2rayPool <small>v1.3.7</small>
+# V2rayPool <small>v1.5.0</small>
 
 > 简单易用的v2ray客户端和代理池服务
 

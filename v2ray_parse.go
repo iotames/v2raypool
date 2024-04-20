@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	nurl "net/url"
 	"strings"
 )
 
@@ -58,17 +59,19 @@ func parseNodeInfo(d string) (nd V2rayNode, err error) {
 		if nd.Protocol == "ss" {
 			pwdsplit := strings.Split(ninfo[1], "@")
 			pwdinfo := pwdsplit[0]
-			b, err = base64.StdEncoding.DecodeString(pwdinfo)
+			var b1 string
+			b1, err = Base64StdDecode(pwdinfo) // base64.StdEncoding.DecodeString(pwdinfo)
 			if err != nil {
 				err = fmt.Errorf("parseNodeInfo err(%v) for ss:// base64 DecodeString", err)
 				return
 			}
-			pwdsplit2 := strings.Split(string(b), ":")
+			pwdsplit2 := strings.Split(b1, ":")
 			method := pwdsplit2[0]
 			password := pwdsplit2[1]
 			addrsplit := strings.Split(pwdsplit[1], `/?`)
 			addrsplit2 := strings.Split(addrsplit[0], `:`)
-			args := strings.Split(addrsplit[1], `;`)
+			argspre, _ := nurl.QueryUnescape(addrsplit[1])
+			args := strings.Split(argspre, `;`)
 			for _, arg := range args {
 				if strings.Contains(arg, "=") {
 					argsplit := strings.Split(arg, "=")
@@ -98,6 +101,11 @@ func parseNodeInfo(d string) (nd V2rayNode, err error) {
 			nd.Port = json.Number(addrsplit2[1])
 			nd.Type = method
 			nd.Id = password
+			portint, _ := nd.Port.Int64()
+			if nd.Id == "" || nd.Type == "" || portint == 0 || nd.Add == "" || nd.Net == "" {
+				err = fmt.Errorf("---parse--shadowsocks--err--ss://--raw(%s)---nd(%+v)", ninfo[1], nd)
+				return
+			}
 			return
 		}
 		if nd.Protocol == "trojan" {

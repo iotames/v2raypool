@@ -445,9 +445,13 @@ func (p *ProxyPool) TestAllForce() {
 		return
 	}
 	p.nodes.SortBySpeed()
-
 	if p.activeCmd == nil {
-		p.ActiveNode(p.nodes[0], true)
+		for _, nd := range p.nodes {
+			if nd.IsOk() {
+				p.ActiveNode(nd, true)
+				break
+			}
+		}
 	}
 	p.IsLock = false
 }
@@ -501,7 +505,12 @@ func (p *ProxyPool) TestAll() {
 	}
 	p.nodes.SortBySpeed()
 	if p.activeCmd == nil {
-		p.ActiveNode(p.nodes[0], true)
+		for _, nd := range p.nodes {
+			if nd.IsOk() {
+				p.ActiveNode(nd, true)
+				break
+			}
+		}
 	}
 	p.IsLock = false
 }

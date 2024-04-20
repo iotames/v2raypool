@@ -18,15 +18,15 @@ import (
 	"github.com/v2fly/v2ray-core/v5/common/net"
 
 	// "github.com/v2fly/v2ray-core/v5/proxy/blackhole"
-	// "github.com/v2fly/v2ray-core/v5/proxy/freedom"
+	"github.com/v2fly/v2ray-core/v5/proxy/freedom"
 	// "github.com/v2fly/v2ray-core/v5/proxy/dokodemo"
 	// "github.com/v2fly/v2ray-core/v5/proxy/socks"
 	// "github.com/v2fly/v2ray-core/v5/common/uuid"
 	"github.com/v2fly/v2ray-core/v5/proxy/http"
+	"github.com/v2fly/v2ray-core/v5/proxy/shadowsocks"
 	"github.com/v2fly/v2ray-core/v5/proxy/socks"
 	"github.com/v2fly/v2ray-core/v5/proxy/vmess"
 
-	// "github.com/v2fly/v2ray-core/v5/proxy/shadowsocks"
 	// "github.com/v2fly/v2ray-core/v5/proxy/shadowsocks2022"
 	vmessOutbound "github.com/v2fly/v2ray-core/v5/proxy/vmess/outbound"
 	"google.golang.org/grpc"
@@ -111,13 +111,20 @@ func (a V2rayApiClient) RemoveInbound(intag string) error {
 	return err
 }
 
-func getTransportStreamConfig(transproto, path string) (conf *internet.StreamConfig, err error) {
+func getTransportStreamConfig(nd V2rayNode, hdhost string) (conf *internet.StreamConfig, err error) {
+	transproto := nd.Net
+	path := nd.Path
 	var transptl internet.TransportProtocol
 	var protoconf proto.Message
 	switch transproto {
 	case "ws", "websocket":
 		transptl = internet.TransportProtocol_WebSocket
-		protoconf = &websocket.Config{Path: path}
+		wsconf := websocket.Config{Path: path}
+		if hdhost != "" {
+			// wsconf.UseBrowserForwarding = true
+			wsconf.Header = []*websocket.Header{{Key: "Host", Value: hdhost}}
+		}
+		protoconf = &wsconf
 	case "tcp":
 		transptl = internet.TransportProtocol_TCP
 		protoconf = &tcp.Config{}
@@ -145,23 +152,28 @@ func (a V2rayApiClient) AddOutboundByV2rayNode(nd V2rayNode, outag string) error
 			return fmt.Errorf("outbound protocol not support %s. only support vmess, ss, shadowsocks", nd.Protocol)
 		}
 	}
-	streamConf, err := getTransportStreamConfig(nd.Net, nd.Path)
+	var streamConf *internet.StreamConfig
+	var resp *pros.AddOutboundResponse
+	var err error
+
+	streamConf, err = getTransportStreamConfig(nd, "")
 	if err != nil {
 		return err
 	}
 
-	outsendset := proxyman.SenderConfig{
+	sender := proxyman.SenderConfig{
 		StreamSettings: streamConf,
 	}
 	if nd.Tls == "tls" {
-		outsendset.StreamSettings.SecurityType = serial.GetMessageType(&tls.Config{})
-		outsendset.StreamSettings.SecuritySettings = []*anypb.Any{
+		sender.StreamSettings.SecurityType = serial.GetMessageType(&tls.Config{})
+		sender.StreamSettings.SecuritySettings = []*anypb.Any{
 			serial.ToTypedMessage(&tls.Config{
 				AllowInsecure: true,
 			}),
 		}
 	}
-	proxyport, err := nd.Port.Int64()
+	var proxyport int64
+	proxyport, err = nd.Port.Int64()
 	if err != nil {
 		return fmt.Errorf("err AddOutboundByV2rayNode 端口数据解析错误 port val(%v)--err(%v)", nd.Port, err)
 	}
@@ -189,21 +201,72 @@ func (a V2rayApiClient) AddOutboundByV2rayNode(nd V2rayNode, outag string) error
 				},
 			},
 		}
-	}
-	// if nd.Protocol == "shadowsocks" || nd.Protocol == "ss" {
-	// 	// proxySet = nil TODO
-	// }
+		resp, err = a.c.AddOutbound(a.ctx, &pros.AddOutboundRequest{Outbound: &v5.OutboundHandlerConfig{
+			Tag:            outag,
+			SenderSettings: serial.ToTypedMessage(&sender),
+			ProxySettings:  serial.ToTypedMessage(proxySet),
+		}})
 
-	resp, err := a.c.AddOutbound(a.ctx, &pros.AddOutboundRequest{Outbound: &v5.OutboundHandlerConfig{
-		Tag:            outag,
-		SenderSettings: serial.ToTypedMessage(&outsendset),
-		ProxySettings:  serial.ToTypedMessage(proxySet),
-		// ProxySettings: serial.ToTypedMessage(&freedom.Config{
-		// 	DomainStrategy: freedom.Config_AS_IS,
-		// 	UserLevel:      0,
-		// }),
-	}})
-	fmt.Printf("---AddOutbound(%s)--(%s:%v)-portType(%T)--result(%s)--err(%v)--\n", outag, nd.Add, nd.Port, nd.Port, resp, err)
+	}
+	if nd.Protocol == "shadowsocks" || nd.Protocol == "ss" {
+		ssAccount := serial.ToTypedMessage(&shadowsocks.Account{
+			Password: nd.Id,
+			CipherType: func() shadowsocks.CipherType {
+				method := strings.ReplaceAll(nd.Type, "-", "_") // "aes-256-gcm",
+				method = strings.ToUpper(method)
+				val, ok := shadowsocks.CipherType_value[method]
+				if ok {
+					return shadowsocks.CipherType(val)
+				}
+				return shadowsocks.CipherType_AES_256_GCM
+			}(),
+		})
+		proxySet = &shadowsocks.ClientConfig{
+			Server: []*protocol.ServerEndpoint{
+				{
+					Address: net.NewIPOrDomain(net.DomainAddress(nd.Add)),
+					Port:    uint32(proxyport),
+					User: []*protocol.User{{
+						Account: ssAccount,
+					}},
+				},
+			},
+		}
+		sender.ProxySettings = &internet.ProxyConfig{
+			Tag: outag + "-dialer",
+		}
+		resp, err = a.c.AddOutbound(a.ctx, &pros.AddOutboundRequest{Outbound: &v5.OutboundHandlerConfig{
+			Tag:            outag,
+			SenderSettings: serial.ToTypedMessage(&sender),
+			ProxySettings:  serial.ToTypedMessage(proxySet),
+		}})
+		fmt.Printf("---AddOutbound--shadowsocks(%s)--(%s:%v)--result(%s)--err(%v)--\n", outag, nd.Add, nd.Port, resp, err)
+		resp, err = a.c.AddOutbound(a.ctx, &pros.AddOutboundRequest{Outbound: &v5.OutboundHandlerConfig{
+			Tag: outag + "-dialer",
+			SenderSettings: serial.ToTypedMessage(func() *proxyman.SenderConfig {
+				streamConf, _ = getTransportStreamConfig(nd, "cloudflare.com")
+				sender := proxyman.SenderConfig{
+					StreamSettings: streamConf,
+					MultiplexSettings: &proxyman.MultiplexingConfig{
+						Enabled:     true,
+						Concurrency: 1,
+					},
+				}
+				return &sender
+			}()),
+			ProxySettings: serial.ToTypedMessage(&freedom.Config{
+				DomainStrategy: freedom.Config_AS_IS,
+				DestinationOverride: &freedom.DestinationOverride{
+					Server: &protocol.ServerEndpoint{
+						Address: net.NewIPOrDomain(net.DomainAddress(nd.Add)),
+						Port:    uint32(proxyport),
+					},
+				},
+			}),
+		}})
+	}
+
+	fmt.Printf("---AddOutbound(%s)--(%s:%v)-result(%s)--err(%v)--\n", outag, nd.Add, nd.Port, resp, err)
 	return err
 }
 

@@ -39,7 +39,7 @@ type V2rayInbound struct {
 
 type V2rayOutbound struct {
 	Protocol    string          `json:"protocol"`
-	SendThrough string          `json:"sendThrough"` // 用于发送数据的 IP 地址，当主机有多个 IP 地址时有效，默认值为 "0.0.0.0"。
+	SendThrough *string         `json:"sendThrough"` // 用于发送数据的 IP 地址，当主机有多个 IP 地址时有效，默认值为 "0.0.0.0"。
 	Tag         string          `json:"tag"`
 	Settings    json.RawMessage `json:"settings"` // 视协议不同而不同。详见每个协议中的 OutboundConfigurationObject
 	// "streamSettings":{"network":"%s","tlsSettings":{"disableSystemRoot":false},"wsSettings":{"path":""},"xtlsSettings":{"disableSystemRoot":false}}
@@ -187,7 +187,10 @@ func setV2rayConfigV4Routing(confv4 *V2rayConfigV4, cf conf.Conf, inPort int) {
 // setV2rayConfigV4Outbounds 出站配置
 // n.Add != "" 时，启用单节点代理模式。
 func setV2rayConfigV4Outbounds(confv4 *V2rayConfigV4, n V2rayNode) error {
-	outdirect := V2rayOutbound{Protocol: "freedom", Tag: TAG_OUTBOUND_DIRECT, SendThrough: "0.0.0.0"}
+	sendth := "0.0.0.0"
+	// sendth.Address = net.ParseAddress()
+	// fmt.Printf("-------setV2rayConfigV4Outbounds---SendThrough---ip(%+v)--domain(%+v)--str(%s)-\n", sendth.Address.IP(), sendth.Address.Domain(), sendth.Address)
+	outdirect := V2rayOutbound{Protocol: "freedom", Tag: TAG_OUTBOUND_DIRECT, SendThrough: &sendth}
 	outdirect.Settings = json.RawMessage(`{}`)
 	outdirect.StreamSetting = json.RawMessage(`{}`)
 
@@ -196,7 +199,7 @@ func setV2rayConfigV4Outbounds(confv4 *V2rayConfigV4, n V2rayNode) error {
 		networkset := n.Net
 		outbd1 := V2rayOutbound{
 			Protocol:    n.Protocol,
-			SendThrough: "0.0.0.0",
+			SendThrough: &sendth,
 			Tag:         TAG_OUTBOUND_ACTIVE,
 		}
 
@@ -219,7 +222,8 @@ func setV2rayConfigV4Outbounds(confv4 *V2rayConfigV4, n V2rayNode) error {
 			return nil
 		}
 		if n.Protocol == "ss" || n.Protocol == "shadowsocks" {
-			settingstr := fmt.Sprintf(`"servers":[{"address":"%s","method":"%s","password":"%s","port":%s}]`, n.Add, n.Type, n.Id, n.Port)
+			outbd1.Protocol = "shadowsocks"
+			settingstr := fmt.Sprintf(`{"servers":[{"address":"%s","method":"%s","password":"%s","port":%s}]}`, n.Add, n.Type, n.Id, n.Port)
 			outbd1.Settings = json.RawMessage(settingstr)
 			proxysetTag := fmt.Sprintf("%s-dialer", outbd1.Tag)
 			outbd1.ProxySettings = json.RawMessage(fmt.Sprintf(`{"tag":"%s"}`, proxysetTag))
