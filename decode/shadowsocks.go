@@ -50,7 +50,7 @@ func ParseShadowsocks(v string) (ss Shadowsocks, err error) {
 			// }
 		}
 		if strings.Contains(arg, "#") {
-			ss.Title = strings.Replace(arg, "#", "", 1) + "OKTEST"
+			ss.Title = strings.Replace(arg, "#", "", 1)
 		}
 		if arg == "tls" {
 			ss.TransportStream.Security = arg

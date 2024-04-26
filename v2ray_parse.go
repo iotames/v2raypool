@@ -80,7 +80,12 @@ func parseNodeInfo(d string) (nd V2rayNode, err error) {
 			return
 		}
 		if nd.Protocol == "trojan" {
-			err = fmt.Errorf("protocol not support trojan://, TODO")
+			var tro decode.Trojan
+			tro, err = decode.ParseTrojan(ninfo[1])
+			if err != nil {
+				return
+			}
+			fmt.Printf("parse trojan:(%+v)\n", tro)
 			return
 		}
 
