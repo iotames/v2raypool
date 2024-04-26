@@ -11,6 +11,7 @@ import (
 
 	"github.com/iotames/miniutils"
 	"github.com/iotames/v2raypool/conf"
+	"github.com/iotames/v2raypool/decode"
 )
 
 // 节点测速最大超时设置。
@@ -290,17 +291,17 @@ func (p *ProxyPool) InitSubscribeData() *ProxyPool {
 	var err error
 	var dt string
 	if p.subscribeRawData != "" {
-		dt, err = parseSubscribeByRaw(p.subscribeRawData)
+		dt, err = decode.ParseSubscribeByRaw(p.subscribeRawData)
 		if err != nil {
 			panic(err)
 		}
 	} else {
 		if p.subscribeUrl != "" {
 			var rawdt string
-			dt, rawdt, err = parseSubscribeByUrl(p.subscribeUrl, "")
+			dt, rawdt, err = decode.ParseSubscribeByUrl(p.subscribeUrl, "")
 			if err != nil {
 				fmt.Printf("-----InitSubscribeData-parseSubscribeByUrl-err(%v)\n", err)
-				dt, rawdt, err = parseSubscribeByUrl(p.subscribeUrl, fmt.Sprintf("http://127.0.0.1:%d", p.localPortStart-1))
+				dt, rawdt, err = decode.ParseSubscribeByUrl(p.subscribeUrl, fmt.Sprintf("http://127.0.0.1:%d", p.localPortStart-1))
 				if err != nil {
 					panic(err)
 				}
@@ -334,13 +335,13 @@ func (p *ProxyPool) UpdateSubscribe() (total, add int) {
 		return
 	}
 
-	dt, srawdata, err = parseSubscribeByUrl(p.subscribeUrl, "")
+	dt, srawdata, err = decode.ParseSubscribeByUrl(p.subscribeUrl, "")
 	if err != nil {
 		fmt.Printf("---UpdateSubscribe-parseSubscribeByUrl-err(%v)--RetryByProxy-\n", err)
 		for _, n := range p.nodes {
 			if n.IsRunning() {
 				localAddr := p.GetLocalAddr(n)
-				dt, srawdata, err = parseSubscribeByUrl(p.subscribeUrl, localAddr)
+				dt, srawdata, err = decode.ParseSubscribeByUrl(p.subscribeUrl, localAddr)
 				fmt.Printf("---UpdateSubscribe--UseProxy(%s)Title(%s)--Err(%v)--ParseV2rayNodes(%s)---\n", localAddr, n.Title, err, dt)
 				if err == nil {
 					fmt.Printf("---SUCCESS--UpdateSubscribe--parseSubscribeByUrl----\n")

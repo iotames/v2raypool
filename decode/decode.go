@@ -1,4 +1,4 @@
-package v2raypool
+package decode
 
 import (
 	"encoding/base64"
@@ -7,15 +7,17 @@ import (
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/iotames/v2raypool/netutil"
 )
 
-func parseSubscribeByUrl(url string, proxy string) (dt string, rawdt string, err error) {
+func ParseSubscribeByUrl(url string, proxy string) (dt string, rawdt string, err error) {
 	if strings.Index(url, "http") != 0 {
 		// panic("订阅源URL格式错误")
 		err = fmt.Errorf("订阅源URL格式错误(%s)", url)
 		return
 	}
-	c, r := getHttpClient(10*time.Second, url, proxy)
+	c, r := netutil.GetHttpClient(10*time.Second, url, proxy)
 	var resp *http.Response
 	resp, err = c.Do(r)
 	if err != nil {
@@ -28,11 +30,11 @@ func parseSubscribeByUrl(url string, proxy string) (dt string, rawdt string, err
 		return
 	}
 	rawdt = string(b)
-	dt, err = parseSubscribeByRaw(rawdt)
+	dt, err = ParseSubscribeByRaw(rawdt)
 	return
 }
 
-func parseSubscribeByRaw(data string) (dt string, err error) {
+func ParseSubscribeByRaw(data string) (dt string, err error) {
 	fmt.Printf("---Begin---parseSubscribeByRaw---\n")
 	dt, err = Base64StdDecode(data)
 	if err != nil {

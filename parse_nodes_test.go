@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+
+	"github.com/iotames/v2raypool/decode"
 )
 
 // func TestInitSubscribeData(t *testing.T) {}
@@ -23,7 +25,7 @@ func TestParseVmessNodes(t *testing.T) {
 		rawnds[i] = fmt.Sprintf(`vmess://%s`, base64.StdEncoding.EncodeToString([]byte(row)))
 	}
 	rawdata := base64.StdEncoding.EncodeToString([]byte(strings.Join(rawnds, "\n")))
-	dt, err := parseSubscribeByRaw(rawdata)
+	dt, err := decode.ParseSubscribeByRaw(rawdata)
 	if err != nil {
 		t.Error(err)
 	}

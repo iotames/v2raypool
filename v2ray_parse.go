@@ -4,8 +4,9 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	nurl "net/url"
 	"strings"
+
+	"github.com/iotames/v2raypool/decode"
 )
 
 // ParseNodes 解析节点 Add, Ps ...
@@ -57,53 +58,23 @@ func parseNodeInfo(d string) (nd V2rayNode, err error) {
 			return
 		}
 		if nd.Protocol == "ss" {
-			pwdsplit := strings.Split(ninfo[1], "@")
-			pwdinfo := pwdsplit[0]
-			var b1 string
-			b1, err = Base64StdDecode(pwdinfo) // base64.StdEncoding.DecodeString(pwdinfo)
+			ssdata := ninfo[1]
+			var ss decode.Shadowsocks
+			ss, err = decode.ParseShadowsocks(ssdata)
 			if err != nil {
-				err = fmt.Errorf("parseNodeInfo err(%v) for ss:// base64 DecodeString", err)
+				err = fmt.Errorf("ParseShadowsocks err(%v)", err)
 				return
 			}
-			pwdsplit2 := strings.Split(b1, ":")
-			method := pwdsplit2[0]
-			password := pwdsplit2[1]
-			addrsplit := strings.Split(pwdsplit[1], `/?`)
-			addrsplit2 := strings.Split(addrsplit[0], `:`)
-			argspre, _ := nurl.QueryUnescape(addrsplit[1])
-			args := strings.Split(argspre, `;`)
-			for _, arg := range args {
-				if strings.Contains(arg, "=") {
-					argsplit := strings.Split(arg, "=")
-					argval := argsplit[1]
-					// plugin=v2ray-plugin
-					if argsplit[0] == "mode" {
-						if argval == "websocket" {
-							argval = "ws"
-						}
-						nd.Net = argval
-					}
-					if argsplit[0] == "path" {
-						nd.Path = argval
-					}
-					// if argsplit[0] == "mux"{
-					// 	// mux=true
-					// }
-				}
-				if strings.Contains(arg, "#") {
-					nd.Ps = strings.Replace(arg, "#", "", 1)
-				}
-				if arg == "tls" {
-					nd.Tls = "tls"
-				}
-			}
-			nd.Add = addrsplit2[0]
-			nd.Port = json.Number(addrsplit2[1])
-			nd.Type = method
-			nd.Id = password
-			portint, _ := nd.Port.Int64()
-			if nd.Id == "" || nd.Type == "" || portint == 0 || nd.Add == "" || nd.Net == "" {
-				err = fmt.Errorf("---parse--shadowsocks--err--ss://--raw(%s)---nd(%+v)", ninfo[1], nd)
+			nd.Add = ss.Address
+			nd.Port = json.Number(fmt.Sprintf("%d", ss.Port)) // TODO err
+			nd.Type = ss.Cipher
+			nd.Id = ss.Password
+			nd.Net = ss.TransportStream.Protocol
+			nd.Tls = ss.TransportStream.Security
+			nd.Path = ss.TransportStream.Path
+			nd.Ps = ss.Title
+			if nd.Id == "" || nd.Type == "" || ss.Port == 0 || nd.Add == "" || nd.Net == "" {
+				err = fmt.Errorf("---parse--shadowsocks--err--ss://--raw(%s)---nd(%+v)", ssdata, nd)
 				return
 			}
 			return

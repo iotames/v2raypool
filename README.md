@@ -206,14 +206,29 @@ VP_TEST_URL = "https://www.google.com"
 
 ## 订阅节点
 
-### 数据格式
 
-1. `VP_SUBSCRIBE_URL`: 订阅地址配置。填写 `http` 开头的URL网址。
+### 已支持的出站协议
 
-2. `base64订阅数据`: 访问订阅地址得到的原始数据。数据被BASE64加密，可保存为 `subscribe_data.txt` 文件，并配置 `VP_SUBSCRIBE_DATA_FILE` 选项。
+| 出站协议   | 订阅数据格式 | 是否支持 |
+| -----     | ----------- | ------- |
+| vmess://  |   base64    |   ✅   |
+| ss://     |   base64    |   ✅   |
+| trojan:// |   -         |   ⛏️   |
+| ssr://    |   -         |   ❌   | 
 
-`base64订阅数据` 经过 `base64解码` 后，得到以 `\n` 换行符分割的多个代理节点信息。暂时仅支持 `vmess` 协议的节点。
-每个节点信息，可能都被Base64加密过(vmess://)，也可能是明文(vless://)，或者二者混合(ss://)。如下所示:
+- ✅ 已支持
+- ⛏️ 开发中
+- ❌ 不支持
+
+### 订阅数据格式
+
+1. `VP_SUBSCRIBE_URL`: 订阅源的地址配置。填写 `http` 开头的URL网址。
+
+2. `订阅数据`: 访问订阅源的URL地址得到的原始数据。数据可能被BASE64编码过，可保存为 `subscribe_data.txt` 文件，并配置 `VP_SUBSCRIBE_DATA_FILE` 选项。
+
+`订阅数据` 经过 `base64解码` 后，得到以 `\n` 换行符分割的多个代理节点信息。
+
+每个节点信息，可能都被Base64编码过(vmess://)，也可能是明文(vless://)，或者二者混合(ss://)。如下所示:
 
 ```
 vmess://eyJhZGQiOiAiMjAyLjc4LjE2Mi41IiwgImFpZCI6IDAsICJob3N0IjogImlyc29mdC5zeXRlcy5uZXQiLCAiaWQiOiAiMmZmOTdjNmQtODU1Ny00MmE0LWI0M2YtMTljNzdjNTk1OWVhIiwgIm5ldCI6ICJ3cyIsICJwYXRoIjogIi9AZm9yd2FyZHYycmF5IiwgInBvcnQiOiA0NDMsICJwcyI6ICJnaXRodWIuY29tL2ZyZWVmcSAtIFx1NTM3MFx1NWVhNiAgMiIsICJ0bHMiOiAidGxzIiwgInR5cGUiOiAiYXV0byIsICJzZWN1cml0eSI6ICJhdXRvIiwgInNraXAtY2VydC12ZXJpZnkiOiB0cnVlLCAic25pIjogIiJ9
@@ -223,18 +238,12 @@ ss://YWVzLTI1Ni1nY206N0JjTGRzTzFXd2VvR0QwWA@193.243.147.128:40368#github.com/fre
 vmess://eyJhZGQiOiAic2VydmVyMzEuYmVoZXNodGJhbmVoLmNvbSIsICJhaWQiOiAwLCAiaG9zdCI6ICJzZXJ2ZXIzMS5iZWhlc2h0YmFuZWguY29tIiwgImlkIjogIjQxNTQxNDNjLWJiYmEtNDdhNC05Zjc5LWMyZWQwODdjYmNjOSIsICJuZXQiOiAid3MiLCAicGF0aCI6ICIvIiwgInBvcnQiOiA4ODgwLCAicHMiOiAiZ2l0aHViLmNvbS9mcmVlZnEgLSBcdTdmOGVcdTU2ZmRDbG91ZEZsYXJlXHU1MTZjXHU1M2Y4Q0ROXHU4MjgyXHU3MGI5IDYiLCAidGxzIjogIiIsICJ0eXBlIjogImF1dG8iLCAic2VjdXJpdHkiOiAiYXV0byIsICJza2lwLWNlcnQtdmVyaWZ5IjogdHJ1ZSwgInNuaSI6ICIifQ==
 ```
 
-3. 系统会忽略格式错误或解析失败的节点，然后继续解析下个节点。
+3. 由于协议不支持，数据格式不兼容，等原因造成的节点解析失败，都会被忽略，然后继续解析下个节点。
 
 4. `vmess` 节点信息再次经过 `BASE64解码` 后，解析为JSON字符串格式。如下所示:
 
 ```
 {"add":"us0.xxx.top","host":"","id":"93EA57CE-EA21-7240-EE7F-317F4A6A8B65","net":"ws","path":"","port":"444","ps":"xxx-v2-US-LosAngeles0","tls":"","type":"none","v":2,"aid":0}
-```
-
-如下节点会解析失败:
-
-```
-ss://Y2hhY2hhMjAtaWV0Zi1wb2x5MTMwNTozNlpDSGVhYlVTZktqZlFFdko0SERW@185.242.86.156:54170#github.com/freefq%20-%20%E4%BF%84%E7%BD%97%E6%96%AF%20%201
 ```
 
 ### 调试工具
