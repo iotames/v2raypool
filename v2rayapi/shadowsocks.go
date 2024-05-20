@@ -10,9 +10,15 @@ import (
 	"github.com/v2fly/v2ray-core/v5/common/protocol"
 	"github.com/v2fly/v2ray-core/v5/common/serial"
 	"github.com/v2fly/v2ray-core/v5/proxy/shadowsocks"
+	"github.com/v2fly/v2ray-core/v5/transport/internet"
 )
 
-func GetShadowsocksOutbound(sender *proxyman.SenderConfig, addr, password, cipher, outag string, port uint32) *pros.AddOutboundRequest {
+func GetShadowsocksOutbound(addr, password, cipher, outag, proxytag string, port uint32) *pros.AddOutboundRequest {
+	sender := &proxyman.SenderConfig{
+		ProxySettings: &internet.ProxyConfig{
+			Tag: proxytag,
+		},
+	}
 	ssAccount := serial.ToTypedMessage(&shadowsocks.Account{
 		Password: password,
 		CipherType: func() shadowsocks.CipherType {

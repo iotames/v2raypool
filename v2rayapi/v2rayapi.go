@@ -6,7 +6,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/v2fly/v2ray-core/v5/app/proxyman"
 	pros "github.com/v2fly/v2ray-core/v5/app/proxyman/command"
 
@@ -25,51 +24,9 @@ import (
 	// "google.golang.org/grpc/credentials/insecure"
 
 	"github.com/v2fly/v2ray-core/v5/transport/internet"
-	"github.com/v2fly/v2ray-core/v5/transport/internet/tcp"
 	"github.com/v2fly/v2ray-core/v5/transport/internet/tls"
-	"github.com/v2fly/v2ray-core/v5/transport/internet/websocket"
-
 	"google.golang.org/protobuf/types/known/anypb"
 )
-
-type V2rayNode struct {
-	Protocol, Add, Host, Id, Net, Path, Ps, Tls, Type string
-	V, Aid, Port                                      json.Number
-}
-
-func GetTransportStreamConfig(network, path, hdhost string) (conf *internet.StreamConfig, err error) {
-	transproto := network
-	var transptl internet.TransportProtocol
-	var protoconf proto.Message
-	switch transproto {
-	case "ws", "websocket":
-		transptl = internet.TransportProtocol_WebSocket
-		wsconf := websocket.Config{Path: path}
-		if hdhost != "" {
-			// wsconf.UseBrowserForwarding = true
-			wsconf.Header = []*websocket.Header{{Key: "Host", Value: hdhost}}
-		}
-		protoconf = &wsconf
-	case "tcp":
-		transptl = internet.TransportProtocol_TCP
-		protoconf = &tcp.Config{}
-	default:
-		err = fmt.Errorf("outbound network or transport not support %s. only support ws or websocket", transproto)
-	}
-	if err != nil {
-		return
-	}
-	conf = &internet.StreamConfig{
-		Protocol: transptl,
-		TransportSettings: []*internet.TransportConfig{
-			{
-				Protocol: transptl,
-				Settings: serial.ToTypedMessage(protoconf),
-			},
-		},
-	}
-	return
-}
 
 const PROTO_VMESS = "vmess"
 const PROTO_SHADOWSOCKS = "shadowsocks"
@@ -126,7 +83,7 @@ func GetOutboundRequest(port, aid json.Number, outproto, addr, sni, password, ne
 	var proxyport int64
 	proxyport, err = port.Int64()
 	if err != nil {
-		err = fmt.Errorf("err AddOutboundByV2rayNode 端口数据解析错误 port val(%v)--err(%v)", port, err)
+		err = fmt.Errorf("err GetOutboundRequest 端口数据解析错误 port val(%v)--err(%v)", port, err)
 		return
 	}
 
@@ -137,20 +94,9 @@ func GetOutboundRequest(port, aid json.Number, outproto, addr, sni, password, ne
 	}
 
 	if outproto == PROTO_SHADOWSOCKS {
-		sender.ProxySettings = &internet.ProxyConfig{
-			Tag: outag + "-dialer",
-		}
-		reqs = []*pros.AddOutboundRequest{GetShadowsocksOutbound(&sender, addr, password, cipher, outag, uint32(proxyport))}
+		reqs = []*pros.AddOutboundRequest{GetShadowsocksOutbound(addr, password, cipher, outag, outag+"-dialer", uint32(proxyport))}
 
-		streamConf, _ = GetTransportStreamConfig(network, password, "cloudflare.com")
-		sender := proxyman.SenderConfig{
-			StreamSettings: streamConf,
-			MultiplexSettings: &proxyman.MultiplexingConfig{
-				Enabled:     true,
-				Concurrency: 1,
-			},
-		}
-		reqs = append(reqs, GetFreedomOutbound(&sender, addr, outag+"-dialer", uint32(proxyport)))
+		reqs = append(reqs, GetFreedomOutboundOfShadowsocks(network, path, addr, outag+"-dialer", security, uint32(proxyport)))
 	}
 
 	if outproto == PROTO_TROJAN {

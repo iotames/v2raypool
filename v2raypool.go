@@ -413,6 +413,10 @@ func (p *ProxyPool) SetLocalAddr(n *ProxyNode, port int) string {
 }
 
 func (p *ProxyPool) testOneNode(n *ProxyNode, i int) bool {
+	remotePort, _ := n.v2rayNode.Port.Int64()
+	if remotePort < 11 {
+		return false
+	}
 	speed, ok := testProxyNode(p.testUrl, p.GetLocalAddr(*n), i, p.testMaxDuration)
 	n.Speed = speed
 	fmt.Printf("-----testOneNode--ok(%v)--speed(%.4f)--nodeTestUrl(%s)-----ProxyPool.testUrl(%s)-----\n", ok, speed.Seconds(), n.TestUrl, p.testUrl)
