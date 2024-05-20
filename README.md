@@ -8,7 +8,8 @@
 
 [项目文档](https://iotames.github.io/v2raypool/)
 
-![WebUI面板](https://github.com/iotames/v2raypool/raw/master/screenshot.jpg)
+![WebUI面板1](https://github.com/iotames/v2raypool/raw/master/screenshot_proxypool.jpg)
+![WebUI面板2](https://github.com/iotames/v2raypool/raw/master/screenshot_v2ray.jpg)
 
 Windows代理设置: `网络和Internet` -> `代理` -> `手动设置代理`
 
