@@ -6,10 +6,17 @@
 
 - 提供通用gRPC控制接口，参看数据定义文件 `v2raypool.proto`
 
-[项目文档](https://iotames.github.io/v2raypool/)
+[项目文档: https://iotames.github.io/v2raypool/](https://iotames.github.io/v2raypool/)
 
-![WebUI面板1](https://github.com/iotames/v2raypool/raw/master/screenshot_proxypool.jpg)
-![WebUI面板2](https://github.com/iotames/v2raypool/raw/master/screenshot_v2ray.jpg)
+## 用户界面
+
+提供 `gRPC接口` 和 `Web网页` 两种交互方式。
+
+代理池节点列表:
+![WebUI面板1](https://raw.githubusercontent.com/iotames/v2raypool/master/screenshot_proxypool.jpg)
+
+v2ray服务进程列表:
+![WebUI面板2](https://raw.githubusercontent.com/iotames/v2raypool/master/screenshot_v2ray.jpg)
 
 Windows代理设置: `网络和Internet` -> `代理` -> `手动设置代理`
 
@@ -71,7 +78,7 @@ VP_V2RAY_PATH 配置项错误，找不到可执行文件。
 
 设置代理节点的订阅源地址，请更改 `.env` 文件的 `VP_SUBSCRIBE_URL` 配置项，配置值为http网络地址。
 
-若网络地址访问异常，可使用 `VP_SUBSCRIBE_DATA_FILE` 配置项。设法查看订阅地址的响应结果，并存入文件 `subscribe_data.txt`。
+若网络地址访问异常，可使用 `VP_SUBSCRIBE_DATA_FILE` 配置项。设法查看订阅地址的响应结果，保存到文件 `subscribe_data.txt`。
 
 
 ### 5. 运行服务端和客户端
@@ -79,7 +86,7 @@ VP_V2RAY_PATH 配置项错误，找不到可执行文件。
 5.1 服务端
 
 可执行文件直接运行，会启动 `gRPC` 和 `WebUI` 服务端。
-如果是首次运行，会自动生成 `.env` 和 `default.env` 配置文件。
+首次运行，会自动生成 `.env` 和 `default.env` 配置文件。
 
 ```
 # linux 或 mac 执行 ./v2raypool
@@ -116,7 +123,7 @@ v2raypool.exe --updateproxynodes
 v2raypool.exe --stopproxynodes
 ```
 
-`WebUI` 网页面板: [http://127.0.0.1:8087](http://127.0.0.1:8087)
+`WebUI` 网页面板: [http://127.0.0.1:8087](http://127.0.0.1:8087). `windows` 环境下网页会自动打开。
 
 ### 6. Linux配置systemd系统服务(可选)
 
