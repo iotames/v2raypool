@@ -10,9 +10,6 @@ import (
 )
 
 // ParseNodes 解析节点 Add, Ps ...
-// {"add":"jp6.xxx.top","host":"","id":"0999AE93-1330-4A75-DBC1-0DD545F7DD60","net":"ws","path":"","port":"41444","ps":"xxx-v2-JP-Tokyo6(1)","tls":"","v":2,"aid":0,"type":"none"}
-// {"add":"hk6.xxx.top","host":"","id":"93EA57CE-EA21-7240-EE7F-317F4A6A8B65","net":"ws","path":"","port":"444","ps":"xxx-v2-HK-HongKong6","tls":"tls","v":2,"aid":0, "type":"none"}
-// vless://26DL68CE-DL93-8342-LQ8F-317F4A6E7J76@45.43.31.159:443?encryption=none&security=reality&sni=azure.microsoft.com&fp=safari&pbk=c7qU9-_0WflwIKUiZFxSss_xw-2AP3jB1ENxKLI0OTw&type=tcp&headerType=none#u9un-US-Xr1
 func ParseV2rayNodes(data string) []V2rayNode {
 	fmt.Println("-----Begin--ParseV2rayNodes-------")
 	sss := strings.Split(data, "\n")
@@ -60,7 +57,8 @@ func parseNodeInfo(d string) (nd V2rayNode, err error) {
 		if nd.Protocol == "ss" {
 			ssdata := ninfo[1]
 			var ss decode.Shadowsocks
-			ss, err = decode.ParseShadowsocks(ssdata)
+			// fmt.Printf("-----ss--raw(%s)---\n", ssdata)
+			ss, err = decode.ParseShadowsocks(d)
 			if err != nil {
 				err = fmt.Errorf("ParseShadowsocks err(%v)", err)
 				return
@@ -81,11 +79,24 @@ func parseNodeInfo(d string) (nd V2rayNode, err error) {
 		}
 		if nd.Protocol == "trojan" {
 			var tro decode.Trojan
-			tro, err = decode.ParseTrojan(ninfo[1])
+			tro, err = decode.ParseTrojan(d)
 			if err != nil {
 				return
 			}
-			fmt.Printf("parse trojan:(%+v)\n", tro)
+			// alpn=http/1.1
+			// sni=trojan.burgerip.co.uk
+			nd.Host = tro.Sni
+			nd.Add = tro.Address
+			nd.Port = json.Number(fmt.Sprintf("%d", tro.Port))
+			nd.Id = tro.Password
+			nd.Net = tro.TransportStream.Protocol // type=tcp
+			nd.Tls = tro.TransportStream.Security
+			nd.Path = tro.TransportStream.Path
+			nd.Ps = tro.Title
+			if nd.Id == "" || tro.Port == 0 || nd.Add == "" || nd.Net == "" {
+				err = fmt.Errorf("---parse--err--trojan://--raw(%s)---nd(%+v)", d, nd)
+				return
+			}
 			return
 		}
 

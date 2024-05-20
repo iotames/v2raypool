@@ -213,7 +213,7 @@ VP_TEST_URL = "https://www.google.com"
 | -----     | ----------- | ------- |
 | vmess://  |   base64    |   ✅   |
 | ss://     |   base64    |   ✅   |
-| trojan:// |   -         |   ⛏️   |
+| trojan:// |   -         |   ✅   |
 | ssr://    |   -         |   ❌   | 
 
 - ✅ 已支持

@@ -197,6 +197,9 @@ func setV2rayConfigV4Outbounds(confv4 *V2rayConfigV4, n V2rayNode) error {
 	confv4.Outbounds = []V2rayOutbound{outdirect}
 	if n.Add != "" {
 		networkset := n.Net
+		if networkset == "" {
+			networkset = "tcp"
+		}
 		outbd1 := V2rayOutbound{
 			Protocol:    n.Protocol,
 			SendThrough: &sendth,
@@ -240,6 +243,23 @@ func setV2rayConfigV4Outbounds(confv4 *V2rayConfigV4, n V2rayNode) error {
 			streamSet2 := fmt.Sprintf(`{"network":"%s","security":"%s","wsSettings":{"path":"%s","headers":{"Host":"cloudflare.com"}},"sockopt":{}}`, networkset, security, n.Path) // v4: network, v5: transport
 			outbd2.StreamSetting = json.RawMessage(streamSet2)
 			confv4.Outbounds = append(confv4.Outbounds, outbd1, outbd2)
+			return nil
+		}
+		if n.Protocol == "trojan" {
+			// trojan://4B2rzYGAjsuN@54.169.218.236:16038?sni=appsvs.shop#%E6%96%B0%E5%8A%A0%E5%9D%A1+Amazon%E6%95%B0%E6%8D%AE%E4%B8%AD%E5%BF%83
+			// trojan://4B2rzYGAjsuN@54.169.218.236:16038?sni=appsvs.shop#新加坡+Amazon数据中心
+			outbd1.Settings = json.RawMessage(fmt.Sprintf(`{"servers":[{"address":"%s","port":%v,"password":"%s"}]}`, n.Add, n.Port, n.Id))
+			security := n.Tls
+			if security == "" {
+				security = "none"
+			}
+			sni := n.Host
+			if sni == "" {
+				sni = n.Add
+			}
+			streamSet := fmt.Sprintf(`{"network":"%s","security":"%s","tlsSettings":{"allowInsecure": false,"serverName": "%s"},"sockopt":{}}`, networkset, security, sni)
+			outbd1.StreamSetting = json.RawMessage(streamSet)
+			confv4.Outbounds = append(confv4.Outbounds, outbd1)
 			return nil
 		}
 		return fmt.Errorf("outbounds protocol not support %s", n.Protocol)
