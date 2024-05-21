@@ -2,6 +2,7 @@ package v2raypool
 
 import (
 	"fmt"
+	"net"
 	"strings"
 
 	"os/exec"
@@ -12,6 +13,7 @@ import (
 	"github.com/iotames/miniutils"
 	"github.com/iotames/v2raypool/conf"
 	"github.com/iotames/v2raypool/decode"
+	"github.com/iotames/v2raypool/netutil"
 )
 
 // 节点测速最大超时设置。
@@ -412,9 +414,12 @@ func (p *ProxyPool) SetLocalAddr(n *ProxyNode, port int) string {
 }
 
 func (p *ProxyPool) testOneNode(n *ProxyNode, i int) bool {
-	remotePort, _ := n.v2rayNode.Port.Int64()
-	if remotePort < 11 {
-		return false
+	ip := net.ParseIP(n.v2rayNode.Add)
+	if ip != nil {
+		fmt.Printf("-----testOneNode-check--ip(%s)---\n", ip)
+		if netutil.IsPrivateIp(ip) {
+			return false
+		}
 	}
 	speed, ok := testProxyNode(p.testUrl, p.GetLocalAddr(*n), i, p.testMaxDuration)
 	n.Speed = speed
