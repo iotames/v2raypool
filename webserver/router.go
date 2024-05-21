@@ -36,12 +36,20 @@ func setRouter(s *web.EasyServer) {
 		}
 		ctx.Writer.Write(TestNodes(dt["TestUrl"]))
 	})
+
 	s.AddHandler("POST", "/api/nodes/start", func(ctx web.Context) {
 		ctx.Writer.Write(StartNodes())
 	})
+
 	s.AddHandler("POST", "/api/nodes/subscribe", func(ctx web.Context) {
-		ctx.Writer.Write(UpdateSubscribe())
+		req := RequestUpdateSubscribe{}
+		err := getPostJson(ctx, &req)
+		if err != nil {
+			return
+		}
+		ctx.Writer.Write(UpdateSubscribe(req.SubscribeByProxy))
 	})
+
 	s.AddHandler("POST", "/api/node/active", func(ctx web.Context) {
 		dt := RequestActiveNode{}
 		err := getPostJson(ctx, &dt)
@@ -125,4 +133,9 @@ type HomePageData struct {
 type RequestActiveNode struct {
 	RemoteAddr  string `json:"remote_addr"`
 	GlobalProxy bool   `json:"global_proxy"`
+}
+
+type RequestUpdateSubscribe struct {
+	SubscribeUrl     string `json:"subscribe_url"`
+	SubscribeByProxy string `json:"subscribe_by_proxy"`
 }

@@ -324,7 +324,7 @@ func (p *ProxyPool) InitSubscribeData() *ProxyPool {
 	}
 	return p
 }
-func (p *ProxyPool) UpdateSubscribe() (total, add int) {
+func (p *ProxyPool) UpdateSubscribe(httpProxy string) (total, add int) {
 	p.nodes.SortBySpeed()
 	var dt string
 	var err error
@@ -334,9 +334,8 @@ func (p *ProxyPool) UpdateSubscribe() (total, add int) {
 		fmt.Printf("---WARNING--subscribeUrl is empty----\n")
 		return
 	}
-
-	dt, srawdata, err = decode.ParseSubscribeByUrl(p.subscribeUrl, "")
-	if err != nil {
+	dt, srawdata, err = decode.ParseSubscribeByUrl(p.subscribeUrl, httpProxy)
+	if err != nil && httpProxy == "" {
 		fmt.Printf("---UpdateSubscribe-parseSubscribeByUrl-err(%v)--RetryByProxy-\n", err)
 		for _, n := range p.nodes {
 			if n.IsRunning() {

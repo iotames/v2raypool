@@ -221,7 +221,7 @@ func (s ProxyPoolServer) UpdateProxySubscribe(ctx context.Context, req *g.OptReq
 		err = fmt.Errorf(msg)
 		return
 	}
-	total, add := pp.UpdateSubscribe()
+	total, add := pp.UpdateSubscribe("")
 	fmt.Printf("---total(%d)---add(%d)----\n", total, add)
 	result.Status = 200
 	result.Msg = "订阅更新完成"
