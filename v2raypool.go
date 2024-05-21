@@ -165,6 +165,7 @@ func (p *ProxyPool) StartV2rayPool() {
 				if nd.LocalAddr == "" {
 					continue
 				}
+				nd.Status = 0
 				p.UpdateNode(nd)
 			}
 		}
@@ -179,6 +180,7 @@ func (p *ProxyPool) StartV2rayPool() {
 					if vv.LocalAddr == "" {
 						continue
 					}
+					vv.Status = 0
 					p.AddSpeedNode(k, vv)
 				}
 			}
@@ -785,7 +787,14 @@ func (p *ProxyPool) ActiveNode(n ProxyNode, globalProxy bool) error {
 			if err != nil {
 				return err
 			}
-			// n.status = 1
+			for k, vvv := range p.speedMap {
+				for j, vv := range vvv {
+					if vv.GetId() == n.GetId() {
+						p.speedMap[k][j].Status = 1
+						break
+					}
+				}
+			}
 			err = p.UpdateNode(n)
 			if err != nil {
 				return fmt.Errorf("active node update node err:%v", err)
