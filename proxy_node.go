@@ -11,15 +11,14 @@ import (
 
 type ProxyNode struct {
 	Index, LocalPort int
-	// cmd               *exec.Cmd
-	Id, localAddr   string
-	RemoteAddr      string `json:"remote_addr"`
-	Title, Protocol string
-	TestUrl         string
-	Speed           time.Duration
-	TestAt          time.Time
-	v2rayNode       V2rayNode
-	status          int
+	Id, LocalAddr    string
+	RemoteAddr       string `json:"remote_addr"`
+	Title, Protocol  string
+	TestUrl          string
+	Speed            time.Duration
+	TestAt           time.Time
+	V2rayNode        V2rayNode
+	Status           int
 }
 
 func NewProxyNodeByV2ray(vnd V2rayNode) *ProxyNode {
@@ -32,7 +31,7 @@ func (p *ProxyNode) GetId() string {
 	if p.Id != "" {
 		return p.Id
 	}
-	p.Id = p.RemoteAddr + ":" + p.v2rayNode.Id
+	p.Id = p.RemoteAddr + ":" + p.V2rayNode.Id
 	return p.Id
 }
 func (p *ProxyNode) SetV2ray(n V2rayNode) *ProxyNode {
@@ -40,7 +39,7 @@ func (p *ProxyNode) SetV2ray(n V2rayNode) *ProxyNode {
 	p.Id = p.RemoteAddr + ":" + n.Id
 	p.Title = n.Ps
 	p.Protocol = n.Protocol
-	p.v2rayNode = n
+	p.V2rayNode = n
 	return p
 }
 
@@ -55,11 +54,11 @@ func (p *ProxyNode) AddToPool(c *V2rayApiClient) error {
 	if err != nil {
 		return err
 	}
-	err = c.AddOutboundByV2rayNode(p.v2rayNode, tag)
+	err = c.AddOutboundByV2rayNode(p.V2rayNode, tag)
 	if err != nil {
 		return err
 	}
-	p.status = 1
+	p.Status = 1
 	return err
 }
 
@@ -75,12 +74,12 @@ func (p *ProxyNode) Remove(c *V2rayApiClient, tag string) error {
 	if err != nil {
 		return err
 	}
-	p.status = 0
+	p.Status = 0
 	return err
 }
 
 func (p ProxyNode) IsRunning() bool {
-	return p.status == 1
+	return p.Status == 1
 }
 
 // IsOk 查看测速是否超过有效期。默认24小时

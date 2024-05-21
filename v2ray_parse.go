@@ -70,7 +70,7 @@ func parseNodeInfo(d string) (nd V2rayNode, err error) {
 			nd.Net = ss.TransportStream.Protocol
 			nd.Tls = ss.TransportStream.Security
 			nd.Path = ss.TransportStream.Path
-			nd.Ps = ss.Title
+			nd.Ps = strings.TrimSpace(ss.Title)
 			if nd.Id == "" || nd.Type == "" || ss.Port == 0 || nd.Add == "" || nd.Net == "" {
 				err = fmt.Errorf("---parse--shadowsocks--err--ss://--raw(%s)---nd(%+v)", ssdata, nd)
 				return
@@ -92,7 +92,7 @@ func parseNodeInfo(d string) (nd V2rayNode, err error) {
 			nd.Net = tro.TransportStream.Protocol // type=tcp
 			nd.Tls = tro.TransportStream.Security
 			nd.Path = tro.TransportStream.Path
-			nd.Ps = tro.Title
+			nd.Ps = strings.TrimSpace(tro.Title)
 			if nd.Id == "" || tro.Port == 0 || nd.Add == "" || nd.Net == "" {
 				err = fmt.Errorf("---parse--err--trojan://--raw(%s)---nd(%+v)", d, nd)
 				return

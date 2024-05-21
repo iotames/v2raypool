@@ -1,12 +1,17 @@
 package v2raypool
 
 import (
+	"crypto/md5"
+	"encoding/gob"
+
+	// "encoding/json"
 	"fmt"
 	"net"
-	"strings"
-
+	"os"
 	"os/exec"
+	"path/filepath"
 	"runtime"
+	"strings"
 	"sync"
 	"time"
 
@@ -53,12 +58,12 @@ func (p ProxyPool) GetLocalPortRange() string {
 func (p ProxyPool) GetLocalPortList() (dl []int, err error) {
 	cf := getConf()
 	for _, v := range p.serverMap {
-		conf := V2rayConfigV4{}
-		err = v.jconf.Decode(&conf)
+		vconf := V2rayConfigV4{}
+		err = v.jconf.Decode(&vconf)
 		if err != nil {
 			return
 		}
-		for _, inb := range conf.Inbounds {
+		for _, inb := range vconf.Inbounds {
 			dl = append(dl, inb.Port)
 			if inb.Port == cf.V2rayApiPort {
 				for _, nd := range p.nodes {
@@ -145,6 +150,39 @@ func (p *ProxyPool) StartV2rayPool() {
 		fmt.Printf("-----SUCCESS--RunProxyPoolInit--Pid(%d)--cost(%.3fs)--\n", pcmd.Process.Pid, time.Since(p.startAt).Seconds())
 	} else {
 		fmt.Printf("-----FAIL--StartV2rayCoreFail-----cost(%.3fs)--\n", time.Since(p.startAt).Seconds())
+	}
+
+	if miniutils.IsPathExists(getNodesFile(p.subscribeUrl)) {
+		var nds = ProxyNodes{}
+		err = getNodesByFile(&nds, p.subscribeUrl)
+		if err != nil {
+			lg := getConf().GetLogger()
+			lg.Errorf("---StartV2rayPool--getNodesByFile---err(%v)---nds(%+v)\n", err, nds)
+		}
+
+		if len(nds) > 0 {
+			for _, nd := range nds {
+				if nd.LocalAddr == "" {
+					continue
+				}
+				p.UpdateNode(nd)
+			}
+		}
+		p.nodes.SortBySpeed()
+	}
+	if miniutils.IsPathExists(getNodesMapFile(p.subscribeUrl)) {
+		ndsmp := make(map[string]ProxyNodes)
+		getNodesMapByFile(&ndsmp, p.subscribeUrl)
+		if len(ndsmp) > 0 {
+			for k, v := range ndsmp {
+				for _, vv := range v {
+					if vv.LocalAddr == "" {
+						continue
+					}
+					p.AddSpeedNode(k, vv)
+				}
+			}
+		}
 	}
 
 	if conf.GetConf().AutoStart {
@@ -394,10 +432,10 @@ func (p ProxyPool) getNodeByV2rayNode(vnd V2rayNode, i int) ProxyNode {
 	return *nn
 }
 func (p ProxyPool) GetLocalAddr(n ProxyNode) string {
-	if n.localAddr == "" {
+	if n.LocalAddr == "" {
 		panic("ProxyNode.localAddr is empty")
 	}
-	return n.localAddr
+	return n.LocalAddr
 }
 func (p *ProxyPool) SetLocalAddr(n *ProxyNode, port int) string {
 	if port == 0 {
@@ -409,12 +447,12 @@ func (p *ProxyPool) SetLocalAddr(n *ProxyNode, port int) string {
 	if protcl == "socks" {
 		protcl = "socks5"
 	}
-	n.localAddr = fmt.Sprintf("%s://127.0.0.1:%d", protcl, n.LocalPort)
-	return n.localAddr
+	n.LocalAddr = fmt.Sprintf("%s://127.0.0.1:%d", protcl, n.LocalPort)
+	return n.LocalAddr
 }
 
 func (p *ProxyPool) testOneNode(n *ProxyNode, i int) bool {
-	ip := net.ParseIP(n.v2rayNode.Add)
+	ip := net.ParseIP(n.V2rayNode.Add)
 	if ip != nil {
 		fmt.Printf("-----testOneNode-check--ip(%s)---\n", ip)
 		if netutil.IsPrivateIp(ip) {
@@ -454,6 +492,23 @@ func (p *ProxyPool) TestAllForce() {
 		return
 	}
 	p.nodes.SortBySpeed()
+
+	// save nodes to file
+	var err error
+	lg := getConf().GetLogger()
+	if len(p.nodes) > 0 {
+		err = saveNodesToFile(p.nodes, getNodesFile(p.subscribeUrl))
+		if err != nil {
+			lg.Errorf("----TestAllForce--saveNodesToFile-err(%v)---", err)
+		}
+	}
+	if len(p.speedMap) > 0 {
+		err = saveNodesMapToFile(p.speedMap, getNodesMapFile(p.subscribeUrl))
+		if err != nil {
+			lg.Errorf("-----TestAllForce--saveNodesMapToFile--err(%v)----", err)
+		}
+	}
+
 	if p.activeCmd == nil {
 		for _, nd := range p.nodes {
 			if nd.IsOk() {
@@ -462,6 +517,7 @@ func (p *ProxyPool) TestAllForce() {
 			}
 		}
 	}
+
 	p.IsLock = false
 }
 
@@ -513,6 +569,23 @@ func (p *ProxyPool) TestAll() {
 		return
 	}
 	p.nodes.SortBySpeed()
+
+	// save nodes to file
+	var err error
+	lg := getConf().GetLogger()
+	if len(p.nodes) > 0 {
+		err = saveNodesToFile(p.nodes, getNodesFile(p.subscribeUrl))
+		if err != nil {
+			lg.Errorf("-----TestAll--saveNodesToFile-err(%v)---", err)
+		}
+	}
+	if len(p.speedMap) > 0 {
+		err = saveNodesMapToFile(p.speedMap, getNodesMapFile(p.subscribeUrl))
+		if err != nil {
+			lg.Errorf("-----TestAll--saveNodesMapToFile--err(%v)----", err)
+		}
+	}
+
 	if p.activeCmd == nil {
 		for _, nd := range p.nodes {
 			if nd.IsOk() {
@@ -521,6 +594,7 @@ func (p *ProxyPool) TestAll() {
 			}
 		}
 	}
+
 	p.IsLock = false
 }
 
@@ -548,13 +622,6 @@ func (p *ProxyPool) StartAll() error {
 	return err
 }
 
-//	func (p ProxyPool) getNodesMap() map[int]ProxyNode {
-//		mp := make(map[int]ProxyNode, len(p.nodes))
-//		for _, n := range p.nodes {
-//			mp[n.LocalPort] = n
-//		}
-//		return mp
-//	}
 func (p ProxyPool) getGrpcAddr() string {
 	return fmt.Sprintf("127.0.0.1:%d", conf.GetConf().V2rayApiPort)
 }
@@ -566,13 +633,13 @@ func (p *ProxyPool) UpdateAfterStopAll() {
 	for i, nd := range p.nodes {
 		if nd.IsRunning() {
 			nd.Remove(c, getProxyNodeTag(nd.Index))
-			p.nodes[i].status = 0
+			p.nodes[i].Status = 0
 		}
 	}
 	for k, nds := range p.speedMap {
 		for i, n := range nds {
 			if n.IsRunning() {
-				p.speedMap[k][i].status = 0
+				p.speedMap[k][i].Status = 0
 			}
 		}
 	}
@@ -668,14 +735,14 @@ func (p *ProxyPool) ActiveNode(n ProxyNode, globalProxy bool) error {
 	}
 
 	vs := NewV2ray(p.v2rayPath)
-	vs.SetPort(activePort).SetNode(n.v2rayNode)
+	vs.SetPort(activePort).SetNode(n.V2rayNode)
 	err = vs.Start("")
 	if err == nil {
 		p.activeCmd = vs.GetExeCmd()
 		p.serverMap[vs.cmd.Process.Pid] = vs
 		fmt.Printf("-----SUCCESS--ActiveNode--Index(%d)--LocalPort(%d)--Pid(%d)---RemoteAddr(%s)--ProcessState(%+v)---\n", n.Index, activePort, p.activeCmd.Process.Pid, n.RemoteAddr, p.activeCmd.ProcessState)
 		if runtime.GOOS == "windows" {
-			addrsplit := strings.Split(n.localAddr, `://`)
+			addrsplit := strings.Split(n.LocalAddr, `://`)
 			protcl := addrsplit[0]
 			if protcl == "socks5" {
 				protcl = "socks"
@@ -761,4 +828,65 @@ func proxyPoolInit() {
 		fmt.Printf("---[%d]--Lport(%d)--Speed(%.3f)--Run(%v)--TestAt(%s)--Remote(%s)--T(%s)--index(%d)\n", i, n.LocalPort, n.Speed.Seconds(), n.IsRunning(), n.TestAt.Format("2006-01-02 15:04"), n.RemoteAddr, n.Title, n.Index)
 	}
 	pp.StartV2rayPool()
+}
+
+func getNodesByFile(data *ProxyNodes, subscribeUrl string) error {
+	f, err := os.Open(getNodesFile(subscribeUrl))
+	if err != nil {
+		fmt.Printf("---getNodesByFile--os.Open--err(%v)\n", err)
+		return err
+	}
+	defer f.Close()
+	// decode := json.NewDecoder(f)
+	decode := gob.NewDecoder(f)
+	err = decode.Decode(data)
+	if err != nil {
+		return err
+	}
+	return err
+}
+
+func getNodesMapByFile(data *map[string]ProxyNodes, subscribeUrl string) error {
+	f, err := os.Open(getNodesMapFile(subscribeUrl))
+	if err != nil {
+		fmt.Printf("---getNodesMapByFile--os.Open--err(%v)\n", err)
+		return err
+	}
+	defer f.Close()
+	// decode := json.NewDecoder(f)
+	decode := gob.NewDecoder(f)
+	err = decode.Decode(data)
+	if err != nil {
+		fmt.Printf("---getNodesMapByFile--decode.Decode--err(%v)---mp(%+v)\n", err, *data)
+		return err
+	}
+	return err
+}
+func saveNodesToFile(nds ProxyNodes, fpath string) error {
+	f, err := os.OpenFile(fpath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0777)
+	if err != nil {
+		return err
+	}
+	// encode := json.NewEncoder(f)
+	encode := gob.NewEncoder(f)
+	return encode.Encode(nds)
+}
+func saveNodesMapToFile(mp map[string]ProxyNodes, fpath string) error {
+	f, err := os.OpenFile(fpath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0777)
+	if err != nil {
+		return err
+	}
+	// encode := json.NewEncoder(f)
+	encode := gob.NewEncoder(f)
+	return encode.Encode(mp)
+}
+
+func getNodesFile(subscribeUrl string) string {
+	runtimeDir := conf.GetConf().RuntimeDir
+	return filepath.Join(runtimeDir, fmt.Sprintf("nodes_%x.gob", md5.Sum([]byte(subscribeUrl))))
+}
+
+func getNodesMapFile(subscribeUrl string) string {
+	runtimeDir := conf.GetConf().RuntimeDir
+	return filepath.Join(runtimeDir, fmt.Sprintf("nodesmap_%x.gob", md5.Sum([]byte(subscribeUrl))))
 }

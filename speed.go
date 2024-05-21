@@ -14,9 +14,11 @@ func testProxyNode(testUrl string, localAddr string, index int, maxDuration time
 	logger := conf.GetConf().GetLogger()
 	c, r := netutil.GetHttpClient(maxDuration, testUrl, localAddr)
 	speed, ok = requestNode(c, r, maxDuration, index)
+	oktag := "FAIL"
 	if ok {
-		logger.Debugf("----SUCCESS---NodeSpeedTest[%d]---Local(%s)---Speed(%s)--", index, localAddr, speed)
+		oktag = "SUCCESS"
 	}
+	logger.Debugf("----%s---NodeSpeedTest[%d]---Local(%s)---Speed(%s)--", oktag, index, localAddr, speed)
 	return
 }
 
