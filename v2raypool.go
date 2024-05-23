@@ -52,9 +52,21 @@ type ProxyPool struct {
 func NewProxyPool() *ProxyPool {
 	return &ProxyPool{lock: &sync.Mutex{}, speedMap: make(map[string]ProxyNodes), serverMap: make(map[int]*V2rayServer, 2)}
 }
+
 func (p ProxyPool) GetLocalPortRange() string {
-	return fmt.Sprintf("%d-%d", p.nodes[0].LocalPort, p.nodes[len(p.nodes)-1].LocalPort)
+	ndslen := len(p.nodes)
+	if ndslen == 0 {
+		return "-"
+	}
+	if ndslen == 1 {
+		return fmt.Sprintf("%d", p.nodes[0].LocalPort)
+	}
+	if ndslen > 1 {
+		return fmt.Sprintf("%d-%d", p.nodes[0].LocalPort, p.nodes[len(p.nodes)-1].LocalPort)
+	}
+	return ""
 }
+
 func (p ProxyPool) GetLocalPortList() (dl []int, err error) {
 	cf := getConf()
 	for _, v := range p.serverMap {
@@ -141,7 +153,6 @@ func (p ProxyPool) GetActiveNode() ProxyNode {
 }
 
 func (p *ProxyPool) StartV2rayPool() {
-	// -----SUCCESS--RunProxyPoolInit--Pid(13628)--cost(1.687s)--
 	vs := NewV2ray(p.v2rayPath)
 	err := vs.Start("")
 	if err == nil {
@@ -332,6 +343,7 @@ func (p *ProxyPool) InitSubscribeData() *ProxyPool {
 	p.startAt = time.Now()
 	var err error
 	var dt string
+	var rawdt string
 	if p.subscribeRawData != "" {
 		dt, err = decode.ParseSubscribeByRaw(p.subscribeRawData)
 		if err != nil {
@@ -339,30 +351,27 @@ func (p *ProxyPool) InitSubscribeData() *ProxyPool {
 		}
 	} else {
 		if p.subscribeUrl != "" {
-			var rawdt string
 			dt, rawdt, err = decode.ParseSubscribeByUrl(p.subscribeUrl, "")
 			if err != nil {
 				fmt.Printf("-----InitSubscribeData-parseSubscribeByUrl-err(%v)\n", err)
-				dt, rawdt, err = decode.ParseSubscribeByUrl(p.subscribeUrl, fmt.Sprintf("http://127.0.0.1:%d", p.localPortStart-1))
-				if err != nil {
-					panic(err)
-				}
 			}
-
 			fmt.Printf("------InitSubscribeData----rawdt(%s)----\n", rawdt)
-			if rawdt != "" {
-				err = conf.GetConf().UpdateSubscribeData(rawdt)
-				if err != nil {
-					panic(err)
-				}
-			}
 		}
 	}
-	vnds := ParseV2rayNodes(dt)
-	for i, vnd := range vnds {
-		pnd := p.getNodeByV2rayNode(vnd, i)
-		p.SetLocalAddr(&pnd, 0)
-		p.AddNode(pnd)
+
+	if dt != "" {
+		vnds := ParseV2rayNodes(dt)
+		for i, vnd := range vnds {
+			pnd := p.getNodeByV2rayNode(vnd, i)
+			p.SetLocalAddr(&pnd, 0)
+			p.AddNode(pnd)
+		}
+		if rawdt != "" && len(vnds) > 0 {
+			err = conf.GetConf().UpdateSubscribeData(rawdt)
+			if err != nil {
+				panic(err)
+			}
+		}
 	}
 	return p
 }
@@ -424,6 +433,7 @@ func (p *ProxyPool) UpdateSubscribe(httpProxy string) (total, add int) {
 			add++
 		}
 	}
+	// TODO 更新订阅后，代理池节点总数可能会增加。getRoutingRules 函数中，对 v2raypool.config.json 文件配置的 rules路由规则数量可能不够用,
 	return
 }
 func (p ProxyPool) getNodeByV2rayNode(vnd V2rayNode, i int) ProxyNode {

@@ -95,8 +95,11 @@ func getRoutingRules(cf conf.Conf, inPort int) string {
 		// 启用 v2ray 内置的基于 gRPC 协议的  API
 		rules = append(rules, V2rayRouteRule{Type: "field", InboundTag: []string{TAG_INBOUND_API}, OutboundTag: TAG_OUTBOUND_API})
 		// IP代理池模式时，启用每个出站和入站一对一映射规则。
-		for _, nd := range GetProxyPool().GetNodes("") {
-			tag := getProxyNodeTag(nd.Index)
+
+		// for _, nd := range GetProxyPool().GetNodes("") {
+		// tag := getProxyNodeTag(nd.Index)
+		for i := 0; i < 100; i++ {
+			tag := getProxyNodeTag(i)
 			// 添加路由规则，相同标签的每一个出站和入站一一对应
 			rules = append(rules, V2rayRouteRule{Type: "field", InboundTag: []string{tag}, OutboundTag: tag})
 		}
