@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"net"
 	"os"
 	"path/filepath"
 	"time"
@@ -14,15 +15,26 @@ import (
 
 func runServer() {
 	logStart()
-	webPort := conf.GetConf().WebServerPort
+	cf := conf.GetConf()
+	webPort := cf.WebServerPort
+	appGrpcPort := cf.GrpcPort
+	v2rayApiPort := cf.V2rayApiPort
 	if webPort == 0 {
 		vp.RunServer()
 		return
 	}
+	if isPortBeUsed(webPort) {
+		panic("proxy pool web port may already be in use")
+	}
+	if isPortBeUsed(appGrpcPort) {
+		panic("proxy pool grpc control port may already be in use")
+	}
+	if isPortBeUsed(v2rayApiPort) {
+		panic("proxy pool of v2ray api port may already be in use")
+	}
 	go vp.RunServer()
 	time.Sleep(time.Second * 1)
 	s := webserver.NewWebServer(webPort)
-	// s.SetData("LoadEnv", LoadEnv)
 	err := miniutils.StartBrowserByUrl(fmt.Sprintf(`http://127.0.0.1:%d`, webPort))
 	if err != nil {
 		fmt.Println("StartBrowserByUrl error: " + err.Error())
@@ -58,4 +70,14 @@ func logStart() {
 	if err != nil {
 		panic(err)
 	}
+}
+
+// 检查端口是否被占用。被占用true, 未被占用 false
+func isPortBeUsed(port int) bool {
+	l, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
+	if err != nil {
+		return true
+	}
+	defer l.Close()
+	return false
 }

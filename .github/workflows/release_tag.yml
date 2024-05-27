@@ -78,7 +78,7 @@ jobs:
       - name: Build
         run: |
           mkdir -p build_assets
-          go build -v -o build_assets/v2raypool -trimpath -ldflags "-s -w -buildid=" ./main
+          go build -v -o build_assets/v2raypool -trimpath -ldflags "-s -w -buildid= -X 'main.AppVersion=v1.6.3'" ./main
       
       - name: Rename Windows File
         if: matrix.goos == 'windows'
