@@ -248,11 +248,10 @@
         elem: '#nodeslist',
         url: '/api/nodes', // 此处为静态模拟数据，实际使用时需换成真实接口
         toolbar: '#toolbarDemo',
-        defaultToolbar: ['filter', {
-          title: '基本设置',
-          layEvent: 'settinglayer',
-          icon: 'layui-icon-set'
-        }],
+        defaultToolbar: ['filter',
+        {title: '基本设置', layEvent: 'settinglayer', icon: 'layui-icon-set'},
+        {title: '清除缓存', layEvent:'clearlayer', icon:'layui-icon-delete'}
+        ],
         escape: false,
         height: 'full-35', // 最大高度减去其他容器已占有的高度差
         // lineStyle: 'height: 95px;',
@@ -345,6 +344,21 @@
             break;
           // case "refreshData": table.reload('nodeslist')
           //   break;
+          case 'clearlayer':
+            layer.confirm("删除runtime目录内所有文件：包括测速缓存等数据。",{icon:3, title:"确定清除应用缓存?"}, function(index){
+
+              postjson("/api/setting/clearcache", {}, function (dt) {
+                layer.close(index)
+                layer.msg(dt.msg);
+                window.setTimeout(function () {
+                  window.location.reload();
+                }, 1000)
+              }, function (dt) {
+                layer.alert(dt.msg, { icon: 2, title: dt.code + "错误" });
+              })
+
+            })
+            break;
           case 'settinglayer':
             layer.open({
               title: '系统设置(<{% .EnvFile %}>文件)',

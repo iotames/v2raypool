@@ -82,6 +82,13 @@ func UpdateConf(dt map[string]string, fpath string) []byte {
 	return result.Bytes()
 }
 
+func ClearCache() []byte {
+	result := BaseResult{}
+	result.Fail("功能开发中...", 500)
+	// result.Success("设置成功，重启应用后生效。")
+	return result.Bytes()
+}
+
 type RequestRoutingRules struct {
 	DirectDomainList []string `json:"direct_domain_list"`
 	DirectIpList     []string `json:"direct_ip_list"`

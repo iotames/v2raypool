@@ -104,6 +104,10 @@ func setRouter(s *web.EasyServer) {
 		ctx.Writer.Write(UnActiveNode(dt.RemoteAddr))
 	})
 
+	s.AddHandler("POST", "/api/setting/clearcache", func(ctx web.Context) {
+		ctx.Writer.Write(ClearCache())
+	})
+
 	s.AddHandler("POST", "/api/setting/update", func(ctx web.Context) {
 		// envfile := ctx.Server.GetData("ENV_FILE").Value.(string)
 		// fmt.Println(envfile)
