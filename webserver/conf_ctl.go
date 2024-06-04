@@ -1,8 +1,11 @@
 package webserver
 
 import (
-	// "os"
+	"os"
+	"path/filepath"
 	"strconv"
+	"strings"
+
 	// "strings"
 
 	// "github.com/iotames/miniutils"
@@ -84,8 +87,34 @@ func UpdateConf(dt map[string]string, fpath string) []byte {
 
 func ClearCache() []byte {
 	result := BaseResult{}
-	result.Fail("功能开发中...", 500)
-	// result.Success("设置成功，重启应用后生效。")
+	runtimedir := conf.GetConf().RuntimeDir
+	flist, err := os.ReadDir(runtimedir)
+	if err != nil {
+		result.Fail(err.Error(), 500)
+		return result.Bytes()
+	}
+	for _, d := range flist {
+		fullpath := filepath.Join(runtimedir, d.Name())
+		if d.IsDir() {
+			err = os.RemoveAll(fullpath)
+		} else {
+			err = os.Remove(fullpath)
+		}
+		if err != nil {
+			// 忽略因无法删除打开中的日志文件而产生的报错
+			if strings.Contains(err.Error(), ".log: The process cannot access the file because it is being used by another process") {
+				err = nil
+			}
+			if err != nil {
+				break
+			}
+		}
+	}
+	if err != nil {
+		result.Fail(err.Error(), 500)
+		return result.Bytes()
+	}
+	result.Success("清除成功")
 	return result.Bytes()
 }
 
