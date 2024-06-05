@@ -37,7 +37,7 @@ func GetProxyPool() *ProxyPool {
 type ProxyPool struct {
 	serverMap                      map[int]*V2rayServer
 	startAt                        time.Time
-	activeCmd                      *exec.Cmd
+	activeCmd, poolCmd             *exec.Cmd
 	activeNode                     ProxyNode
 	localPortStart                 int
 	v2rayPath, testUrl             string
@@ -152,17 +152,25 @@ func (p ProxyPool) GetActiveNode() ProxyNode {
 	return p.activeNode
 }
 
-func (p *ProxyPool) StartV2rayPool() {
-	vs := NewV2ray(p.v2rayPath)
-	err := vs.Start("")
-	if err == nil {
-		pcmd := vs.GetExeCmd()
-		p.serverMap[pcmd.Process.Pid] = vs
-		fmt.Printf("-----SUCCESS--RunProxyPoolInit--Pid(%d)--cost(%.3fs)--\n", pcmd.Process.Pid, time.Since(p.startAt).Seconds())
-	} else {
-		fmt.Printf("-----FAIL--StartV2rayCoreFail-----cost(%.3fs)--\n", time.Since(p.startAt).Seconds())
+func (p *ProxyPool) startV2rayPoolCmd() error {
+	var err error
+	if p.poolCmd == nil {
+		vs := NewV2ray(p.v2rayPath)
+		err := vs.Start("")
+		if err == nil {
+			p.poolCmd = vs.GetExeCmd()
+			p.serverMap[p.poolCmd.Process.Pid] = vs
+			fmt.Printf("-----SUCCESS--RunProxyPoolInit--Pid(%d)--cost(%.3fs)--\n", p.poolCmd.Process.Pid, time.Since(p.startAt).Seconds())
+		} else {
+			fmt.Printf("-----FAIL--StartV2rayCoreFail-----cost(%.3fs)--\n", time.Since(p.startAt).Seconds())
+		}
 	}
+	return err
+}
 
+func (p *ProxyPool) StartV2rayPool() {
+	var err error
+	p.startV2rayPoolCmd()
 	if miniutils.IsPathExists(getNodesFile(p.subscribeUrl)) {
 		var nds = ProxyNodes{}
 		err = getNodesByFile(&nds, p.subscribeUrl)
@@ -614,7 +622,10 @@ func (p *ProxyPool) TestAll() {
 func (p *ProxyPool) StartAll() error {
 	var err error
 	p.IsLock = true
-
+	if p.poolCmd == nil {
+		p.startV2rayPoolCmd()
+		time.Sleep(1 * time.Second)
+	}
 	c := NewV2rayApiClientV5(p.getGrpcAddr())
 	if c.Dial() == nil {
 		defer c.Close()
@@ -637,14 +648,20 @@ func (p *ProxyPool) StartAll() error {
 func (p ProxyPool) getGrpcAddr() string {
 	return fmt.Sprintf("127.0.0.1:%d", conf.GetConf().V2rayApiPort)
 }
-func (p *ProxyPool) UpdateAfterStopAll() {
+func (p *ProxyPool) UpdateAfterStopAll() (okcount, errcount int, err error) {
 	c := NewV2rayApiClientV5(p.getGrpcAddr())
 	if c.Dial() == nil {
 		defer c.Close()
 	}
 	for i, nd := range p.nodes {
 		if nd.IsRunning() {
-			nd.Remove(c, getProxyNodeTag(nd.Index))
+			erreach := nd.Remove(c, getProxyNodeTag(nd.Index))
+			if erreach != nil {
+				errcount++
+				err = erreach
+				continue
+			}
+			okcount++
 			p.nodes[i].Status = 0
 		}
 	}
@@ -655,45 +672,25 @@ func (p *ProxyPool) UpdateAfterStopAll() {
 			}
 		}
 	}
+	return
 }
+
 func (p *ProxyPool) StopAll() error {
 	var err error
 	p.IsLock = true
-	c := NewV2rayApiClientV5(p.getGrpcAddr())
-	if c.Dial() == nil {
-		defer c.Close()
-	}
-	for _, n := range p.nodes {
-		if n.IsRunning() {
-			err = n.Remove(c, "")
-			if err != nil {
-				break
-			}
-			p.UpdateNode(n)
-		}
-	}
-	p.UpdateAfterStopAll()
+	_, _, err = p.UpdateAfterStopAll()
 	p.IsLock = false
 	return err
 }
-func (p *ProxyPool) KillAllNodes() (total, runport, kill, fail int) {
-	var err error
-	p.IsLock = true
-	c := NewV2rayApiClientV5(p.getGrpcAddr())
-	if c.Dial() == nil {
-		defer c.Close()
-	}
-	for _, nd := range p.nodes {
-		err = nd.Remove(c, getProxyNodeTag(nd.Index))
-		if err == nil {
-			p.UpdateNode(nd)
-			kill++
-		} else {
-			fail++
-		}
-	}
 
-	p.UpdateAfterStopAll()
+// func (p *ProxyPool) Delete() error {
+// 	return nil
+// }
+
+func (p *ProxyPool) KillAllNodes() (total, runport, kill, fail int) {
+	p.IsLock = true
+	total = len(p.nodes)
+	kill, fail, _ = p.UpdateAfterStopAll()
 	p.IsLock = false
 	for _, vs := range p.serverMap {
 		vcmd := vs.GetExeCmd()
@@ -701,6 +698,8 @@ func (p *ProxyPool) KillAllNodes() (total, runport, kill, fail int) {
 			vcmd.Process.Kill()
 		}
 	}
+	p.activeCmd = nil
+	p.poolCmd = nil
 	return
 }
 func (p *ProxyPool) UnActiveNode(n ProxyNode) error {

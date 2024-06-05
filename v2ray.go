@@ -61,7 +61,8 @@ func (v *V2rayServer) setExeCmd(configFile string) {
 			if inbd1.Protocol == "socks" {
 				proto2 = "http"
 			}
-			inbd2 := NewV2rayInboundV4(proto2, v.localPort-1)
+			lport2 := v.localPort - 1
+			inbd2 := NewV2rayInboundV4(proto2, lport2)
 			vconf.Inbounds = []V2rayInbound{inbd1, inbd2}
 			err := v.jconf.SetContent(vconf)
 			if err != nil {

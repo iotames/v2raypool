@@ -16,21 +16,11 @@ import (
 func runServer() {
 	logStart()
 	cf := conf.GetConf()
+	checkInitPorts(cf)
 	webPort := cf.WebServerPort
-	appGrpcPort := cf.GrpcPort
-	v2rayApiPort := cf.V2rayApiPort
 	if webPort == 0 {
 		vp.RunServer()
 		return
-	}
-	if isPortBeUsed(webPort) {
-		panic("proxy pool web port may already be in use")
-	}
-	if isPortBeUsed(appGrpcPort) {
-		panic("proxy pool grpc control port may already be in use")
-	}
-	if isPortBeUsed(v2rayApiPort) {
-		panic("proxy pool of v2ray api port may already be in use")
 	}
 	go vp.RunServer()
 	time.Sleep(time.Second * 1)
@@ -40,6 +30,33 @@ func runServer() {
 		fmt.Println("StartBrowserByUrl error: " + err.Error())
 	}
 	s.ListenAndServe()
+}
+
+func checkInitPorts(cf conf.Conf) {
+	appGrpcPort := cf.GrpcPort
+	v2rayApiPort := cf.V2rayApiPort
+	webPort := cf.WebServerPort
+	sysPort1 := cf.GetHttpProxyPort()
+	sysPort2 := sysPort1 - 1
+	startPort := sysPort1 + 1
+	if isPortBeUsed(webPort) {
+		panic(fmt.Errorf("proxy pool web port(%d) may already be in use", webPort))
+	}
+	if isPortBeUsed(appGrpcPort) {
+		panic(fmt.Errorf("proxy pool grpc control port(%d) may already be in use", appGrpcPort))
+	}
+	if isPortBeUsed(v2rayApiPort) {
+		panic(fmt.Errorf("proxy pool of v2ray api port(%d) may already be in use", v2rayApiPort))
+	}
+	if isPortBeUsed(sysPort1) {
+		panic(fmt.Errorf("http proxy port(%d) may already be in use", sysPort1))
+	}
+	if isPortBeUsed(sysPort2) {
+		panic(fmt.Errorf("socks5 proxy port(%d) may already be in use", sysPort1))
+	}
+	if isPortBeUsed(startPort) {
+		panic(fmt.Errorf("proxy pool start port(%d) may already be in use", startPort))
+	}
 }
 
 func logStart() {

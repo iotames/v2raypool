@@ -64,7 +64,7 @@ func (p *ProxyNode) AddToPool(c *V2rayApiClient) error {
 
 func (p *ProxyNode) Remove(c *V2rayApiClient, tag string) error {
 	if tag == "" {
-		tag = p.GetId()
+		panic("tag could not be empty")
 	}
 	err := c.RemoveOutbound(tag)
 	if err != nil {

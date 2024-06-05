@@ -85,8 +85,10 @@ func (a V2rayApiClient) AddInbound(inport net.Port, intag, protocol string) erro
 }
 
 func (a V2rayApiClient) RemoveInbound(intag string) error {
-	result, err := a.c.RemoveInbound(a.ctx, &pros.RemoveInboundRequest{Tag: intag})
-	fmt.Printf("---RemoveInbound(%s)----result(%v)---err(%v)-\n", intag, result, err)
+	_, err := a.c.RemoveInbound(a.ctx, &pros.RemoveInboundRequest{Tag: intag})
+	if err != nil {
+		fmt.Printf("---RemoveInbound(%s)--err(%v)-\n", intag, err)
+	}
 	return err
 }
 
@@ -107,7 +109,9 @@ func (a V2rayApiClient) AddOutboundByV2rayNode(nd V2rayNode, outag string) error
 }
 
 func (a V2rayApiClient) RemoveOutbound(outag string) error {
-	result, err := a.c.RemoveOutbound(a.ctx, &pros.RemoveOutboundRequest{Tag: outag})
-	fmt.Printf("---RemoveOutbound(%s)----result(%v)---err(%v)-\n", outag, result, err)
+	_, err := a.c.RemoveOutbound(a.ctx, &pros.RemoveOutboundRequest{Tag: outag})
+	if err != nil {
+		fmt.Printf("---RemoveOutbound(%s)--err(%v)-\n", outag, err)
+	}
 	return err
 }
