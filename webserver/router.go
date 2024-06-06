@@ -59,6 +59,15 @@ func setRouter(s *web.EasyServer) {
 		ctx.Writer.Write(ActiveNode(dt.RemoteAddr, dt.GlobalProxy))
 	})
 
+	s.AddHandler("POST", "/api/node/delete", func(ctx web.Context) {
+		dt := RequestNode{}
+		err := getPostJson(ctx, &dt)
+		if err != nil {
+			return
+		}
+		ctx.Writer.Write(DeleteNode(dt.Index))
+	})
+
 	s.AddHandler("POST", "/api/v2ray/run", func(ctx web.Context) {
 		dt := V2rayServerData{}
 		err := getPostJson(ctx, &dt)
@@ -134,6 +143,9 @@ type HomePageData struct {
 	TestedDomainList []string
 }
 
+type RequestNode struct {
+	Index int
+}
 type RequestActiveNode struct {
 	RemoteAddr  string `json:"remote_addr"`
 	GlobalProxy bool   `json:"global_proxy"`

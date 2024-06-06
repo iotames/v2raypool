@@ -57,6 +57,18 @@ func ActiveNode(remoteAddr string, globalProxy bool) []byte {
 	return result.Bytes()
 }
 
+func DeleteNode(index int) []byte {
+	pp := vp.GetProxyPool()
+	result := BaseResult{}
+	err := pp.Delete(index)
+	if err != nil {
+		result.Fail(err.Error(), 500)
+		return result.Bytes()
+	}
+	result.Success("删除成功")
+	return result.Bytes()
+}
+
 func UpdateSubscribe(httpProxy string) []byte {
 	pp := vp.GetProxyPool()
 	total, add := pp.UpdateSubscribe(httpProxy)

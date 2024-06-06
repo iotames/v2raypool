@@ -282,10 +282,21 @@ func (p *ProxyPool) RemoveNode(n ProxyNode) {
 func (p *ProxyPool) GetNodes(domain string) ProxyNodes {
 	p.lock.Lock()
 	defer p.lock.Unlock()
+	var nds ProxyNodes
 	if domain == "" {
-		return p.nodes
+		for _, nd := range p.nodes {
+			if !nd.IsDelete {
+				nds = append(nds, nd)
+			}
+		}
+		return nds
 	}
-	return p.getSpeedNodes(domain)
+	for _, nd := range p.getSpeedNodes(domain) {
+		if !nd.IsDelete {
+			nds = append(nds, nd)
+		}
+	}
+	return nds
 }
 
 func (p *ProxyPool) UpdateNode(n ProxyNode) error {
@@ -630,7 +641,7 @@ func (p *ProxyPool) StartAll() error {
 	if c.Dial() == nil {
 		defer c.Close()
 	}
-	for _, n := range p.nodes {
+	for i, n := range p.nodes {
 		if !n.IsRunning() {
 			err = n.AddToPool(c)
 			if err != nil {
@@ -638,7 +649,12 @@ func (p *ProxyPool) StartAll() error {
 				logger.Errorf("------StartAll--err--addr(%s)--AddToPool(%v)", n.RemoteAddr, err)
 				break
 			}
-			p.UpdateNode(n)
+			p.nodes[i].Status = 1
+		}
+	}
+	for k, v := range p.speedMap {
+		for j := range v {
+			p.speedMap[k][j].Status = 1
 		}
 	}
 	p.IsLock = false
@@ -683,9 +699,39 @@ func (p *ProxyPool) StopAll() error {
 	return err
 }
 
-// func (p *ProxyPool) Delete() error {
-// 	return nil
-// }
+func (p *ProxyPool) Delete(index int) error {
+	var err error
+	n := p.nodes[index]
+	if n.IsRunning() {
+		c := NewV2rayApiClientV5(p.getGrpcAddr())
+		err = c.Dial()
+		if err == nil {
+			defer c.Close()
+			err = n.Remove(c, getProxyNodeTag(index))
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	for i, pnd := range p.nodes {
+		if pnd.Index == index {
+			p.nodes[i].IsDelete = true
+			p.nodes[i].Status = 0
+		}
+	}
+
+	for k, vvv := range p.speedMap {
+		for j, vv := range vvv {
+			if vv.Index == index {
+				p.speedMap[k][j].IsDelete = true
+				p.speedMap[k][j].Status = 0
+			}
+		}
+	}
+
+	return err
+}
 
 func (p *ProxyPool) KillAllNodes() (total, runport, kill, fail int) {
 	p.IsLock = true
@@ -702,6 +748,7 @@ func (p *ProxyPool) KillAllNodes() (total, runport, kill, fail int) {
 	p.poolCmd = nil
 	return
 }
+
 func (p *ProxyPool) UnActiveNode(n ProxyNode) error {
 	// activePort := p.localPortStart - 1
 	err := p.killActiveNode()

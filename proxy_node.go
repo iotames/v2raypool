@@ -19,6 +19,7 @@ type ProxyNode struct {
 	TestAt           time.Time
 	V2rayNode        V2rayNode
 	Status           int
+	IsDelete         bool
 }
 
 func NewProxyNodeByV2ray(vnd V2rayNode) *ProxyNode {

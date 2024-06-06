@@ -147,6 +147,8 @@
     <a class="layui-btn layui-btn-xs {{= d.is_active ? 'layui-bg-purple' : 'layui-bg-blue' }}" lay-event="active">
       {{= d.is_active ? '已启用' : '启用' }}
     </a>
+    <!-- layui-icon layui-icon-delete -->
+    <a class="layui-btn layui-btn-xs layui-bg-red" lay-event="delete">删除</a>
   </div>
 </script>
 
@@ -272,9 +274,9 @@
           { field: 'speed', title: '速度/秒', templet: '<span class="layui-badge {{= d.test_at != "0001-01-01 00:00" ? "layui-bg-green" : ""}}" onclick="showTips(\'{{= d.test_url }}\', this)">{{= d.speed >= 5 ? 100 : d.speed }} s</span>', width: 100, sort: true },
           { field: 'title', title: '标题', width: 200 },
           { field: 'remote_addr', title: '节点地址', width: 180 },
-          { field: 'is_running', title: '状态', templet: '<span>{{= d.is_running ? "运行中" : "已停止"}}</span>', width: 60 },
+          { field: 'is_running', title: '状态', templet: '<span class="layui-badge {{= d.is_running ? "layui-bg-green" : ""}}">{{= d.is_running ? "运行中" : "已停止"}}</span>', width: 60 },
           { field: 'test_at', title: '测速时间', width: 180 },
-          { fixed: 'right', title: '操作', width: 80, minWidth: 80, toolbar: '#barDemo' }
+          { fixed: 'right', title: '操作', width: 80, minWidth: 115, toolbar: '#barDemo' }
         ]],
         error: function (res, msg) {
           console.log(res, msg)
@@ -428,7 +430,6 @@
               });
 
             } else {
-
               layer.open({
                 title: hintmsg,
                 type: 1,
@@ -469,10 +470,23 @@
                   });
                 }
               });
-
             }
 
             break;
+          case 'delete':
+            var posturl = "/api/node/delete"
+
+            layer.confirm("确定删除节点【" + data.title + "】？", function (index) {
+              postjson(posturl, {index: data.index}, function (dt) {
+                  layer.msg(dt.msg);
+                }, function (dt) {
+                  layer.alert(dt.msg, { icon: 2, title: dt.code + "错误" });
+                })
+                table.reload('nodeslist')
+                console.log(data)
+                layer.close(index);
+              });
+            break
         }
       });
     });
