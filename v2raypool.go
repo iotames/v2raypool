@@ -492,10 +492,12 @@ func (p *ProxyPool) testOneNode(n *ProxyNode, i int) bool {
 	}
 	speed, ok := testProxyNode(p.testUrl, p.GetLocalAddr(*n), i, p.testMaxDuration)
 	n.Speed = speed
-	fmt.Printf("-----testOneNode--ok(%v)--speed(%.4f)--nodeTestUrl(%s)-----ProxyPool.testUrl(%s)-----\n", ok, speed.Seconds(), n.TestUrl, p.testUrl)
+	fmt.Printf("-----testOneNode--ok(%v)--speed(%.4f)--nodeTestUrl(%s)-----ProxyPool.testUrl(%s)--Title(%s)---\n", ok, speed.Seconds(), n.TestUrl, p.testUrl, n.Title)
 	if ok {
 		n.TestUrl = p.testUrl
 		n.TestAt = time.Now()
+	} else {
+		n.TestAt = time.Time{}
 	}
 	p.UpdateNode(*n)
 	if speed < p.testMaxDuration {
