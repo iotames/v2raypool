@@ -48,6 +48,8 @@ github.com/google/pprof v0.0.0-20230602150820-91b7bce49751 h1:hR7/MlvK23p6+lIw9S
 github.com/google/pprof v0.0.0-20230602150820-91b7bce49751/go.mod h1:Jh3hGz2jkYak8qXPD19ryItVnUgpgeqzdkY/D0EaeuA=
 github.com/gorilla/websocket v1.5.1 h1:gmztn0JnHVt9JZquRuzLw3g4wouNVzKL15iLr/zn/QY=
 github.com/gorilla/websocket v1.5.1/go.mod h1:x3kM2JMyaluk02fnUJpQuwD2dCS5NDG2ZHL0uE0tcaY=
+github.com/iotames/easyconf v1.0.3 h1:wCK9nmgRMOtp9PwekAl1pQwW9HkJbUlgNs79t33IXjQ=
+github.com/iotames/easyconf v1.0.3/go.mod h1:/E9K2SGmzK5rUna0zawq0BpkYb1DSzvUJ0P2DEBcbe0=
 github.com/iotames/glayui v1.1.2 h1:wmA6fydKETXRF7wSO5t97IuC3kx8+pEoEf80a7ababA=
 github.com/iotames/glayui v1.1.2/go.mod h1:MRl2O5YY+rZdynyq3BqPIRaFLaSank4eOF5Psvm50rY=
 github.com/iotames/miniutils v1.0.11 h1:L/hz+D2RKgZMev2a9pYe0OtQRdXckqxzsG7XdQRIG8Y=

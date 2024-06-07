@@ -1,9 +1,10 @@
 module github.com/iotames/v2raypool
 
-go 1.21
+go 1.22.1
 
 require (
 	github.com/golang/protobuf v1.5.4
+	github.com/iotames/easyconf v1.0.3
 	github.com/iotames/glayui v1.1.2
 	github.com/iotames/miniutils v1.0.11
 	github.com/joho/godotenv v1.5.1
