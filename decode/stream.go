@@ -14,12 +14,12 @@ type StreamConfig struct {
 	Protocol, Security, Path string
 }
 
-func NewStreamConfig(proto string) *StreamConfig {
-	if proto == "ws" {
-		proto = "websocket"
-	}
-	return &StreamConfig{Protocol: proto}
-}
+// func NewStreamConfig(proto string) *StreamConfig {
+// 	if proto == "ws" {
+// 		proto = "websocket"
+// 	}
+// 	return &StreamConfig{Protocol: proto}
+// }
 
 // {
 // 	"transport":"tcp",

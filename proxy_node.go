@@ -88,9 +88,6 @@ func (p ProxyNode) IsOk() bool {
 	return time.Since(p.TestAt) < time.Hour*24
 }
 
-// // {"add":"jp6.xxx.top","host":"","id":"0999AE93-1330-4A75-DBC1-0DD545F7DD60","net":"ws","path":"","port":"41444","ps":"xxx-v2-JP-Tokyo6(1)","tls":"","v":2,"aid":0,"type":"none"}
-// protocol, add, port id, net
-
 type ProxyNodes []ProxyNode
 
 func (s ProxyNodes) Len() int           { return len(s) }

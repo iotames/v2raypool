@@ -71,7 +71,7 @@ func parseNodeInfo(d string) (nd V2rayNode, err error) {
 			nd.Tls = ss.TransportStream.Security
 			nd.Path = ss.TransportStream.Path
 			nd.Ps = strings.TrimSpace(ss.Title)
-			if nd.Id == "" || nd.Type == "" || ss.Port == 0 || nd.Add == "" || nd.Net == "" {
+			if nd.Id == "" || nd.Type == "" || ss.Port == 0 || nd.Add == "" {
 				err = fmt.Errorf("---parse--shadowsocks--err--ss://--raw(%s)---nd(%+v)", ssdata, nd)
 				return
 			}
