@@ -44,11 +44,12 @@ func getConfByEnv() error {
 	ecf.StringVar(&cf.SubscribeDataFile, "VP_SUBSCRIBE_DATA_FILE", conf.DEFAULT_SUBSCRIBE_DATA_FILE, "订阅数据文件", "若订阅地址无法直接访问，可指定订阅数据文件，数据文件内容为访问订阅地址获取的原始数据。", "若有设置订阅数据文件，且文件内容不为空。则优先从该文件读取订阅节点信息。")
 	ecf.StringVar(&cf.HttpProxy, "VP_HTTP_PROXY", conf.DEFAULT_HTTP_PROXY, "HTTP系统代理", "代理池每个节点的本地端口号，从系统代理往后开始累加。为防止与常用端口冲突，尽量设大点。", "支持 http:// 和 socks5:// 协议。若http端口为30000，则socks5端口为29999。反之亦然。")
 	ecf.StringVar(&cf.TestUrl, "VP_TEST_URL", conf.DEFAULT_TEST_URL, "节点测速的URL")
-
-	// TODO 添加注释到配置文件中
-	// # 路由规则，用英文逗号,隔开。此处更改规则，必须删除 routing.rules.json 文件再重启才可生效。也可直接更改json文件(比如调整规则的优先级顺序)。
-	// # 1. 规则是放在 routing.rules 这个数组当中，数组的内容是有顺序的，也就是说在这里规则是有顺序的，匹配规则时是从上往下匹配；
-	// # 2. 当路由匹配到一个规则时就会跳出匹配而不会对之后的规则进行匹配；
+	rulesComment := []string{
+		"路由规则，用英文逗号,隔开。此处更改规则，必须删除 routing.rules.json 文件再重启才可生效。也可直接更改json文件(比如调整规则的优先级顺序)。",
+		"1. 规则是放在 routing.rules 这个数组当中，数组的内容是有顺序的，也就是说在这里规则是有顺序的，匹配规则时是从上往下匹配；",
+		"2. 当路由匹配到一个规则时就会跳出匹配而不会对之后的规则进行匹配；",
+	}
+	ecf.AddComment("", rulesComment...)
 	ecf.StringListVar(&cf.DirectDomainList, "VP_DIRECT_DOMAIN_LIST", strings.Split(conf.DEFAULT_DIRECT_DOMAIN_LIST, ","), "直连上网的域名列表", `例：baidu.com,domain:baidu.com,full:www.baidu.com,regexp:.*\.qq\.com$`)
 	ecf.StringListVar(&cf.DirectIpList, "VP_DIRECT_IP_LIST", strings.Split(conf.DEFAULT_DIRECT_IP_LIST, `,`), "直连上网的IP列表")
 	ecf.StringListVar(&cf.ProxyDomainList, "VP_PROXY_DOMAIN_LIST", strings.Split(conf.DEFAULT_PROXY_DOMAIN_LIST, `,`), "代理上网的域名列表")
@@ -82,7 +83,7 @@ func getConfByEnv() error {
 	if err != nil {
 		hitmsg += "VP_V2RAY_PATH 配置项错误，找不到可执行文件。\n"
 		hitmsg += "请下载v2ray核心文件(https://github.com/v2fly/v2ray-core/releases)\n"
-		hitmsg += "下载后，请【删除或改名】默认配置文件(config.json)，防止错误读取"
+		// hitmsg += "下载后，请【删除或改名】默认配置文件(config.json)，防止错误读取"
 		logger.Error(hitmsg)
 		return err
 	}
