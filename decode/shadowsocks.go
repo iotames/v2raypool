@@ -100,7 +100,9 @@ func ParseShadowsocks(u string) (ss Shadowsocks, err error) {
 			}
 		}
 	}
-
+	if ss.TransportStream.Protocol == "" {
+		ss.TransportStream.Protocol = "tcp"
+	}
 	if ss.TransportStream.Protocol == "websocket" {
 		ss.TransportStream.Protocol = "ws"
 	}
