@@ -1,3 +1,5 @@
+//go:generate goversioninfo resource/versioninfo.json
+
 package main
 
 import (
@@ -5,7 +7,7 @@ import (
 	"fmt"
 )
 
-var AppVersion = "v1.0.1"
+var AppVersion = "v1.7.1"
 var GoVersion = "go version go1.19.4 windows/amd64"
 
 func main() {

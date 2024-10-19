@@ -66,6 +66,7 @@ jobs:
           go env -w GO111MODULE=on
           go env -w GOPROXY=https://goproxy.cn,direct
           go mod tidy
+          go install github.com/josephspurrier/goversioninfo/cmd/goversioninfo@latest
       
       - name: Get File Name
         id: get_filename
@@ -80,7 +81,8 @@ jobs:
           mkdir -p build_assets
           echo 'hello.ref=${{ github.ref }}'
           echo 'hello.ref_name=${{ github.ref_name }}'
-          go build -v -o build_assets/v2raypool -trimpath -ldflags "-s -w -buildid= -X 'main.AppVersion=${{ github.ref_name }}' -X 'main.GoVersion=`go version`'" ./main
+          go generate
+          go build -v -o build_assets/v2raypool -trimpath -ldflags "-s -w -linkmode internal -buildid= -X 'main.AppVersion=${{ github.ref_name }}' -X 'main.GoVersion=`go version`'" ./main
       
       - name: Rename Windows File
         if: matrix.goos == 'windows'
