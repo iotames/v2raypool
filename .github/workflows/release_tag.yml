@@ -78,10 +78,10 @@ jobs:
         
       - name: Build
         run: |
-          mkdir -p build_assets
           echo 'hello.ref=${{ github.ref }}'
-          echo 'hello.ref_name=${{ github.ref_name }}'
-          go generate
+          echo 'hello.ref_name=${{ github.ref_name }}'        
+          go generate ./main
+          mkdir -p build_assets
           go build -v -o build_assets/v2raypool -trimpath -ldflags "-s -w -linkmode internal -buildid= -X 'main.AppVersion=${{ github.ref_name }}' -X 'main.GoVersion=`go version`'" ./main
       
       - name: Rename Windows File

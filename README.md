@@ -1,12 +1,33 @@
+<div align="center">
+   <p>
+   <img style="width:200px" alt="V2rayPool" src="https://raw.githubusercontent.com/iotames/v2raypool/master/main/resource/v2raypool.logo.png">
+   </p>
+  <strong>简单易用的v2ray客户端和代理池服务</strong>
+<br>
+
+</div>
+
+
 ## 简介
 
-- 同时接入多个v2ray节点，使用多个本地端口，组成简单的IP代理池服务。可供爬虫等程序调用。
+[![GoDoc](https://badgen.net/badge/Go/referenct)](https://pkg.go.dev/github.com/iotames/miniutils)
+[![License](https://badgen.net/badge/License/MIT/green)](https://github.com/iotames/miniutils/blob/main/LICENSE)
 
-- 可以选一个节点设为系统代理，作为普通的v2ray客户端使用。
+- 纯Go语言实现，Linux, Win, IOS 全平台支持
+- 同时运行多个v2ray代理，组成IP代理池
+- 使用gRPC接口控制和WebUI网页交互
 
-- 提供通用gRPC控制接口，参看数据定义文件 `v2raypool.proto`
+`gRPC` 接口请参照数据定义文件: `v2raypool.proto`
 
 [项目文档: https://iotames.github.io/v2raypool/](https://iotames.github.io/v2raypool/)
+
+
+## 用途
+
+1. 多个本地监听端口，组成简单的IP代理池。可供爬虫等程序调用。
+2. 选择单个节点设为系统代理，可作为普通的v2ray客户端使用。
+
+
 
 ## 用户界面
 

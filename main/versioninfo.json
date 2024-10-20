@@ -2,14 +2,14 @@
     "FixedFileInfo": {
         "FileVersion": {
             "Major": 1,
-            "Minor": 0,
-            "Patch": 0,
+            "Minor": 7,
+            "Patch": 2,
             "Build": 0
         },
         "ProductVersion": {
             "Major": 1,
-            "Minor": 0,
-            "Patch": 0,
+            "Minor": 7,
+            "Patch": 2,
             "Build": 0
         },
         "FileFlagsMask": "3f",
@@ -21,15 +21,15 @@
     "StringFileInfo": {
         "Comments": "",
         "CompanyName": "",
-        "FileDescription": "",
-        "FileVersion": "",
+        "FileDescription": "简单易用的v2ray客户端和代理池服务",
+        "FileVersion": "v1.7.2",
         "InternalName": "",
         "LegalCopyright": "",
         "LegalTrademarks": "",
         "OriginalFilename": "",
         "PrivateBuild": "",
         "ProductName": "V2rayPool",
-        "ProductVersion": "v1.7.0",
+        "ProductVersion": "v1.7.2",
         "SpecialBuild": ""
     },
     "VarFileInfo": {
@@ -38,6 +38,6 @@
             "CharsetID": "04B0"
         }
     },
-    "IconPath": "resource/go.logo.ico",
+    "IconPath": "resource/v2raypool.logo.ico",
     "ManifestPath": ""
 }
