@@ -75,12 +75,17 @@ jobs:
           echo "GOOS: $GOOS, GOARCH: $GOARCH, RELEASE_NAME: $_NAME"
           echo "ASSET_NAME=$_NAME" >> $GITHUB_OUTPUT
           echo "ASSET_NAME=$_NAME" >> $GITHUB_ENV
-        
+
+      - name: Prepare Build for Windows
+        if: matrix.goos == 'windows'
+        run: |
+          go env GOPATH
+          go generate ./main || echo "try export PATH ..." && export PATH=$PATH:`go env GOPATH`/bin && go generate ./main
+
       - name: Build
         run: |
           echo 'hello.ref=${{ github.ref }}'
-          echo 'hello.ref_name=${{ github.ref_name }}'        
-          go generate ./main
+          echo 'hello.ref_name=${{ github.ref_name }}'
           mkdir -p build_assets
           go build -v -o build_assets/v2raypool -trimpath -ldflags "-s -w -linkmode internal -buildid= -X 'main.AppVersion=${{ github.ref_name }}' -X 'main.GoVersion=`go version`'" ./main
       
