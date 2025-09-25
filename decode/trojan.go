@@ -16,6 +16,7 @@ type Trojan struct {
 	Alpn              string `json:"alpn,omitempty"`
 }
 
+// ParseTrojan 解析Url格式的节点数据
 func ParseTrojan(d string) (tr Trojan, err error) {
 	var t *nurl.URL
 	t, err = nurl.Parse(d)

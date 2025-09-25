@@ -117,7 +117,7 @@ jobs:
 
         # 上传附件
       - name: Upload file to Artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ steps.get_filename.outputs.ASSET_NAME }}.tar.gz
           path: ${{ steps.get_filename.outputs.ASSET_NAME }}.tar.gz    

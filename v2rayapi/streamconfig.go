@@ -8,6 +8,7 @@ import (
 	"github.com/v2fly/v2ray-core/v5/common/serial"
 	"github.com/v2fly/v2ray-core/v5/transport/internet"
 	"github.com/v2fly/v2ray-core/v5/transport/internet/tcp"
+	"github.com/v2fly/v2ray-core/v5/transport/internet/udp"
 	"github.com/v2fly/v2ray-core/v5/transport/internet/websocket"
 )
 
@@ -30,8 +31,11 @@ func GetTransportStreamConfig(network, path, hdhost string) (conf *internet.Stre
 	case "tcp":
 		transptl = internet.TransportProtocol_TCP
 		protoconf = &tcp.Config{}
+	case "udp":
+		transptl = internet.TransportProtocol_UDP
+		protoconf = &udp.Config{}
 	default:
-		err = fmt.Errorf("outbound network or transport not support (%s). only support tcp, ws or websocket", transproto)
+		err = fmt.Errorf("outbound network or transport not support (%s). only support udp, tcp, ws or websocket", transproto)
 	}
 	if err != nil {
 		return

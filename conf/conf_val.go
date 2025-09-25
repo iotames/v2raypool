@@ -42,7 +42,7 @@ type Conf struct {
 	DirectDomainList, DirectIpList, ProxyDomainList, ProxyIpList []string
 }
 
-func (cf Conf) GetSubscribeData() string {
+func (cf Conf) GetSubscribeData() []byte {
 	f, err := os.Open(cf.SubscribeDataFile)
 	if err != nil {
 		panic(fmt.Errorf("poen SubscribeDataFile(%s) err(%v)", cf.SubscribeDataFile, err))
@@ -51,7 +51,7 @@ func (cf Conf) GetSubscribeData() string {
 	if err != nil {
 		panic(err)
 	}
-	return strings.TrimSpace(string(b))
+	return b
 }
 
 func (cf Conf) GetOkInboundProtocols() []string {

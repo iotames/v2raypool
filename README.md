@@ -99,7 +99,7 @@ VP_V2RAY_PATH 配置项错误，找不到可执行文件。
 
 设置代理节点的订阅源地址，请更改 `.env` 文件的 `VP_SUBSCRIBE_URL` 配置项，配置值为http网络地址。
 
-若网络地址访问异常，可使用 `VP_SUBSCRIBE_DATA_FILE` 配置项。设法查看订阅地址的响应结果，保存到文件 `subscribe_data.txt`。
+若网络地址访问异常，可使用 `VP_SUBSCRIBE_DATA_FILE` 配置项。设法查看订阅地址的响应结果，保存到文件 `subscribe_data.txt`。支持 `Clash` 的 `.yml` 文件格式。
 
 
 ### 5. 运行服务端和客户端
@@ -223,6 +223,7 @@ VP_SUBSCRIBE_URL = ""
 
 # 若订阅地址无法直接访问，可指定订阅数据文件，数据文件内容为访问订阅地址获取的原始数据。
 # 若有设置订阅数据文件，且文件内容不为空。则优先从该文件读取订阅节点信息。
+# 支持Clash的.yml订阅文件。
 VP_SUBSCRIBE_DATA_FILE = "subscribe_data.txt"
 
 # 设置HTTP代理，代理池每个节点的本地端口号，往后开始累加。为防止与常用端口冲突，尽量设大点。
@@ -331,3 +332,7 @@ IP匹配规则:
 # 从proto数据格式文件生成可供Go语言调用的代码包
 protoc --go_out=./ --go-grpc_out=./ v2raypool.proto
 ```
+
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=iotames/v2raypool&type=Date)](https://star-history.com/#iotames/v2raypool&Date)

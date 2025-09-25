@@ -38,8 +38,12 @@ func requestNode(c *http.Client, r *http.Request, maxDuration time.Duration, i i
 	if err != nil {
 		if strings.Contains(err.Error(), io.EOF.Error()) {
 			speed = costTime
+			ok = true
+			// ---SpeedTestError(30)Error(Get "https://www.google.com/": EOF)---statusCode(0)--cost(1.6185742s)--
+			logger.Debugf("---SpeedTestError(%d)--io.EOF.Error(%s)---statusCode(%d)--cost(%+v)---", i, err, statusCode, costTime)
+		} else {
+			logger.Debugf("---SpeedTestError(%d)Error(%s)---statusCode(%d)--cost(%+v)---", i, err, statusCode, costTime)
 		}
-		logger.Debugf("---SpeedTestError(%d)Error(%s)---statusCode(%d)--cost(%+v)---", i, err, statusCode, costTime)
 		return
 	}
 

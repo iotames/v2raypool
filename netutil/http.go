@@ -15,7 +15,7 @@ func GetHttpClient(maxDuration time.Duration, requestUrl string, proxyAddr strin
 	httpTrans := (&http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}).Clone() // trans.(*http.Transport)
-	httpTrans.DisableKeepAlives = true // 解决 Get "https://www.google.com": EOF
+	httpTrans.DisableKeepAlives = true // 禁用连接复用，每次请求都用新连接。解决 Get "https://www.google.com": EOF
 	if proxyAddr != "" {
 		var proxy *url.URL
 		proxy, err = url.Parse(proxyAddr)

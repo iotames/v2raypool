@@ -41,7 +41,7 @@ func getConfByEnv() error {
 	ecf.IntVar(&cf.GrpcPort, "VP_GRPC_PORT", conf.DEFAULT_GRPC_PORT, "代理池的gRPC服务端口")
 	ecf.StringVar(&cf.V2rayPath, "VP_V2RAY_PATH", conf.DEFAULT_V2RAY_PATH, "v2ray可执行文件路径", `例: "D:\\Users\\yourname\\v2ray-windows-64\\v2ray.exe" or "/root/v2ray-linux64/v2ray"`)
 	ecf.StringVar(&cf.SubscribeUrl, "VP_SUBSCRIBE_URL", "", "代理节点订阅地址")
-	ecf.StringVar(&cf.SubscribeDataFile, "VP_SUBSCRIBE_DATA_FILE", conf.DEFAULT_SUBSCRIBE_DATA_FILE, "订阅数据文件", "若订阅地址无法直接访问，可指定订阅数据文件，数据文件内容为访问订阅地址获取的原始数据。", "若有设置订阅数据文件，且文件内容不为空。则优先从该文件读取订阅节点信息。")
+	ecf.StringVar(&cf.SubscribeDataFile, "VP_SUBSCRIBE_DATA_FILE", conf.DEFAULT_SUBSCRIBE_DATA_FILE, "订阅数据文件", "若订阅地址无法直接访问，可指定订阅数据文件，数据文件内容为访问订阅地址获取的原始数据。", "支持Clash的.yml订阅文件。", "若有设置订阅数据文件，且文件内容不为空。则优先从该文件读取订阅节点信息。")
 	ecf.StringVar(&cf.HttpProxy, "VP_HTTP_PROXY", conf.DEFAULT_HTTP_PROXY, "HTTP系统代理", "代理池每个节点的本地端口号，从系统代理往后开始累加。为防止与常用端口冲突，尽量设大点。", "支持 http:// 和 socks5:// 协议。若http端口为30000，则socks5端口为29999。反之亦然。")
 	ecf.StringVar(&cf.TestUrl, "VP_TEST_URL", conf.DEFAULT_TEST_URL, "节点测速的URL")
 	rulesComment := []string{

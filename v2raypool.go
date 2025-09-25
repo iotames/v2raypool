@@ -1,15 +1,15 @@
 package v2raypool
 
 import (
-	"crypto/md5"
-	"encoding/gob"
-
-	// "encoding/json"
+	// save nodes to file
+	// "crypto/md5"
+	// "path/filepath"
+	// "encoding/gob"
+	// "os"
+	"encoding/json"
 	"fmt"
 	"net"
-	"os"
 	"os/exec"
-	"path/filepath"
 	"runtime"
 	"strings"
 	"sync"
@@ -35,18 +35,21 @@ func GetProxyPool() *ProxyPool {
 }
 
 type ProxyPool struct {
-	serverMap                      map[int]*V2rayServer
-	startAt                        time.Time
-	activeCmd, poolCmd             *exec.Cmd
-	activeNode                     ProxyNode
-	localPortStart                 int
-	v2rayPath, testUrl             string
-	subscribeRawData, subscribeUrl string
-	testMaxDuration                time.Duration
-	nodes                          ProxyNodes
-	lock                           *sync.Mutex
-	IsLock                         bool
-	speedMap                       map[string]ProxyNodes
+	serverMap          map[int]*V2rayServer
+	startAt            time.Time
+	activeCmd, poolCmd *exec.Cmd
+	activeNode         ProxyNode
+	localPortStart     int
+	v2rayPath, testUrl string
+	subscribeRawData   []byte
+	subscribeUrl       string
+	// 订阅格式 ymal, or json, or empty
+	subscribeRawDataFormat string
+	testMaxDuration        time.Duration
+	nodes                  ProxyNodes
+	lock                   *sync.Mutex
+	IsLock                 bool
+	speedMap               map[string]ProxyNodes
 }
 
 func NewProxyPool() *ProxyPool {
@@ -168,44 +171,49 @@ func (p *ProxyPool) startV2rayPoolCmd() error {
 	return err
 }
 
+// func (p *ProxyPool) getNodesByFile() error {
+// 	var err error
+
+// 	if miniutils.IsPathExists(getNodesFile(p.subscribeUrl)) {
+// 		var nds = ProxyNodes{}
+// 		err = getNodesByFile(&nds, p.subscribeUrl)
+// 		if err != nil {
+// 			lg := getConf().GetLogger()
+// 			lg.Errorf("---StartV2rayPool--getNodesByFile---err(%v)---nds(%+v)\n", err, nds)
+// 		}
+
+// 		if len(nds) > 0 {
+// 			for _, nd := range nds {
+// 				if nd.LocalAddr == "" {
+// 					continue
+// 				}
+// 				nd.Status = 0
+// 				p.UpdateNode(nd)
+// 			}
+// 		}
+// 		p.nodes.SortBySpeed()
+// 	}
+// 	if miniutils.IsPathExists(getNodesMapFile(p.subscribeUrl)) {
+// 		ndsmp := make(map[string]ProxyNodes)
+// 		getNodesMapByFile(&ndsmp, p.subscribeUrl)
+// 		if len(ndsmp) > 0 {
+// 			for k, v := range ndsmp {
+// 				for _, vv := range v {
+// 					if vv.LocalAddr == "" {
+// 						continue
+// 					}
+// 					vv.Status = 0
+// 					p.AddSpeedNode(k, vv)
+// 				}
+// 			}
+// 		}
+// 	}
+// 	return err
+// }
+
 func (p *ProxyPool) StartV2rayPool() {
-	var err error
 	p.startV2rayPoolCmd()
-	if miniutils.IsPathExists(getNodesFile(p.subscribeUrl)) {
-		var nds = ProxyNodes{}
-		err = getNodesByFile(&nds, p.subscribeUrl)
-		if err != nil {
-			lg := getConf().GetLogger()
-			lg.Errorf("---StartV2rayPool--getNodesByFile---err(%v)---nds(%+v)\n", err, nds)
-		}
-
-		if len(nds) > 0 {
-			for _, nd := range nds {
-				if nd.LocalAddr == "" {
-					continue
-				}
-				nd.Status = 0
-				p.UpdateNode(nd)
-			}
-		}
-		p.nodes.SortBySpeed()
-	}
-	if miniutils.IsPathExists(getNodesMapFile(p.subscribeUrl)) {
-		ndsmp := make(map[string]ProxyNodes)
-		getNodesMapByFile(&ndsmp, p.subscribeUrl)
-		if len(ndsmp) > 0 {
-			for k, v := range ndsmp {
-				for _, vv := range v {
-					if vv.LocalAddr == "" {
-						continue
-					}
-					vv.Status = 0
-					p.AddSpeedNode(k, vv)
-				}
-			}
-		}
-	}
-
+	// p.getNodesByFile()
 	if conf.GetConf().AutoStart {
 		// 自动启动所有代理节点。并测速。然后选择最快的节点作为系统代理。
 		p.StartAll()
@@ -217,14 +225,21 @@ func (p *ProxyPool) SetLocalPortStart(port int) *ProxyPool {
 	p.localPortStart = port
 	return p
 }
-func (p *ProxyPool) SetSubscribeRawData(d string) *ProxyPool {
+func (p *ProxyPool) SetSubscribeRawData(d []byte, subscribeRawDataFormat string) *ProxyPool {
 	p.subscribeRawData = d
+	if subscribeRawDataFormat != "" && subscribeRawDataFormat != decode.FILE_FORMAT_YAML {
+		panic("订阅源格式错误:只支持" + decode.FILE_FORMAT_YAML)
+	}
+	p.subscribeRawDataFormat = subscribeRawDataFormat
 	return p
 }
+
 func (p *ProxyPool) SetSubscribeUrl(d string) *ProxyPool {
 	p.subscribeUrl = d
 	return p
 }
+
+// SetTestMaxDuration 设置测速最大耗时。超过此时间则认为测速失败
 func (p *ProxyPool) SetTestMaxDuration(d time.Duration) *ProxyPool {
 	p.testMaxDuration = d
 	return p
@@ -355,43 +370,69 @@ func (p ProxyPool) GetTestedDomainList() []string {
 	}
 	return dl
 }
-func (p *ProxyPool) InitSubscribeData() *ProxyPool {
-	if p.localPortStart == 0 {
-		panic("please set localPortStart")
-	}
-	p.startAt = time.Now()
+
+func (p *ProxyPool) parseSubscribeDataFromBase64() {
 	var err error
 	var dt string
-	var rawdt string
-	if p.subscribeRawData != "" {
-		dt, err = decode.ParseSubscribeByRaw(p.subscribeRawData)
+	subscribeRawDataStr := strings.TrimSpace(string(p.subscribeRawData))
+
+	if subscribeRawDataStr != "" {
+		dt, err = decode.ParseSubscribeByRaw(subscribeRawDataStr)
 		if err != nil {
 			panic(err)
 		}
 	} else {
 		if p.subscribeUrl != "" {
-			dt, rawdt, err = decode.ParseSubscribeByUrl(p.subscribeUrl, "")
+			dt, subscribeRawDataStr, err = decode.ParseSubscribeByUrl(p.subscribeUrl, "")
 			if err != nil {
 				fmt.Printf("-----InitSubscribeData-parseSubscribeByUrl-err(%v)\n", err)
 			}
-			fmt.Printf("------InitSubscribeData----rawdt(%s)----\n", rawdt)
+			fmt.Printf("------InitSubscribeData----rawdt(%s)----\n", subscribeRawDataStr)
 		}
 	}
 
 	if dt != "" {
-		vnds := ParseV2rayNodes(dt)
-		for i, vnd := range vnds {
-			pnd := p.getNodeByV2rayNode(vnd, i)
-			p.SetLocalAddr(&pnd, 0)
-			p.AddNode(pnd)
-		}
-		if rawdt != "" && len(vnds) > 0 {
-			err = conf.GetConf().UpdateSubscribeData(rawdt)
-			if err != nil {
-				panic(err)
-			}
-		}
+		p.addNodeList(ParseV2rayNodes(dt))
 	}
+}
+
+func (p *ProxyPool) addNodeList(vnds []V2rayNode) {
+	for i, vnd := range vnds {
+		pnd := p.getNodeByV2rayNode(vnd, i)
+		p.SetLocalAddr(&pnd, 0)
+		p.AddNode(pnd)
+	}
+}
+
+func (p *ProxyPool) InitSubscribeData() *ProxyPool {
+	if p.localPortStart == 0 {
+		panic("please set localPortStart")
+	}
+	p.startAt = time.Now()
+	if p.subscribeRawDataFormat == decode.FILE_FORMAT_YAML {
+		nds := decode.ParseClashSubscribe(p.subscribeRawData)
+		var vnds []V2rayNode
+		for _, clashNd := range nds {
+			nd := V2rayNode{
+				Protocol: clashNd.Type,
+				Host:     clashNd.Sni,
+				Add:      clashNd.Server,
+			}
+			nd.Port = json.Number(fmt.Sprintf("%d", clashNd.Port))
+			nd.Ps = strings.TrimSpace(clashNd.Name)
+			nd.Id = clashNd.Password
+			nd.Net = "tcp"
+			if clashNd.Udp {
+				nd.Net = "udp"
+			}
+			// nd.Tls = tro.TransportStream.Security
+			// nd.Path = tro.TransportStream.Path
+			vnds = append(vnds, nd)
+		}
+		p.addNodeList(vnds)
+		return p
+	}
+	p.parseSubscribeDataFromBase64()
 	return p
 }
 func (p *ProxyPool) UpdateSubscribe(httpProxy string) (total, add int) {
@@ -526,21 +567,21 @@ func (p *ProxyPool) TestAllForce() {
 	}
 	p.nodes.SortBySpeed()
 
-	// save nodes to file
-	var err error
-	lg := getConf().GetLogger()
-	if len(p.nodes) > 0 {
-		err = saveNodesToFile(p.nodes, getNodesFile(p.subscribeUrl))
-		if err != nil {
-			lg.Errorf("----TestAllForce--saveNodesToFile-err(%v)---", err)
-		}
-	}
-	if len(p.speedMap) > 0 {
-		err = saveNodesMapToFile(p.speedMap, getNodesMapFile(p.subscribeUrl))
-		if err != nil {
-			lg.Errorf("-----TestAllForce--saveNodesMapToFile--err(%v)----", err)
-		}
-	}
+	// // save nodes to file
+	// var err error
+	// lg := getConf().GetLogger()
+	// if len(p.nodes) > 0 {
+	// 	err = saveNodesToFile(p.nodes, getNodesFile(p.subscribeUrl))
+	// 	if err != nil {
+	// 		lg.Errorf("----TestAllForce--saveNodesToFile-err(%v)---", err)
+	// 	}
+	// }
+	// if len(p.speedMap) > 0 {
+	// 	err = saveNodesMapToFile(p.speedMap, getNodesMapFile(p.subscribeUrl))
+	// 	if err != nil {
+	// 		lg.Errorf("-----TestAllForce--saveNodesMapToFile--err(%v)----", err)
+	// 	}
+	// }
 
 	if p.activeCmd == nil {
 		for _, nd := range p.nodes {
@@ -603,21 +644,21 @@ func (p *ProxyPool) TestAll() {
 	}
 	p.nodes.SortBySpeed()
 
-	// save nodes to file
-	var err error
-	lg := getConf().GetLogger()
-	if len(p.nodes) > 0 {
-		err = saveNodesToFile(p.nodes, getNodesFile(p.subscribeUrl))
-		if err != nil {
-			lg.Errorf("-----TestAll--saveNodesToFile-err(%v)---", err)
-		}
-	}
-	if len(p.speedMap) > 0 {
-		err = saveNodesMapToFile(p.speedMap, getNodesMapFile(p.subscribeUrl))
-		if err != nil {
-			lg.Errorf("-----TestAll--saveNodesMapToFile--err(%v)----", err)
-		}
-	}
+	// // save nodes to file
+	// var err error
+	// lg := getConf().GetLogger()
+	// if len(p.nodes) > 0 {
+	// 	err = saveNodesToFile(p.nodes, getNodesFile(p.subscribeUrl))
+	// 	if err != nil {
+	// 		lg.Errorf("-----TestAll--saveNodesToFile-err(%v)---", err)
+	// 	}
+	// }
+	// if len(p.speedMap) > 0 {
+	// 	err = saveNodesMapToFile(p.speedMap, getNodesMapFile(p.subscribeUrl))
+	// 	if err != nil {
+	// 		lg.Errorf("-----TestAll--saveNodesMapToFile--err(%v)----", err)
+	// 	}
+	// }
 
 	if p.activeCmd == nil {
 		for _, nd := range p.nodes {
@@ -875,17 +916,19 @@ func getConf() conf.Conf {
 // https://cloud.tencent.com/developer/article/1564128
 func proxyPoolInit() {
 	cf := getConf()
-	subscribeRawData := cf.GetSubscribeData()
-	if cf.SubscribeUrl == "" {
-		// subscribeRawData == ""
-		panic("subscribe url can not be empty.订阅地址不能为空")
+	if cf.SubscribeUrl == "" && cf.SubscribeDataFile == "" {
+		panic("SubscribeUrl AND SubscribeDataFile can not be empty.订阅地址和订阅数据文件不能同时为空")
 	}
 	port := cf.GetHttpProxyPort()
+	sformat := ""
+	if strings.Contains(cf.SubscribeDataFile, ".yml") || strings.Contains(cf.SubscribeDataFile, ".yaml") {
+		sformat = decode.FILE_FORMAT_YAML
+	}
 
 	pp := GetProxyPool()
 	pp.SetV2rayPath(cf.V2rayPath).
 		SetTestUrl(cf.TestUrl).
-		SetSubscribeRawData(subscribeRawData).
+		SetSubscribeRawData(cf.GetSubscribeData(), sformat).
 		SetSubscribeUrl(cf.SubscribeUrl).
 		SetLocalPortStart(port + 1).
 		SetTestMaxDuration(MAX_TEST_DURATION).
@@ -897,63 +940,65 @@ func proxyPoolInit() {
 	pp.StartV2rayPool()
 }
 
-func getNodesByFile(data *ProxyNodes, subscribeUrl string) error {
-	f, err := os.Open(getNodesFile(subscribeUrl))
-	if err != nil {
-		fmt.Printf("---getNodesByFile--os.Open--err(%v)\n", err)
-		return err
-	}
-	defer f.Close()
-	// decode := json.NewDecoder(f)
-	decode := gob.NewDecoder(f)
-	err = decode.Decode(data)
-	if err != nil {
-		return err
-	}
-	return err
-}
+// func getNodesByFile(data *ProxyNodes, subscribeUrl string) error {
+// 	f, err := os.Open(getNodesFile(subscribeUrl))
+// 	if err != nil {
+// 		fmt.Printf("---getNodesByFile--os.Open--err(%v)\n", err)
+// 		return err
+// 	}
+// 	defer f.Close()
+// 	// decode := json.NewDecoder(f)
+// 	decode := gob.NewDecoder(f)
+// 	err = decode.Decode(data)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	return err
+// }
 
-func getNodesMapByFile(data *map[string]ProxyNodes, subscribeUrl string) error {
-	f, err := os.Open(getNodesMapFile(subscribeUrl))
-	if err != nil {
-		fmt.Printf("---getNodesMapByFile--os.Open--err(%v)\n", err)
-		return err
-	}
-	defer f.Close()
-	// decode := json.NewDecoder(f)
-	decode := gob.NewDecoder(f)
-	err = decode.Decode(data)
-	if err != nil {
-		fmt.Printf("---getNodesMapByFile--decode.Decode--err(%v)---mp(%+v)\n", err, *data)
-		return err
-	}
-	return err
-}
-func saveNodesToFile(nds ProxyNodes, fpath string) error {
-	f, err := os.OpenFile(fpath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0777)
-	if err != nil {
-		return err
-	}
-	// encode := json.NewEncoder(f)
-	encode := gob.NewEncoder(f)
-	return encode.Encode(nds)
-}
-func saveNodesMapToFile(mp map[string]ProxyNodes, fpath string) error {
-	f, err := os.OpenFile(fpath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0777)
-	if err != nil {
-		return err
-	}
-	// encode := json.NewEncoder(f)
-	encode := gob.NewEncoder(f)
-	return encode.Encode(mp)
-}
+//	func getNodesMapByFile(data *map[string]ProxyNodes, subscribeUrl string) error {
+//		f, err := os.Open(getNodesMapFile(subscribeUrl))
+//		if err != nil {
+//			fmt.Printf("---getNodesMapByFile--os.Open--err(%v)\n", err)
+//			return err
+//		}
+//		defer f.Close()
+//		// decode := json.NewDecoder(f)
+//		decode := gob.NewDecoder(f)
+//		err = decode.Decode(data)
+//		if err != nil {
+//			fmt.Printf("---getNodesMapByFile--decode.Decode--err(%v)---mp(%+v)\n", err, *data)
+//			return err
+//		}
+//		return err
+//	}
 
-func getNodesFile(subscribeUrl string) string {
-	runtimeDir := conf.GetConf().RuntimeDir
-	return filepath.Join(runtimeDir, fmt.Sprintf("nodes_%x.gob", md5.Sum([]byte(subscribeUrl))))
-}
+// func saveNodesToFile(nds ProxyNodes, fpath string) error {
+// 	f, err := os.OpenFile(fpath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0777)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	// encode := json.NewEncoder(f)
+// 	encode := gob.NewEncoder(f)
+// 	return encode.Encode(nds)
+// }
 
-func getNodesMapFile(subscribeUrl string) string {
-	runtimeDir := conf.GetConf().RuntimeDir
-	return filepath.Join(runtimeDir, fmt.Sprintf("nodesmap_%x.gob", md5.Sum([]byte(subscribeUrl))))
-}
+// func saveNodesMapToFile(mp map[string]ProxyNodes, fpath string) error {
+// 	f, err := os.OpenFile(fpath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0777)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	// encode := json.NewEncoder(f)
+// 	encode := gob.NewEncoder(f)
+// 	return encode.Encode(mp)
+// }
+
+// func getNodesFile(subscribeUrl string) string {
+// 	runtimeDir := conf.GetConf().RuntimeDir
+// 	return filepath.Join(runtimeDir, fmt.Sprintf("nodes_%x.gob", md5.Sum([]byte(subscribeUrl))))
+// }
+
+// func getNodesMapFile(subscribeUrl string) string {
+// 	runtimeDir := conf.GetConf().RuntimeDir
+// 	return filepath.Join(runtimeDir, fmt.Sprintf("nodesmap_%x.gob", md5.Sum([]byte(subscribeUrl))))
+// }

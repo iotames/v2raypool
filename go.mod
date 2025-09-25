@@ -11,6 +11,7 @@ require (
 	github.com/v2fly/v2ray-core/v5 v5.15.1
 	google.golang.org/grpc v1.63.2
 	google.golang.org/protobuf v1.33.0
+	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (
