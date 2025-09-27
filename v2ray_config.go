@@ -351,7 +351,7 @@ func getV2rayConfigV4(n V2rayNode, inPort int) *JsonConfig {
 		panic(err)
 	}
 
-	fmt.Printf("\n---getV2rayConfigV4--Outbounds-len(%d)--v2ray.config=(%s)--\n", len(vconf.Outbounds), string(vconfb))
+	fmt.Printf("\n---getV2rayConfigV4--Outbounds-len(%d)---\n", len(vconf.Outbounds))
 	return NewJsonConfig(vconfb)
 }
 

@@ -116,7 +116,11 @@ v2raypool.exe
 
 5.2 客户端
 
-`gRPC` 客户端交互命令:
+客户端有 `WebUI` 和 `gRPC` 两种。
+
+1. `WebUI` 网页面板: [http://127.0.0.1:8087](http://127.0.0.1:8087). `windows` 环境下网页会自动打开。
+
+2. `gRPC` 通用接口：详见 `v2raypool.proto` 文件
 
 ```
 # 启动v2ray代理池，激活所有代理节点。
@@ -144,7 +148,6 @@ v2raypool.exe --updateproxynodes
 v2raypool.exe --stopproxynodes
 ```
 
-`WebUI` 网页面板: [http://127.0.0.1:8087](http://127.0.0.1:8087). `windows` 环境下网页会自动打开。
 
 ### 6. Linux配置systemd系统服务(可选)
 
@@ -291,7 +294,7 @@ vmess://eyJhZGQiOiAic2VydmVyMzEuYmVoZXNodGJhbmVoLmNvbSIsICJhaWQiOiAwLCAiaG9zdCI6
 - DIRECT_IP_LIST 直连IP列表
 
 
-域名匹配规则:
+域名匹配规则（使用geosite规则，可能要 `geosite.dat` 文件支持）:
 
 - `纯字符串`：当此字符串匹配`目标域名中任意部分`，该规则生效。比如 `sina.com` 可以匹配 `sina.com`、`sina.com.cn`、`sina.company` 和 `www.sina.com`，但不匹配 `sina.cn`。
 - `正则表达式`：由 `regexp:` 开始，余下部分是一个正则表达式。当此正则表达式匹配目标域名时，该规则生效。例如 `regexp:\.goo.*\.com$` 匹配 `www.google.com`、`fonts.googleapis.com`，但不匹配 `google.com`。
@@ -300,7 +303,7 @@ vmess://eyJhZGQiOiAic2VydmVyMzEuYmVoZXNodGJhbmVoLmNvbSIsICJhaWQiOiAwLCAiaG9zdCI6
 - `预定义域名列表`：由 `geosite:` 开头，余下部分是一个类别名称（域名列表），如 `geosite:google` 或者 `geosite:cn`。名称及域名列表参考[预定义域名列表](https://www.v2fly.org/config/routing.html#%E9%A2%84%E5%AE%9A%E4%B9%89%E5%9F%9F%E5%90%8D%E5%88%97%E8%A1%A8)。
 - `从文件中加载域名`：形如 `ext:file:tag`，必须以 `ext:` 开头，后面跟文件名和标签，文件存放在[资源目录](https://www.v2fly.org/config/env.html#%E8%B5%84%E6%BA%90%E6%96%87%E4%BB%B6%E8%B7%AF%E5%BE%84)中，文件格式与 `geosite.dat` 相同，标签必须在文件中存在。
 
-IP匹配规则:
+IP匹配规则（使用geoip规则，可能要 `geoip.dat` 文件支持）:
 
 - `IP`：形如 `127.0.0.1`。
 - `CIDR`：形如 `10.0.0.0/8`。

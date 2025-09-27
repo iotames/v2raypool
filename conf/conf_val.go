@@ -32,14 +32,15 @@ type Conf struct {
 	TestUrl                               string
 	EnvFile                               string
 	RuntimeDir                            string
-	AutoStart                             bool
+	AutoStart, EnableStorage              bool
 	GrpcPort, V2rayApiPort, WebServerPort int
 	V2rayPath                             string
 	SubscribeUrl                          string
 	SubscribeDataFile                     string
 	// TODO 拆分HttpProxy配置为HTTP协议端口，SOCKS协议端口。 使用HTTP端口为系统代理
-	HttpProxy                                                    string
-	DirectDomainList, DirectIpList, ProxyDomainList, ProxyIpList []string
+	HttpProxy                      string
+	DirectDomainList, DirectIpList []string
+	ProxyDomainList, ProxyIpList   []string
 }
 
 func (cf Conf) GetSubscribeData() []byte {
