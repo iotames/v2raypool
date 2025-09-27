@@ -56,7 +56,7 @@ func getConfByEnv() error {
 	ecf.StringListVar(&cf.ProxyIpList, "VP_PROXY_IP_LIST", strings.Split(conf.DEFAULT_PROXY_IP_LIST, `,`), "代理上网的IP列表")
 	ecf.IntVar(&cf.V2rayApiPort, "VP_V2RAY_API_PORT", conf.DEFAULT_V2RAY_API_PORT, "v2ray的API控制端口")
 	ecf.IntVar(&cf.WebServerPort, "VP_WEB_SERVER_PORT", conf.DEFAULT_WEB_SERVER_PORT, "Web服务器端口", "设置为0可禁用Web面板")
-	ecf.BoolVar(&cf.EnableStorage, "VP_STORAGE_ENABLE", false, "保存测速节点数据到本地存储，下次重启应用直接读取。")
+	ecf.BoolVar(&cf.EnableStorage, "VP_STORAGE_ENABLE", false, "保存测速节点数据到本地存储，下次重启应用直接读取。", "使用订阅地址SubscribeUrl的值来定位存储文件。变更订阅地址会找不到之前的测速数据。")
 	ecf.Parse()
 	conf.SetConf(cf)
 	vconf = cf
