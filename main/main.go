@@ -5,7 +5,7 @@ import (
 	"fmt"
 )
 
-var AppVersion = "v1.8.1"
+var AppVersion = "v1.8.2"
 var GoVersion = "go version go1.19.4 windows/amd64"
 
 func main() {
