@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"net"
 	"os/exec"
+	"path/filepath"
 	"runtime"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -878,16 +880,33 @@ func getConf() conf.Conf {
 // https://cloud.tencent.com/developer/article/1564128
 func proxyPoolInit() {
 	cf := getConf()
-	if cf.SubscribeUrl == "" && cf.SubscribeDataFile == "" {
-		panic("SubscribeUrl AND SubscribeDataFile can not be empty.订阅地址和订阅数据文件不能同时为空")
+	if cf.SubscribeUrl == "" {
+		panic("SubscribeUrl can not be empty.订阅地址VP_SUBSCRIBE_URL的值不能为空")
 	}
-	port := cf.GetHttpProxyPort()
+	// 订阅地址支持一个文件路径
+	extList := []string{
+		".yml",
+		".yaml",
+	}
+	// 获取订阅地址的后缀名。
+	fext := filepath.Ext(cf.SubscribeUrl)
+	if slices.Contains(extList, fext) {
+		// 如果订阅的URL地址是个受支持的文件路径，但订阅数据文件未指定。则以此订阅的URL地址为订阅数据文件路径。
+		if cf.SubscribeDataFile == "" {
+			cf.SubscribeDataFile = cf.SubscribeUrl
+		}
+		// 如果订阅的URL地址是个受支持的文件路径，但订阅数据文件又不为空。这让人无法抉择。
+		if cf.SubscribeDataFile != cf.SubscribeUrl {
+			panic(fmt.Errorf("订阅文件地址VP_SUBSCRIBE_DATA_FILE（%s）和订阅URL地址VP_SUBSCRIBE_URL（%s）冲突", cf.SubscribeDataFile, cf.SubscribeUrl))
+		}
+	}
 	sformat := ""
 	if strings.Contains(cf.SubscribeDataFile, ".yml") || strings.Contains(cf.SubscribeDataFile, ".yaml") {
 		sformat = decode.FILE_FORMAT_YAML
 	}
 
 	pp := GetProxyPool()
+	port := cf.GetHttpProxyPort()
 	pp.SetV2rayPath(cf.V2rayPath).
 		SetTestUrl(cf.TestUrl).
 		SetSubscribeRawData(cf.GetSubscribeData(), sformat).

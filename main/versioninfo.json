@@ -2,15 +2,13 @@
     "FixedFileInfo": {
         "FileVersion": {
             "Major": 1,
-            "Minor": 7,
-            "Patch": 2,
-            "Build": 0
+            "Minor": 8,
+            "Patch": 1
         },
         "ProductVersion": {
             "Major": 1,
-            "Minor": 7,
-            "Patch": 2,
-            "Build": 0
+            "Minor": 8,
+            "Patch": 1
         },
         "FileFlagsMask": "3f",
         "FileFlags ": "00",
@@ -22,14 +20,14 @@
         "Comments": "",
         "CompanyName": "",
         "FileDescription": "简单易用的v2ray客户端和代理池服务",
-        "FileVersion": "v1.7.3",
+        "FileVersion": "v1.8.1",
         "InternalName": "",
         "LegalCopyright": "",
         "LegalTrademarks": "",
         "OriginalFilename": "",
         "PrivateBuild": "",
         "ProductName": "V2rayPool",
-        "ProductVersion": "v1.7.3",
+        "ProductVersion": "v1.8.1",
         "SpecialBuild": ""
     },
     "VarFileInfo": {
