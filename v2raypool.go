@@ -1,7 +1,6 @@
 package v2raypool
 
 import (
-	"encoding/json"
 	"fmt"
 	"net"
 	"os/exec"
@@ -370,25 +369,7 @@ func (p *ProxyPool) InitSubscribeData() *ProxyPool {
 	}
 	p.startAt = time.Now()
 	if p.subscribeRawDataFormat == decode.FILE_FORMAT_YAML {
-		nds := decode.ParseClashSubscribe(p.subscribeRawData)
-		var vnds []V2rayNode
-		for _, clashNd := range nds {
-			nd := V2rayNode{
-				Protocol: clashNd.Type,
-				Host:     clashNd.Sni,
-				Add:      clashNd.Server,
-			}
-			nd.Port = json.Number(fmt.Sprintf("%d", clashNd.Port))
-			nd.Ps = strings.TrimSpace(clashNd.Name)
-			nd.Id = clashNd.Password
-			nd.Net = "tcp"
-			if clashNd.Udp {
-				nd.Net = "udp"
-			}
-			// nd.Tls = tro.TransportStream.Security
-			// nd.Path = tro.TransportStream.Path
-			vnds = append(vnds, nd)
-		}
+		vnds := decode.ParseClashSubscribe(p.subscribeRawData)
 		p.addNodeList(vnds)
 		return p
 	}

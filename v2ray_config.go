@@ -260,7 +260,7 @@ func setV2rayConfigV4Outbounds(confv4 *V2rayConfigV4, n V2rayNode) error {
 			if sni == "" {
 				sni = n.Add
 			}
-			streamSet := fmt.Sprintf(`{"network":"%s","security":"%s","tlsSettings":{"allowInsecure": false,"serverName": "%s"},"sockopt":{}}`, networkset, security, sni)
+			streamSet := fmt.Sprintf(`{"network":"%s","security":"%s","tlsSettings":{"allowInsecure": true,"serverName": "%s"},"sockopt":{}}`, networkset, security, sni)
 			outbd1.StreamSetting = json.RawMessage(streamSet)
 			confv4.Outbounds = append(confv4.Outbounds, outbd1)
 			return nil

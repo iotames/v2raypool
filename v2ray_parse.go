@@ -79,20 +79,11 @@ func parseNodeInfo(d string) (nd V2rayNode, err error) {
 		}
 		if nd.Protocol == "trojan" {
 			var tro decode.Trojan
-			tro, err = decode.ParseTrojan(d)
+			tro, err = decode.ParseTrojanUrl(d)
 			if err != nil {
 				return
 			}
-			// alpn=http/1.1
-			// sni=trojan.burgerip.co.uk
-			nd.Host = tro.Sni
-			nd.Add = tro.Address
-			nd.Port = json.Number(fmt.Sprintf("%d", tro.Port))
-			nd.Id = tro.Password
-			nd.Net = tro.TransportStream.Protocol // type=tcp
-			nd.Tls = tro.TransportStream.Security
-			nd.Path = tro.TransportStream.Path
-			nd.Ps = strings.TrimSpace(tro.Title)
+			decode.TrojanToV2ray(tro, &nd)
 			if nd.Id == "" || tro.Port == 0 || nd.Add == "" || nd.Net == "" {
 				err = fmt.Errorf("---parse--err--trojan://--raw(%s)---nd(%+v)", d, nd)
 				return

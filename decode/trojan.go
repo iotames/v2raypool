@@ -1,9 +1,12 @@
 package decode
 
 import (
+	"encoding/json"
 	"fmt"
 	nurl "net/url"
 	"strconv"
+
+	"strings"
 )
 
 type Trojan struct {
@@ -16,8 +19,21 @@ type Trojan struct {
 	Alpn              string `json:"alpn,omitempty"`
 }
 
-// ParseTrojan 解析Url格式的节点数据
-func ParseTrojan(d string) (tr Trojan, err error) {
+func TrojanToV2ray(tro Trojan, nd *V2raySsNode) {
+	// alpn=http/1.1
+	// sni=trojan.burgerip.co.uk
+	nd.Host = tro.Sni
+	nd.Add = tro.Address
+	nd.Port = json.Number(fmt.Sprintf("%d", tro.Port))
+	nd.Id = tro.Password
+	nd.Net = tro.TransportStream.Protocol // type=tcp
+	nd.Tls = tro.TransportStream.Security
+	nd.Path = tro.TransportStream.Path
+	nd.Ps = strings.TrimSpace(tro.Title)
+}
+
+// ParseTrojanUrl 解析Url格式的节点数据
+func ParseTrojanUrl(d string) (tr Trojan, err error) {
 	var t *nurl.URL
 	t, err = nurl.Parse(d)
 	if err != nil {

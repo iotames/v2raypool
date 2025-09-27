@@ -67,12 +67,12 @@ func GetOutboundRequest(port, aid json.Number, outproto, addr, sni, password, ne
 		StreamSettings: streamConf,
 	}
 	if security == "tls" {
+		// AllowInsecure = true 不校验TLS证书
 		tlsconf := &tls.Config{
 			AllowInsecure: true,
 		}
 		if outproto == PROTO_TROJAN {
 			tlsconf.ServerName = sni
-			// TODO allowInsecure false
 		}
 		sender.StreamSettings.SecurityType = serial.GetMessageType(&tls.Config{})
 		sender.StreamSettings.SecuritySettings = []*anypb.Any{

@@ -2,6 +2,11 @@ package decode
 
 import (
 	"gopkg.in/yaml.v3"
+
+	"encoding/json"
+	"fmt"
+
+	"strings"
 )
 
 const FILE_FORMAT_YAML = "yaml"
@@ -22,11 +27,36 @@ type ClashSubscribeSource struct {
 	Proxies []ClashProxyNode `yaml:"proxies"`
 }
 
-func ParseClashSubscribe(b []byte) []ClashProxyNode {
+func ParseClashSubscribe(b []byte) []V2raySsNode {
 	config := ClashSubscribeSource{}
 	err := yaml.Unmarshal(b, &config)
 	if err != nil {
 		panic(err)
 	}
-	return config.Proxies
+
+	var vnds []V2raySsNode
+	for _, clashNd := range config.Proxies {
+		if clashNd.Type != "trojan" {
+			fmt.Println("----ERROR------Clash Only Support:trojan")
+			continue
+		}
+		nd := V2raySsNode{
+			Protocol: clashNd.Type,
+			Host:     clashNd.Sni,
+			Add:      clashNd.Server,
+		}
+		nd.Port = json.Number(fmt.Sprintf("%d", clashNd.Port))
+		nd.Ps = strings.TrimSpace(clashNd.Name)
+		nd.Id = clashNd.Password
+		nd.Net = "tcp"
+		// if clashNd.Udp {
+		// 	nd.Net = "udp"
+		// }
+		nd.Tls = "tls"
+		// if clashNd.SkipCertVerify {
+		// 	allowInsecure = true
+		// }
+		vnds = append(vnds, nd)
+	}
+	return vnds
 }

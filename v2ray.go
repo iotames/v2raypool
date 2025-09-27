@@ -1,17 +1,19 @@
 package v2raypool
 
 import (
-	"encoding/json"
+	"github.com/iotames/v2raypool/decode"
+
 	"fmt"
 	"os"
 	"os/exec"
 )
 
-// "protocol":"vmess"
-type V2rayNode struct {
-	Protocol, Add, Host, Id, Net, Path, Ps, Tls, Type string
-	V, Aid, Port                                      json.Number
-}
+type V2rayNode = decode.V2raySsNode
+
+// type V2rayNode struct {
+// 	Protocol, Add, Host, Id, Net, Path, Ps, Tls, Type string
+// 	V, Aid, Port                                      json.Number
+// }
 
 type V2rayServer struct {
 	v2rayPath  string
