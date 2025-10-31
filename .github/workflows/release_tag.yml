@@ -77,12 +77,18 @@ jobs:
 
       - name: Prepare Build for Windows
         if: matrix.goos == 'windows'
+        # 执行 go install 时，Go 工具链会根据当前的 GOOS 和 GOARCH 来编译和安装二进制文件
+        # 由于设置了 GOOS=windows，编译出来的 goversioninfo 是 Windows 可执行文件（.exe 扩展名）
+        # 但 GitHub Actions 运行在 Linux 环境（ubuntu-latest）上，无法直接执行 Windows 的 .exe 文件
+        # 安装路径为：/home/runner/go/bin/windows_amd64/goversioninfo.exe
         run: |
-          go install github.com/josephspurrier/goversioninfo/cmd/goversioninfo@latest
+          GOOS=linux GOARCH=amd64 go install github.com/josephspurrier/goversioninfo/cmd/goversioninfo@latest
           GOPATH=$(go env GOPATH)
           GOVERSIONINFO_TOOL="$GOPATH/bin/goversioninfo"
           ls "$GOPATH/bin"
-          cd main && $GOVERSIONINFO_TOOL versioninfo.json || cd .. && echo "generate resource.syso fail" && pwd
+          ROOT_DIR=$(pwd)
+          cd main && $GOVERSIONINFO_TOOL versioninfo.json || echo "generate resource.syso fail"
+          cd $ROOT_DIR && pwd
     
       - name: Build
         run: |
