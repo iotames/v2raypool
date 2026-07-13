@@ -99,6 +99,9 @@ func (s ProxyPoolServer) SetTestUrl(ctx context.Context, req *g.OptRequestUrl) (
 		return
 	}
 	pp.SetTestUrl(testUrl)
+	cf := conf.GetConf()
+	cf.TestUrl = testUrl
+	conf.SetConf(cf)
 	return
 }
 

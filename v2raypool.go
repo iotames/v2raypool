@@ -536,6 +536,10 @@ func (p *ProxyPool) TestAllForce() {
 	}
 
 	p.IsLock = false
+	// 测速完成，通知隧道池刷新节点列表
+	if tp := GetTunnelPool(); tp != nil && tp.IsRunning() {
+		tp.RefreshNodes()
+	}
 }
 
 // GetLastSpeedNode 查看当前节点是否存在测速信息
@@ -615,6 +619,10 @@ func (p *ProxyPool) TestAll() {
 	}
 
 	p.IsLock = false
+	// 测速完成，通知隧道池刷新节点列表
+	if tp := GetTunnelPool(); tp != nil && tp.IsRunning() {
+		tp.RefreshNodes()
+	}
 }
 
 // StartAll 启动所有已停止的节点。
@@ -689,6 +697,13 @@ func (p *ProxyPool) StopAll() error {
 
 func (p *ProxyPool) Delete(index int) error {
 	var err error
+	// 删除激活节点时同步清理状态
+	if p.activeNode.RemoteAddr != "" && p.nodes[index].GetId() == p.activeNode.GetId() {
+		p.activeNode = ProxyNode{}
+		sysProxyType = SysProxyNone
+		sysProxyNodeIdx = -1
+		p.activeCmd = nil
+	}
 	n := p.nodes[index]
 	if n.IsRunning() {
 		c := NewV2rayApiClientV5(p.getGrpcAddr())
@@ -734,6 +749,9 @@ func (p *ProxyPool) KillAllNodes() (total, runport, kill, fail int) {
 	}
 	p.activeCmd = nil
 	p.poolCmd = nil
+	p.activeNode = ProxyNode{}
+	sysProxyType = SysProxyNone
+	sysProxyNodeIdx = -1
 	return
 }
 
@@ -751,6 +769,8 @@ func (p *ProxyPool) UnActiveNode(n ProxyNode) error {
 		}
 	}
 	p.activeNode = ProxyNode{}
+	sysProxyType = SysProxyNone
+	sysProxyNodeIdx = -1
 	return err
 }
 
@@ -849,6 +869,7 @@ func (p *ProxyPool) ActiveNode(n ProxyNode, globalProxy bool) error {
 	}
 
 	p.activeNode = n
+	UpdateSysProxyNode(n.Index)
 	return err
 }
 

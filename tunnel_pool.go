@@ -12,6 +12,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/iotames/miniutils"
 	"github.com/iotames/v2raypool/conf"
 	"github.com/iotames/v2raypool/netutil"
 )
@@ -112,6 +113,13 @@ func (tp *TunnelPool) IsRunning() bool {
 	return tp.running
 }
 
+// SetMaxDelay 在线更新延迟阈值（毫秒），下次刷新节点时生效
+func (tp *TunnelPool) SetMaxDelay(ms int) {
+	tp.mu.Lock()
+	defer tp.mu.Unlock()
+	tp.config.MaxDelayMs = ms
+}
+
 // GetStatus 返回隧道代理池状态信息（供 WebUI 使用）
 func (tp *TunnelPool) GetStatus() map[string]interface{} {
 	tp.mu.RLock()
@@ -148,11 +156,24 @@ func (tp *TunnelPool) RefreshNodes() int {
 	}
 	tp.pool.lock.Unlock()
 
-	// 逐个测速，测速结果通过 testOneNode 自动写回 Pool.nodes 和 Pool.speedMap
+	// 逐个测速，跳过近期已测速的节点（24h内有效），复用已有速度数据
 	logger := conf.GetConf().GetLogger()
+	domain := miniutils.GetDomainByUrl(tp.pool.testUrl)
+	logger.Infof("-----RefreshNodes--testUrl(%q)--domain(%q)--running(%d)--maxDelay(%dms)------", tp.pool.testUrl, domain, len(runningNodes), maxDelay)
 	for i := range runningNodes {
 		nd := &runningNodes[i]
-		tp.pool.testOneNode(nd, nd.Index)
+		// 检查是否有针对当前测速域名的有效测速数据
+		oknd := tp.pool.GetLastSpeedNode(*nd, domain)
+		if oknd.IsOk() {
+			nd.Speed = oknd.Speed
+			nd.TestUrl = oknd.TestUrl
+			nd.TestAt = oknd.TestAt
+			logger.Infof("-----RefreshNodes--skipTest--idx(%d)--id(%s)--speed(%.2fms)------", nd.Index, nd.GetId(), nd.Speed.Seconds()*1000)
+		} else {
+			logger.Infof("-----RefreshNodes--needTest--idx(%d)--id(%s)--okndIsOk(%v)------", nd.Index, nd.GetId(), oknd.IsOk())
+			tp.pool.testOneNode(nd, nd.Index)
+			logger.Infof("-----RefreshNodes--tested--idx(%d)--speed(%.2fms)--ok(%v)------", nd.Index, nd.Speed.Seconds()*1000, nd.Speed < tp.pool.testMaxDuration)
+		}
 	}
 
 	// 按最新测速结果筛选
@@ -168,7 +189,7 @@ func (tp *TunnelPool) RefreshNodes() int {
 	tp.nodeList = available
 	tp.mu.Unlock()
 
-	logger.Infof("-----隧道代理池刷新节点: 共 %d 个可用节点(%dms阈值内)------\n", len(available), maxDelay)
+	logger.Infof("-----隧道代理池刷新节点: 共 %d 个可用节点(%dms阈值内), 运行中%d, 筛选后%d------", len(available), maxDelay, len(runningNodes), len(available))
 	return len(available)
 }
 

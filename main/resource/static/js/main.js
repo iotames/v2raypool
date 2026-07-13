@@ -16,7 +16,22 @@ layui.use(['table', 'dropdown', 'form'], function () {
     });
 
     form.on('select(test_domain)', function (data) {
-        table.reloadData('nodeslist', { where: { domain: data.value } });
+        var domain = data.value;
+        table.reloadData('nodeslist', { where: { domain: domain } });
+        if (domain) {
+            // 下拉框数据来自已测速域列表，安全防御检查
+            var list = (typeof VPTestedDomainList !== 'undefined') ? VPTestedDomainList : [];
+            if (list.indexOf(domain) === -1) {
+                layer.msg("该域名未测试过，请先测速", {icon: 2});
+                return;
+            }
+            var testUrl = 'https://' + domain + '/';
+            VPTestUrl = testUrl;
+            postjson("/api/nodes/test-url", { TestUrl: testUrl }, function(dt) {
+                layer.msg("测速地址已切换到: " + domain, {time: 1500});
+                document.getElementById("statusTestUrl").innerText = testUrl;
+            }, function(dt) { layer.alert(dt.msg || "切换失败", {icon:2, title:"错误"}); });
+        }
     });
 
     util.on('lay-on', {
@@ -89,6 +104,8 @@ layui.use(['table', 'dropdown', 'form'], function () {
                     }, function(dt2) {
                         layer.alert(dt2.msg, {icon:2, title:"切换失败"});
                     });
+                }, function(dt) {
+                    layer.alert("获取代理状态失败", {icon:2, title:"错误"});
                 });
                 break;
             case 'tunnelToggle':
@@ -96,8 +113,10 @@ layui.use(['table', 'dropdown', 'form'], function () {
                     if (dt.data && dt.data.running) {
                         postjson("/api/tunnel/stop", {}, function() { layer.msg("隧道代理池已关闭"); refreshStatusBar(); }, function(dt2) { layer.alert(dt2.msg, {icon:2, title:"错误"}); });
                     } else {
-                        postjson("/api/tunnel/start", {}, function() { layer.msg("隧道代理池已启动"); refreshStatusBar(); }, function(dt2) { layer.alert(dt2.msg, {icon:2, title:"启动失败"}); });
+                        postjson("/api/tunnel/start", {}, function() { layer.msg("隧道代理池已启动"); refreshStatusBar(); setTimeout(refreshStatusBar, 5000); }, function(dt2) { layer.alert(dt2.msg, {icon:2, title:"启动失败"}); });
                     }
+                }, function(dt) {
+                    layer.alert("获取隧道状态失败", {icon:2, title:"错误"});
                 });
                 break;
             case 'testNodes':
@@ -198,7 +217,7 @@ layui.use(['table', 'dropdown', 'form'], function () {
                                 var postdata = { remote_addr: data.remote_addr, global_proxy: fdt.field.global_proxy != "0" };
                                 postjson(posturl, postdata, function () {
                                     layer.close(idx); layer.msg("启用成功");
-                                    setTimeout(function() { table.reloadData('nodeslist'); refreshStatusBar(); }, 500);
+                                    setTimeout(function() { table.reload('nodeslist'); refreshStatusBar(); }, 500);
                                 }, function (dt) { layer.alert(dt.msg, { icon: 2, title: dt.code + "错误" }); }, submitbtn);
                                 return false;
                             });
@@ -209,9 +228,9 @@ layui.use(['table', 'dropdown', 'form'], function () {
             case 'delete':
                 layer.confirm("确定删除节点【" + data.title + "】？", function (index) {
                     postjson("/api/node/delete", {index: data.index}, function () {
-                        layer.msg("已删除"); refreshStatusBar();
+                        layer.msg("已删除"); table.reload('nodeslist'); refreshStatusBar();
                     }, function (dt) { layer.alert(dt.msg, { icon: 2, title: dt.code + "错误" }); });
-                    table.reload('nodeslist'); layer.close(index);
+                    layer.close(index);
                 });
                 break;
         }
@@ -241,6 +260,24 @@ layui.use(['table', 'dropdown', 'form'], function () {
                 document.getElementById("statusTunnelNodes").innerText = dt.data.node_count || 0;
                 document.getElementById("statusTunnelPort").innerText = dt.data.port + "";
                 document.getElementById("statusTunnelMaxDelay").innerText = dt.data.max_delay_ms || 230;
+                var el = document.getElementById("statusTunnelMaxDelay");
+                el.style.cursor = "pointer";
+                el.style.textDecoration = "underline";
+                el.style.textDecorationStyle = "dashed";
+                el.style.fontSize = "16px";
+                el.style.fontWeight = "bold";
+                el.title = "点击修改延迟阈值";
+                el.onclick = function() {
+                    var oldVal = parseInt(this.innerText) || 230;
+                    layer.prompt({title: "修改隧道延迟阈值(ms)", value: oldVal, formType: 0}, function(val, idx) {
+                        var n = parseInt(val);
+                        if (!n || n < 10) { layer.msg("阈值必须≥10ms"); return; }
+                        postjson("/api/setting/update", {VP_TUNNEL_MAX_DELAY: n + ""}, function(dt2) {
+                            layer.close(idx); layer.msg("阈值已更新为 " + n + "ms");
+                            refreshStatusBar();
+                        }, function(dt2) { layer.alert(dt2.msg, {icon:2, title:"更新失败"}); });
+                    });
+                };
                 btn.innerText = "隧道池: 开"; btn.className = "layui-btn layui-btn-sm layui-bg-orange";
             } else {
                 document.getElementById("statusTunnelState").innerText = "未启动";

@@ -37,10 +37,8 @@ func ActiveNode(remoteAddr string, globalProxy bool) []byte {
 	var err error
 	pp := vp.GetProxyPool()
 	ok := false
-	var targetNode vp.ProxyNode
 	for _, nd := range pp.GetNodes("") {
 		if nd.RemoteAddr == remoteAddr {
-			targetNode = nd
 			err = pp.ActiveNode(nd, globalProxy)
 			ok = true
 			break
@@ -55,8 +53,6 @@ func ActiveNode(remoteAddr string, globalProxy bool) []byte {
 		result.Fail(err.Error(), 500)
 		return result.Bytes()
 	}
-	// 同步更新全局系统代理状态，WebUI 刷新后下拉框才能正确显示
-	vp.UpdateSysProxyNode(targetNode.Index)
 	result.Success("启用成功")
 	return result.Bytes()
 }
@@ -119,6 +115,19 @@ func TestNodes(testurl string) []byte {
 	pp.SetTestUrl(testurl)
 	go pp.TestAll()
 	result.Success("测速已开始，请稍候...")
+	return result.Bytes()
+}
+
+// SetTestUrlOnly 仅设置测速地址，不触发测速
+// 下拉框选择已测速过的域名时调用
+func SetTestUrlOnly(testurl string) []byte {
+	result := BaseResult{}
+	pp := vp.GetProxyPool()
+	pp.SetTestUrl(testurl)
+	oldConf := conf.GetConf()
+	oldConf.TestUrl = testurl
+	conf.SetConf(oldConf)
+	result.Success("测速地址已切换")
 	return result.Bytes()
 }
 

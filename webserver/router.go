@@ -38,6 +38,15 @@ func setRouter(s *web.EasyServer) {
 		ctx.Writer.Write(TestNodes(dt["TestUrl"]))
 	})
 
+	s.AddHandler("POST", "/api/nodes/test-url", func(ctx web.Context) {
+		dt := make(map[string]string)
+		err := getPostJson(ctx, &dt)
+		if err != nil {
+			return
+		}
+		ctx.Writer.Write(SetTestUrlOnly(dt["TestUrl"]))
+	})
+
 	s.AddHandler("POST", "/api/nodes/start", func(ctx web.Context) {
 		ctx.Writer.Write(StartNodes())
 	})

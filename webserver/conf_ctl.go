@@ -9,7 +9,7 @@ import (
 	// "strings"
 
 	// "github.com/iotames/miniutils"
-	// vp "github.com/iotames/v2raypool"
+	vp "github.com/iotames/v2raypool"
 	"github.com/iotames/v2raypool/conf"
 )
 
@@ -60,27 +60,59 @@ func UpdateConf(dt map[string]string, fpath string) []byte {
 	}
 	// fmt.Printf("-----cf(%+v)---\n", dt)
 	cf := conf.GetConf()
-	cf.V2rayApiPort, err = strconv.Atoi(dt["VP_V2RAY_API_PORT"])
-	if err != nil {
-		result.Fail("VP_V2RAY_API_PORT 更新失败:"+err.Error(), 400)
-		return result.Bytes()
+	if v, ok := dt["VP_V2RAY_API_PORT"]; ok && v != "" {
+		cf.V2rayApiPort, err = strconv.Atoi(v)
+		if err != nil {
+			result.Fail("VP_V2RAY_API_PORT 更新失败:"+err.Error(), 400)
+			return result.Bytes()
+		}
 	}
-	cf.WebServerPort, err = strconv.Atoi(dt["VP_WEB_SERVER_PORT"])
-	if err != nil {
-		result.Fail("VP_WEB_SERVER_PORT 更新失败:"+err.Error(), 400)
-		return result.Bytes()
+	if v, ok := dt["VP_WEB_SERVER_PORT"]; ok && v != "" {
+		cf.WebServerPort, err = strconv.Atoi(v)
+		if err != nil {
+			result.Fail("VP_WEB_SERVER_PORT 更新失败:"+err.Error(), 400)
+			return result.Bytes()
+		}
 	}
-	cf.GrpcPort, err = strconv.Atoi(dt["VP_GRPC_PORT"])
-	if err != nil {
-		result.Fail("VP_GRPC_PORT 更新失败:"+err.Error(), 400)
-		return result.Bytes()
+	if v, ok := dt["VP_GRPC_PORT"]; ok && v != "" {
+		cf.GrpcPort, err = strconv.Atoi(v)
+		if err != nil {
+			result.Fail("VP_GRPC_PORT 更新失败:"+err.Error(), 400)
+			return result.Bytes()
+		}
 	}
-	cf.TestUrl = dt["VP_TEST_URL"]
-	cf.SubscribeUrl = dt["VP_SUBSCRIBE_URL"]
-	cf.SubscribeDataFile = dt["VP_SUBSCRIBE_DATA_FILE"]
-	cf.V2rayPath = dt["VP_V2RAY_PATH"]
-	cf.HttpProxy = dt["VP_HTTP_PROXY"]
+	if v, ok := dt["VP_TEST_URL"]; ok && v != "" {
+		cf.TestUrl = v
+	}
+	if v, ok := dt["VP_SUBSCRIBE_URL"]; ok && v != "" {
+		cf.SubscribeUrl = v
+	}
+	if v, ok := dt["VP_SUBSCRIBE_DATA_FILE"]; ok && v != "" {
+		cf.SubscribeDataFile = v
+	}
+	if v, ok := dt["VP_V2RAY_PATH"]; ok && v != "" {
+		cf.V2rayPath = v
+	}
+	if v, ok := dt["VP_HTTP_PROXY"]; ok && v != "" {
+		cf.HttpProxy = v
+	}
+	if v, ok := dt["VP_TUNNEL_MAX_DELAY"]; ok {
+		if n, err2 := strconv.Atoi(v); err2 == nil && n > 0 {
+			cf.TunnelMaxDelay = n
+			// 同步更新运行中的隧道池
+			if tp := vp.GetTunnelPool(); tp != nil && tp.IsRunning() {
+				tp.SetMaxDelay(n)
+			}
+		}
+	}
 	conf.SetConf(cf)
+	pp := vp.GetProxyPool()
+	if _, ok := dt["VP_TEST_URL"]; ok {
+		pp.SetTestUrl(cf.TestUrl)
+	}
+	if _, ok := dt["VP_SUBSCRIBE_URL"]; ok {
+		pp.SetSubscribeUrl(cf.SubscribeUrl)
+	}
 	result.Success("设置成功，重启应用后生效。")
 	return result.Bytes()
 }
