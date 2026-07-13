@@ -2,8 +2,13 @@ go.sum
 reasonix.toml
 *.BK
 *.exe
+*.exe~
 *.zip
 *.yaml
 *.yml
 .reasonix/
+runtime/
+.env
+default.env
+go.sum
 build_assets/

@@ -61,7 +61,7 @@ func getConfByEnv() error {
 	ecf.IntVar(&cf.TunnelPort, "VP_TUNNEL_PORT", 1080, "隧道代理池监听端口", "爬虫程序通过此端口使用代理，如 http://127.0.0.1:1080")
 	ecf.IntVar(&cf.TunnelMaxDelay, "VP_TUNNEL_MAX_DELAY", 230, "隧道代理池最大延迟阈值(毫秒)", "只有测速延迟小于此值的节点才会加入隧道代理池")
 	ecf.IntVar(&cf.TunnelRefreshInterval, "VP_TUNNEL_REFRESH_INTERVAL", 1200, "隧道代理池节点测速刷新间隔(秒)", "隧道池每隔此时间对运行中节点重新测速并更新可用列表，默认1200秒即20分钟")
-	ecf.Parse()
+	ecf.Parse(false)
 	conf.SetConf(cf)
 	vconf = cf
 

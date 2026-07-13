@@ -46,6 +46,90 @@ a:hover { color: var(--primary-hover); }
 /* --- Layout --- */
 .container { max-width: 1400px; margin: 0 auto; padding: 16px; }
 
+/* --- Cards Row --- */
+.cards-row {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 16px;
+  align-items: stretch;
+}
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+.tunnel-card { flex: 1; min-width: 0; }
+.settings-card { flex: 0 0 auto; min-width: 280px; }
+.card-header {
+  display: flex;
+  align-items: center;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border-light);
+  background: #fafafa;
+}
+.card-header-title {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text);
+}
+.card-body { padding: 12px 14px; }
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 8px 16px;
+}
+.card-field {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.card-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.card-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.3;
+}
+.card-value .unit {
+  color: #aaa;
+  font-weight: 400;
+  font-size: 0.7em;
+  margin-left: 1px;
+}
+.card-value-clickable {
+  cursor: pointer;
+  text-decoration: underline dashed;
+  color: var(--primary);
+}
+.card-value-clickable:hover { color: var(--primary-hover); }
+.card-value-clickable .unit {
+  color: #aaa;
+}
+.settings-btn-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* --- Start Section (in tab 1) --- */
+.start-section {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 14px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border-light);
+}
+
 /* --- Header --- */
 .page-header {
   text-align: center;
@@ -185,6 +269,27 @@ table.vp-table .col-num { width: 40px; text-align: center; color: var(--text-mut
 table.vp-table td:last-child { white-space: nowrap; }
 .vp-table-actions { display: inline-flex; gap: 4px; align-items: center; }
 .vp-table-actions .btn-sm { padding: 3px 7px; min-width: 34px; }
+
+table.vp-table th[data-sort]:hover {
+  color: var(--primary);
+  background: #eef5ff;
+}
+/* 排序箭头 */
+table.vp-table th[data-sort]::after {
+  content: '';
+  margin-left: 4px;
+  font-size: 11px;
+}
+/* 表头固定 */
+.tab-content .table-wrap {
+  position: relative;
+}
+.tab-content .table-wrap table.vp-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: #f8f8f8;
+}
 
 /* --- Badge / Tag --- */
 .badge {
@@ -550,6 +655,15 @@ textarea.form-control { resize: vertical; min-height: 60px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: #ccc; border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: #aaa; }
+
+/* --- Column Toggle --- */
+/* 隐藏节点地址（第6列）和测速时间（第8列） */
+.tab-content.hide-cols table.vp-table td:nth-child(6),
+.tab-content.hide-cols table.vp-table th:nth-child(6),
+.tab-content.hide-cols table.vp-table td:nth-child(8),
+.tab-content.hide-cols table.vp-table th:nth-child(8) {
+  display: none;
+}
 
 /* --- Responsive --- */
 @media (max-width: 768px) {

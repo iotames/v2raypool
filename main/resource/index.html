@@ -43,36 +43,63 @@
       V2rayPool
     </header>
 
-    <!-- ===== Status Bar ===== -->
+    <!-- ===== Simplified Status Bar ===== -->
     <div class="status-bar" id="statusBar">
       <span class="status-item"><strong>系统代理:</strong> <span class="status-value" id="statusSysProxy">查询中...</span></span>
       <span class="status-item"><strong>测速URL:</strong> <span class="status-value" id="statusTestUrl"><{% .TestUrl %}></span></span>
       <span class="status-item"><strong>运行节点:</strong> <span class="status-value primary" id="statusRunCount">-</span></span>
-      <span class="status-item"><strong>隧道池:</strong> <span class="status-value" id="statusTunnelState">-</span></span>
-      <span class="status-item"><strong>隧道节点:</strong> <span class="status-value success" id="statusTunnelNodes">-</span></span>
-      <span class="status-item"><strong>隧道端口:</strong> <span class="status-value danger" id="statusTunnelPort">-</span></span>
-      <span class="status-item"><strong>延迟阈值:</strong> <span class="status-value warning" id="statusTunnelMaxDelay">-</span> ms</span>
     </div>
 
-    <!-- ===== Toolbar ===== -->
-    <div class="toolbar" id="toolbar">
-      <!-- 测速域名选择 -->
-      <select class="toolbar-select" id="domainSelect">
-        <option value="">🌐 测速域名</option>
-      </select>
+    <!-- ===== Cards Row ===== -->
+    <div class="cards-row">
 
-      <!-- 操作按钮 -->
-      <button class="btn btn-sm btn-primary" data-action="testNodes">⏱ 测速</button>
-      <button class="btn btn-sm btn-purple" data-action="startNodes">▶ 启动</button>
-      <button class="btn btn-sm" data-action="subscribe">📥 订阅</button>
-      <button class="btn btn-sm" data-action="routingrules">🔀 路由规则</button>
-      <button class="btn btn-sm btn-success" data-action="tunnelToggle" id="tunnelBtn">🕳 隧道池: 关</button>
-      <button class="btn btn-sm" data-action="sysProxyOpen" id="sysProxyBtn">🖥 系统代理: 关闭</button>
+      <!-- ===== Tunnel Pool Card ===== -->
+      <div class="card tunnel-card">
+        <div class="card-header">
+          <button class="btn btn-sm btn-success" data-action="tunnelToggle" id="tunnelBtn">🕳 隧道池: 关</button>
+        </div>
+        <div class="card-body">
+          <div class="card-grid">
+            <div class="card-field">
+              <span class="card-label">状态</span>
+              <span class="card-value" id="tunnelState">-</span>
+            </div>
+            <div class="card-field">
+              <span class="card-label">节点数</span>
+              <span class="card-value" id="tunnelNodes">0</span>
+            </div>
+            <div class="card-field">
+              <span class="card-label">端口</span>
+              <span class="card-value" id="tunnelPort">-</span>
+            </div>
+            <div class="card-field">
+              <span class="card-label">延迟阈值</span>
+              <span class="card-value" id="tunnelMaxDelay">-</span>
+            </div>
+            <div class="card-field">
+              <span class="card-label">测速间隔</span>
+              <span class="card-value" id="tunnelRefreshInterval">-</span>
+            </div>
+          </div>
+        </div>
+      </div>
 
-      <div style="flex:1"></div>
+      <!-- ===== Settings Panel Card ===== -->
+      <div class="card settings-card">
+        <div class="card-header">
+          <span class="card-header-title">⚙ 设置</span>
+        </div>
+        <div class="card-body">
+          <div class="settings-btn-group">
+            <button class="btn btn-sm" data-action="subscribe">📥 订阅</button>
+            <button class="btn btn-sm" data-action="routingrules">🔀 路由规则</button>
+            <button class="btn btn-sm" data-action="settinglayer">⚙ 系统设置</button>
+            <button class="btn btn-sm" data-action="clearlayer" title="清除缓存">🗑 清除缓存</button>
+            <button class="btn btn-sm" data-action="toggleCols" title="显示/隐藏列">👁 列切换</button>
+          </div>
+        </div>
+      </div>
 
-      <button class="btn btn-sm" data-action="settinglayer" title="基本设置">⚙</button>
-      <button class="btn btn-sm" data-action="clearlayer" title="清除缓存">🗑</button>
     </div>
 
     <!-- ===== Tabs ===== -->
@@ -82,9 +109,20 @@
         <button class="tab-btn">v2ray列表</button>
       </div>
 
-      <!-- Tab 1: Nodes Pool -->
+      <!-- Tab 1: Nodes Pool → "开始" Section + Table -->
       <div class="tab-content active" id="nodesTableBody">
-        <div class="table-loading"><span class="spinner"></span>加载中...</div>
+        <!-- "开始" 操作区 -->
+        <div class="start-section">
+          <select class="toolbar-select" id="domainSelect">
+            <option value="">🌐 测速域名</option>
+          </select>
+          <button class="btn btn-sm btn-primary" data-action="testNodes">⏱ 测速</button>
+          <button class="btn btn-sm btn-purple" data-action="startNodes">▶ 启动</button>
+          <button class="btn btn-sm btn-cyan" data-action="sysProxyOpen" id="sysProxyBtn">🖥 系统代理: 关闭</button>
+          <span class="text-muted" style="margin-left:auto;font-size:12px">点击节点「启用」设为系统代理</span>
+        </div>
+        <!-- 加载/空状态由 JS 填充 -->
+        <div class="table-loading" id="nodeTableInner"><span class="spinner"></span>加载中...</div>
       </div>
 
       <!-- Tab 2: V2ray List -->

@@ -7,7 +7,7 @@
 
   <div class="form-row">
     <label class="form-label-inline">系统代理地址</label>
-    <input type="text" name="VP_HTTP_PROXY" value="<{% .HttpProxy %}>" class="form-control" required>
+    <input type="text" name="VP_HTTP_PROXY" value="<{% .HttpProxy %}>" class="form-control" required oninvalid="this.setCustomValidity('系统代理地址不能为空')" oninput="this.setCustomValidity('')">
   </div>
 
   <div class="form-row">

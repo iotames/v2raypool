@@ -38,6 +38,7 @@ type TunnelPool struct {
 	cancel   context.CancelFunc
 	running  bool
 	nodeList ProxyNodes       // 当前可用的节点快照
+	refreshCh chan struct{}   // 配置变更触发立即刷新
 }
 
 // NewTunnelPool 创建隧道代理池实例
@@ -45,10 +46,11 @@ type TunnelPool struct {
 func NewTunnelPool(cfg TunnelConfig) *TunnelPool {
 	ctx, cancel := context.WithCancel(context.Background())
 	return &TunnelPool{
-		pool:   GetProxyPool(),
-		config: cfg,
-		ctx:    ctx,
-		cancel: cancel,
+		pool:      GetProxyPool(),
+		config:    cfg,
+		ctx:       ctx,
+		cancel:    cancel,
+		refreshCh: make(chan struct{}, 1),
 	}
 }
 
@@ -62,6 +64,9 @@ func (tp *TunnelPool) Start() error {
 	if tp.running {
 		return fmt.Errorf("隧道代理池已在运行中")
 	}
+
+	// 重建 context（停止后再启动时需要新 context）
+	tp.ctx, tp.cancel = context.WithCancel(context.Background())
 
 	addr := fmt.Sprintf(":%d", tp.config.Port)
 	tp.server = &http.Server{
@@ -113,15 +118,36 @@ func (tp *TunnelPool) IsRunning() bool {
 	return tp.running
 }
 
-// SetMaxDelay 在线更新延迟阈值（毫秒），下次刷新节点时生效
+// SetMaxDelay 在线更新延迟阈值（毫秒），立即触发刷新以即时生效
 // ms 必须 > 0，否则不生效
 func (tp *TunnelPool) SetMaxDelay(ms int) {
 	if ms <= 0 {
 		return
 	}
 	tp.mu.Lock()
-	defer tp.mu.Unlock()
 	tp.config.MaxDelayMs = ms
+	tp.mu.Unlock()
+	// 立即触发刷新，新阈值即时生效
+	select {
+	case tp.refreshCh <- struct{}{}:
+	default:
+	}
+}
+
+// SetRefreshInterval 在线更新测速间隔（秒），立即触发刷新并重置定时器
+// secs 必须 ≥ 10，否则不生效
+func (tp *TunnelPool) SetRefreshInterval(secs int) {
+	if secs < 10 {
+		return
+	}
+	tp.mu.Lock()
+	tp.config.RefreshInterval = secs
+	tp.mu.Unlock()
+	// 立即触发刷新，新的间隔会在 refreshNodesLoop 中重建 ticker
+	select {
+	case tp.refreshCh <- struct{}{}:
+	default:
+	}
 }
 
 // GetStatus 返回隧道代理池状态信息（供 WebUI 使用）
@@ -197,13 +223,20 @@ func (tp *TunnelPool) RefreshNodes() int {
 	return len(available)
 }
 
-// refreshNodesLoop 后台定时刷新节点，间隔由配置项 VP_TUNNEL_REFRESH_INTERVAL 决定
+// refreshNodesLoop 后台定时刷新节点，支持配置变更时即时触发
 func (tp *TunnelPool) refreshNodesLoop() {
-	interval := tp.config.RefreshInterval
-	if interval <= 0 {
-		interval = DEFAULT_TUNNEL_REFRESH_INTERVAL
+	getInterval := func() time.Duration {
+		interval := 0
+		tp.mu.RLock()
+		interval = tp.config.RefreshInterval
+		tp.mu.RUnlock()
+		if interval <= 0 {
+			interval = DEFAULT_TUNNEL_REFRESH_INTERVAL
+		}
+		return time.Duration(interval) * time.Second
 	}
-	ticker := time.NewTicker(time.Duration(interval) * time.Second)
+
+	ticker := time.NewTicker(getInterval())
 	defer ticker.Stop()
 
 	// 首次立即刷新
@@ -213,6 +246,10 @@ func (tp *TunnelPool) refreshNodesLoop() {
 		select {
 		case <-tp.ctx.Done():
 			return
+		case <-tp.refreshCh:
+			// 配置变更：立即刷新，并用新间隔重建 ticker
+			tp.RefreshNodes()
+			ticker.Reset(getInterval())
 		case <-ticker.C:
 			tp.RefreshNodes()
 		}

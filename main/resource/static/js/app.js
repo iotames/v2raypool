@@ -9,28 +9,41 @@
   /* ===== Global State ===== */
   let VPTestUrl = window.__VP_TEST_URL__ || 'https://www.google.com/';
   let VPTestedDomainList = window.__VP_TESTED_DOMAINS__ || [];
-  const VP_DEFAULT_MAX_DELAY = 230;
+  let showExtraCols = true; // 列显示切换
 
-  /* ===== Delay Threshold Click Handler ===== */
-  function setupDelayClick(el) {
+  /* ===== 隧道卡片可点击数值的公共设置 ===== */
+  function setupTunnelClickable(elId, value, displayUnit, configKey, title, minVal) {
+    var el = document.getElementById(elId);
     if (!el) return;
-    el.style.cursor = 'pointer';
-    el.style.textDecoration = 'underline dashed';
-    el.style.fontSize = '16px';
-    el.style.fontWeight = 'bold';
-    el.title = '点击修改延迟阈值';
-    el.onclick = async function() {
-      const oldVal = parseInt(el.textContent) || VP_DEFAULT_MAX_DELAY;
-      const val = await VPUI.prompt('修改隧道延迟阈值(ms)', oldVal);
-      if (val === null) return;
-      const n = parseInt(val);
-      if (isNaN(n) || n < 10) { VPUI.toast.warning('阈值必须为≥10的整数'); return; }
-      const btn = this;
-      API.updateSetting({ VP_TUNNEL_MAX_DELAY: n + '' }, dt2 => {
-        VPUI.toast.success('阈值已更新为 ' + n + 'ms');
-        refreshStatusBar();
-      }, dt2 => VPUI.toast.error(dt2.msg || '更新失败'));
-    };
+    if (value === '-') {
+      el.className = 'card-value';
+      el.style.cursor = 'default';
+      el.style.textDecoration = 'none';
+      el.title = '';
+      el.innerHTML = '-';
+      el.onclick = null;
+    } else {
+      el.className = 'card-value card-value-clickable';
+      el.innerHTML = value + ' <span class="unit">' + displayUnit + '</span>';
+      el.title = '点击修改' + title;
+      var promptTitle = '修改' + title + (displayUnit ? '(' + displayUnit + ')' : '');
+      el.onclick = function() {
+        VPUI.prompt(promptTitle, value).then(function(val) {
+          if (val === null) return;
+          var n = parseInt(val);
+          if (isNaN(n) || n < minVal) {
+            VPUI.toast.warning('值必须为≥' + minVal + '的整数');
+            return;
+          }
+          var data = {};
+          data[configKey] = String(n);
+          API.updateSetting(data, function() {
+            VPUI.toast.success(configKey + ' 已更新为 ' + n + displayUnit);
+            refreshStatusBar();
+          }, function(dt2) { VPUI.toast.error(dt2.msg || '更新失败'); });
+        });
+      };
+    }
   }
 
   /* ===== Tab System ===== */
@@ -46,7 +59,8 @@
       header.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       contents.forEach((c, i) => c.classList.toggle('active', i === idx));
-      if (idx === 1) refreshV2rayTable();
+      if (idx === 0) adjustTableHeight();
+      if (idx === 1) { refreshV2rayTable(); adjustTableHeight(); };
     });
   }
 
@@ -82,43 +96,51 @@
       document.getElementById('statusRunCount') && (document.getElementById('statusRunCount').textContent = '失败');
     });
 
-    // Tunnel status
+    // Tunnel status — 更新隧道卡片
     API.tunnelStatus(dt => {
-      const btn = document.getElementById('tunnelBtn');
-      const stateEl = document.getElementById('statusTunnelState');
-      const nodesEl = document.getElementById('statusTunnelNodes');
-      const portEl = document.getElementById('statusTunnelPort');
-      const delayEl = document.getElementById('statusTunnelMaxDelay');
+      var stateEl = document.getElementById('tunnelState');
+      var nodesEl = document.getElementById('tunnelNodes');
+      var portEl = document.getElementById('tunnelPort');
+      var delayEl = document.getElementById('tunnelMaxDelay');
+      var intervalEl = document.getElementById('tunnelRefreshInterval');
+      var btn = document.getElementById('tunnelBtn');
 
-      // 延迟阈值始终可点击修改，不管隧道是否运行
-      setupDelayClick(delayEl);
-
-      if (dt.data && dt.data.running) {
-        stateEl.textContent = '运行中'; stateEl.style.color = '#5FB878';
-        nodesEl.textContent = dt.data.node_count || 0;
-        portEl.textContent = dt.data.port || '';
-        delayEl.textContent = dt.data.max_delay_ms || VP_DEFAULT_MAX_DELAY;
-        if (btn) { btn.textContent = '隧道池: 开'; btn.className = 'btn btn-sm btn-orange'; }
-      } else {
-        stateEl.textContent = '未启动'; stateEl.style.color = '#999';
-        nodesEl.textContent = '0';
-        portEl.textContent = '-';
-        delayEl.textContent = VP_DEFAULT_MAX_DELAY + '';
-        if (btn) { btn.textContent = '隧道池: 关'; btn.className = 'btn btn-sm btn-success'; }
+      if (stateEl) {
+        var running = dt.data && dt.data.running;
+        stateEl.textContent = running ? '运行中' : '未启动';
+        stateEl.style.color = running ? '#5FB878' : '#999';
+      }
+      if (nodesEl) nodesEl.textContent = (dt.data && dt.data.node_count) || 0;
+      if (portEl) {
+        var portVal = running ? (dt.data.port || '-') : '-';
+        setupTunnelClickable('tunnelPort', String(portVal), '', 'VP_TUNNEL_PORT', '端口', 1);
+      }
+      if (delayEl) {
+        var delayVal = running ? (dt.data.max_delay_ms || 230) : '-';
+        setupTunnelClickable('tunnelMaxDelay', String(delayVal), 'ms', 'VP_TUNNEL_MAX_DELAY', '延迟阈值', 10);
+      }
+      if (intervalEl) {
+        var intervalVal = running ? ((dt.data && dt.data.refresh_interval) || 1200) : '-';
+        setupTunnelClickable('tunnelRefreshInterval', String(intervalVal), 's', 'VP_TUNNEL_REFRESH_INTERVAL', '测速间隔', 10);
+      }
+      if (btn) {
+        btn.textContent = running ? '🕳 隧道池: 开' : '🕳 隧道池: 关';
+        btn.className = running ? 'btn btn-sm btn-orange' : 'btn btn-sm btn-success';
       }
     }, function() {
-      const stateEl = document.getElementById('statusTunnelState');
-      if (stateEl) { stateEl.textContent = '状态未知'; stateEl.style.color = '#FF5722'; }
+      var el = document.getElementById('tunnelState');
+      if (el) { el.textContent = '状态未知'; el.style.color = '#FF5722'; }
     });
   }
 
   /* ===== Nodes Table ===== */
   function renderNodesTable(domain) {
-    const container = document.getElementById('nodesTableBody');
+    const container = document.getElementById('nodeTableInner');
     if (!container) return;
     container.innerHTML = '<div class="table-loading"><span class="spinner"></span>加载中...</div>';
 
     API.getNodes(domain, function(dt) {
+      nodesDataCache = dt;
       const data = dt.data;
       if (!data || data.length === 0) {
         container.innerHTML = '<div class="table-empty">' +
@@ -132,7 +154,7 @@
           '<th style="width:40px">#</th>' +
           '<th>协议</th>' +
           '<th>本机地址</th>' +
-          '<th>速度/秒</th>' +
+          '<th data-sort="speed" style="cursor:pointer">速度/秒</th>' +
           '<th>标题</th>' +
           '<th>节点地址</th>' +
           '<th>状态</th>' +
@@ -149,8 +171,8 @@
             ? '<span class="badge badge-green">运行中</span>'
             : '<span class="badge">已停止</span>';
           const activeBtn = row.is_active
-            ? '<button class="btn btn-sm btn-purple" onclick="handleActive(' + idx + ')">已启用</button>'
-            : '<button class="btn btn-sm btn-primary" onclick="handleActive(' + idx + ')">启用</button>';
+            ? '<button class="btn btn-sm btn-purple" onclick="handleActive(' + row.index + ')">已启用</button>'
+            : '<button class="btn btn-sm btn-primary" onclick="handleActive(' + row.index + ')">启用</button>';
 
           html += '<tr>' +
             '<td class="col-num">' + (idx + 1) + '</td>' +
@@ -162,13 +184,14 @@
             '<td>' + statusDisplay + '</td>' +
             '<td style="font-size:12px;color:#999">' + (tested ? row.test_at : '-') + '</td>' +
             '<td><span class="vp-table-actions">' + activeBtn +
-            '<button class="btn btn-sm btn-danger" onclick="handleDelete(' + idx + ')">删除</button></span></td>' +
+            '<button class="btn btn-sm btn-danger" onclick="handleDelete(' + row.index + ')">删除</button></span></td>' +
             '</tr>';
         });
 
         html += '</tbody></table></div>';
         html += '<div class="text-muted" style="margin-top:6px;font-size:12px">共 ' + data.length + ' 个节点</div>';
         container.innerHTML = html;
+        adjustTableHeight();
     }, function() {
       container.innerHTML = '<div class="table-empty">' +
         '<div style="font-size:40px;margin-bottom:8px;opacity:0.3">⚠️</div>' +
@@ -199,10 +222,11 @@
   };
 
   /* ===== Nodes Table Actions (exposed globally) ===== */
-  window.handleActive = async function(idx) {
+  window.handleActive = async function(serverIdx) {
     const dt = await getNodesData();
-    if (!dt || !dt.data || !dt.data[idx]) return;
-    const node = dt.data[idx];
+    if (!dt || !dt.data) return;
+    const node = dt.data.find(function(n) { return n.index === serverIdx; });
+    if (!node) { VPUI.toast.error('节点不存在'); return; }
     if (node.is_active) {
       const ok = await VPUI.confirm('取消[' + node.title + ']节点为系统代理吗？');
       if (!ok) return;
@@ -241,13 +265,14 @@
     }
   };
 
-  window.handleDelete = async function(idx) {
+  window.handleDelete = async function(serverIdx) {
     const dt = await getNodesData();
-    if (!dt || !dt.data || !dt.data[idx]) return;
-    const node = dt.data[idx];
+    if (!dt || !dt.data) return;
+    const node = dt.data.find(function(n) { return n.index === serverIdx; });
+    if (!node) { VPUI.toast.error('节点不存在'); return; }
     const ok = await VPUI.confirm('确定删除节点【' + node.title + '】？');
     if (!ok) return;
-    API.deleteNode(idx, d => {
+    API.deleteNode(serverIdx, d => {
       VPUI.toast.success('已删除');
       renderNodesTable();
       refreshStatusBar();
@@ -260,10 +285,10 @@
 
   /* ===== Toolbar Events ===== */
   function initToolbar() {
-    document.getElementById('toolbar')?.addEventListener('click', e => {
-      const btn = e.target.closest('[data-action]');
+    document.addEventListener('click', function(e) {
+      var btn = e.target.closest('[data-action]');
       if (!btn) return;
-      const action = btn.dataset.action;
+      var action = btn.dataset.action;
       if (typeof toolbarActions[action] === 'function') toolbarActions[action](btn);
     });
   }
@@ -292,13 +317,21 @@
             if (!input || !input.value) { VPUI.toast.warning('请输入测速地址'); return false; }
             API.testNodes(input.value, d => {
               VPUI.toast.success(d.msg || '测速已开始');
-              // 轮询刷新表格显示测速结果
-              let count = 12;
-              const iv = setInterval(() => {
+              // 在工具栏显示测速进度
+              var testBtn = document.querySelector('[data-action="testNodes"]');
+              var origText = testBtn ? testBtn.textContent : '';
+              if (testBtn) { testBtn.disabled = true; }
+              var count = 12;
+              if (testBtn) { testBtn.textContent = '⏱ 测速中 ' + count + 's'; }
+              var iv = setInterval(function() {
                 renderNodesTable();
                 refreshStatusBar();
                 count--;
-                if (count <= 0) clearInterval(iv);
+                if (testBtn) { testBtn.textContent = '⏱ 测速中 ' + count + 's'; }
+                if (count <= 0) {
+                  clearInterval(iv);
+                  if (testBtn) { testBtn.disabled = false; testBtn.textContent = origText || '⏱ 测速'; }
+                }
               }, 2000);
             }, d => VPUI.toast.error(d.msg || '测速失败'));
           }}
@@ -428,8 +461,103 @@
         VPUI.toast.success('已清除');
         setTimeout(() => { window.location.reload(); }, 1000);
       }, d => VPUI.toast.error(d.msg || '清除失败'));
+    },
+
+    toggleCols: function() {
+      showExtraCols = !showExtraCols;
+      var container = document.getElementById('nodesTableBody');
+      if (container) {
+        container.classList.toggle('hide-cols', !showExtraCols);
+      }
+      VPUI.toast.info(showExtraCols ? '已显示全部列' : '已隐藏节点地址/测速时间列');
     }
   };
+
+  /* ===== Node Table Sort ===== */
+  let nodesDataCache = null;
+  let nodesSortDir = { speed: 0 }; // 0=none, 1=asc, 2=desc
+
+  function initTableSort() {
+    var container = document.getElementById('nodeTableInner');
+    if (!container) return;
+    container.addEventListener('click', function(e) {
+      var th = e.target.closest('th[data-sort]');
+      if (!th) return;
+      var field = th.getAttribute('data-sort');
+      if (!field) return;
+      nodesSortDir[field] = ((nodesSortDir[field] || 0) % 3) + 1;
+      var dir = nodesSortDir[field]; // 1=asc, 2=desc
+      if (!nodesDataCache || !nodesDataCache.data) return;
+      var sorted = nodesDataCache.data.slice();
+      if (dir === 1) {
+        sorted.sort(function(a, b) {
+          var va = parseFloat(a[field]) || 0;
+          var vb = parseFloat(b[field]) || 0;
+          if (va === 0 && a.test_at === '0001-01-01 00:00') va = Infinity;
+          if (vb === 0 && b.test_at === '0001-01-01 00:00') vb = Infinity;
+          return va - vb;
+        });
+      } else if (dir === 2) {
+        sorted.sort(function(a, b) {
+          var va = parseFloat(a[field]) || 0;
+          var vb = parseFloat(b[field]) || 0;
+          if (va === 0 && a.test_at === '0001-01-01 00:00') va = Infinity;
+          if (vb === 0 && b.test_at === '0001-01-01 00:00') vb = Infinity;
+          return vb - va;
+        });
+      } else {
+        sorted = nodesDataCache.data;
+      }
+      nodesSortDir[field] = dir;
+      renderSortedTable(sorted);
+    });
+  }
+
+  function renderSortedTable(data) {
+    var container = document.getElementById('nodeTableInner');
+    if (!container) return;
+    var dir = nodesSortDir.speed || 0;
+    var arrow = dir === 0 ? '' : (dir === 1 ? ' ▲' : ' ▼');
+    var html = '<div class="table-wrap"><table class="vp-table"><thead><tr>' +
+      '<th style="width:40px">#</th>' +
+      '<th>协议</th>' +
+      '<th>本机地址</th>' +
+      '<th data-sort="speed" style="cursor:pointer">速度/秒' + arrow + '</th>' +
+      '<th>标题</th>' +
+      '<th>节点地址</th>' +
+      '<th>状态</th>' +
+      '<th>测速时间</th>' +
+      '<th style="width:120px">操作</th>' +
+      '</tr></thead><tbody>';
+    data.forEach(function(row) {
+      var tested = row.test_at && row.test_at !== '0001-01-01 00:00';
+      var speedDisplay = tested
+        ? '<span class="badge badge-green" onclick="VPUI.showTips(\'' + (row.test_url || '').replace(/'/g, "\\'") + '\', this)">' + (row.speed >= 5 ? 100 : (row.speed || '-')) + ' s</span>'
+        : '<span class="badge">- s</span>';
+      var statusDisplay = row.is_running
+        ? '<span class="badge badge-green">运行中</span>'
+        : '<span class="badge">已停止</span>';
+      var activeBtn = row.is_active
+        ? '<button class="btn btn-sm btn-purple" onclick="handleActive(' + row.index + ')">已启用</button>'
+        : '<button class="btn btn-sm btn-primary" onclick="handleActive(' + row.index + ')">启用</button>';
+      html += '<tr>' +
+        '<td class="col-num">' + (data.indexOf(row) + 1) + '</td>' +
+        '<td>' + escHtml(row.protocol || '-') + '</td>' +
+        '<td>' + escHtml(row.local_addr || '-') + '</td>' +
+        '<td>' + speedDisplay + '</td>' +
+        '<td>' + escHtml(row.title || '-') + '</td>' +
+        '<td>' + escHtml(row.remote_addr || '-') + '</td>' +
+        '<td>' + statusDisplay + '</td>' +
+        '<td style="font-size:12px;color:#999">' + (tested ? row.test_at : '-') + '</td>' +
+        '<td><span class="vp-table-actions">' + activeBtn +
+        '<button class="btn btn-sm btn-danger" onclick="handleDelete(' + row.index + ')">删除</button></span></td>' +
+        '</tr>';
+    });
+    html += '</tbody></table></div>';
+    html += '<div class="text-muted" style="margin-top:6px;font-size:12px">共 ' + data.length + ' 个节点</div>';
+    container.innerHTML = html;
+    adjustTableHeight();
+  }
 
   /* ===== Domain Select ===== */
   function initDomainSelect() {
@@ -661,16 +789,37 @@
   };
 
 
+  /* ===== Table Auto-Height ===== */
+  function adjustTableHeight() {
+    var container = document.getElementById('nodesTableBody');
+    if (!container || container.classList.contains('active') === false) return;
+    // 计算剩余高度：视口高度 - 容器顶部偏移 - 底部留白
+    var rect = container.getBoundingClientRect();
+    var available = window.innerHeight - rect.top - 20;
+    if (available > 300) {
+      container.style.minHeight = available + 'px';
+      // 让 table-wrap 占满
+      var wrap = container.querySelector('.table-wrap');
+      if (wrap) {
+        wrap.style.maxHeight = (available - 60) + 'px';
+        wrap.style.overflowY = 'auto';
+      }
+    }
+  }
+
   /* ===== INIT ===== */
   document.addEventListener('DOMContentLoaded', function() {
     initTabs();
     initToolbar();
     initDomainSelect();
+    initTableSort();
     renderNodesTable();
     refreshStatusBar();
 
     // Auto-refresh status bar every 30s
     setInterval(refreshStatusBar, 30000);
+    // 浏览器 resize 时更新表格高度
+    window.addEventListener('resize', adjustTableHeight);
   });
 
 })();

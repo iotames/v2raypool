@@ -102,6 +102,24 @@ func UpdateConf(dt map[string]string, fpath string) []byte {
 			}
 		}
 	}
+	if v, ok := dt["VP_TUNNEL_REFRESH_INTERVAL"]; ok {
+		if n, err2 := strconv.Atoi(v); err2 == nil && n >= 10 {
+			cf.TunnelRefreshInterval = n
+			if tp := vp.GetTunnelPool(); tp != nil && tp.IsRunning() {
+				tp.SetRefreshInterval(n)
+			}
+		}
+	}
+	if v, ok := dt["VP_TUNNEL_PORT"]; ok {
+		if n, err2 := strconv.Atoi(v); err2 == nil && n > 0 && n <= 65535 {
+			cf.TunnelPort = n
+			// 端口变更需要重启隧道池生效
+			if tp := vp.GetTunnelPool(); tp != nil && tp.IsRunning() {
+				tp.Stop()
+				tp.Start()
+			}
+		}
+	}
 	conf.SetConf(cf)
 	pp := vp.GetProxyPool()
 	if _, ok := dt["VP_TEST_URL"]; ok {
@@ -110,7 +128,7 @@ func UpdateConf(dt map[string]string, fpath string) []byte {
 	if _, ok := dt["VP_SUBSCRIBE_URL"]; ok {
 		pp.SetSubscribeUrl(cf.SubscribeUrl)
 	}
-	result.Success("设置成功，重启应用后生效。")
+	result.Success("设置成功，已即时生效。")
 	return result.Bytes()
 }
 
