@@ -57,6 +57,10 @@ func getConfByEnv() error {
 	ecf.IntVar(&cf.V2rayApiPort, "VP_V2RAY_API_PORT", conf.DEFAULT_V2RAY_API_PORT, "v2ray的API控制端口")
 	ecf.IntVar(&cf.WebServerPort, "VP_WEB_SERVER_PORT", conf.DEFAULT_WEB_SERVER_PORT, "Web服务器端口", "设置为0可禁用Web面板")
 	ecf.BoolVar(&cf.EnableStorage, "VP_ENABLE_STORAGE", false, "保存测速节点数据到本地存储，下次重启应用直接读取。", "使用订阅地址SubscribeUrl的值来定位存储文件。变更订阅地址会找不到之前的测速数据。")
+	ecf.BoolVar(&cf.TunnelEnabled, "VP_TUNNEL_ENABLE", false, "启用隧道代理池", "启用后对外暴露单一HTTP代理端口，每次请求随机切换出口IP，适合爬虫防反爬")
+	ecf.IntVar(&cf.TunnelPort, "VP_TUNNEL_PORT", 1080, "隧道代理池监听端口", "爬虫程序通过此端口使用代理，如 http://127.0.0.1:1080")
+	ecf.IntVar(&cf.TunnelMaxDelay, "VP_TUNNEL_MAX_DELAY", 230, "隧道代理池最大延迟阈值(毫秒)", "只有测速延迟小于此值的节点才会加入隧道代理池")
+	ecf.IntVar(&cf.TunnelRefreshInterval, "VP_TUNNEL_REFRESH_INTERVAL", 1200, "隧道代理池节点测速刷新间隔(秒)", "隧道池每隔此时间对运行中节点重新测速并更新可用列表，默认1200秒即20分钟")
 	ecf.Parse()
 	conf.SetConf(cf)
 	vconf = cf

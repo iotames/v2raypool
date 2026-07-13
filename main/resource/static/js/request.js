@@ -43,3 +43,23 @@ var postjson = function (posturl, postdata, success, fail, btn) {
       }
     };
   }
+
+var getjson = function (geturl, success, fail) {
+    var xhr = new XMLHttpRequest();
+    xhr.open('get', geturl, true);
+    xhr.send();
+    xhr.onreadystatechange = function () {
+      if (xhr.readyState === 4) {
+        if (xhr.status === 200) {
+          var dt = JSON.parse(xhr.responseText);
+          if (dt.code == 0 || dt.code == 200) {
+            success(dt);
+          } else {
+            if (fail) fail(dt);
+          }
+        } else {
+          if (fail) fail({code: xhr.status, msg: xhr.statusText});
+        }
+      }
+    };
+  }

@@ -13,11 +13,13 @@ func main() {
 	var force, getproxynodes, killproxynodes, testproxynodes, startproxynodes, updateproxynodes, stopproxynodes bool
 	var activeproxynode int
 	var setproxytesturl, getproxynodesbydomain string
+	var sysproxy int
 	flag.BoolVar(&version, "version", false, "show the app version")
 	flag.BoolVar(&force, "force", false, "do some optrate force")
 	flag.StringVar(&setproxytesturl, "setproxytesturl", "", "Set testUrl of Proxy Nodes")
 	flag.StringVar(&getproxynodesbydomain, "getproxynodesbydomain", "", "Get ProxyNodes By Domain")
 	flag.IntVar(&activeproxynode, "activeproxynode", -1, "active proxy node by index")
+	flag.IntVar(&sysproxy, "sysproxy", -1, "switch system proxy: 0=none, 1=node(use with --activeproxynode), 2=tunnel")
 	flag.BoolVar(&getproxynodes, "getproxynodes", false, "get proxypool nodes")
 	flag.BoolVar(&killproxynodes, "killproxynodes", false, "kill all proxypool nodes")
 	flag.BoolVar(&testproxynodes, "testproxynodes", false, "test speed of proxy nodes")
@@ -64,6 +66,14 @@ func main() {
 	}
 	if stopproxynodes {
 		stopProxyNodes()
+		return
+	}
+	if sysproxy >= 0 {
+		nodeIdx := -1
+		if sysproxy == 1 {
+			nodeIdx = activeproxynode
+		}
+		setSysProxy(sysproxy, nodeIdx)
 		return
 	}
 	runServer()

@@ -41,6 +41,11 @@ type Conf struct {
 	HttpProxy                      string
 	DirectDomainList, DirectIpList []string
 	ProxyDomainList, ProxyIpList   []string
+	// 隧道代理池配置
+	TunnelEnabled  bool
+	TunnelPort     int
+	TunnelMaxDelay int
+	TunnelRefreshInterval int
 }
 
 func (cf Conf) GetSubscribeData() []byte {

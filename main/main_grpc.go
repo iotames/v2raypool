@@ -122,3 +122,12 @@ func stopProxyNodes() {
 		fmt.Println(res.Msg)
 	})
 }
+
+func setSysProxy(proxyType int, nodeIdx int) {
+	err := vp.SetSysProxy(vp.SysProxyType(proxyType), nodeIdx)
+	if err != nil {
+		panic(err)
+	}
+	typeNames := map[int]string{0: "无代理", 1: "固定节点", 2: "隧道代理"}
+	fmt.Printf("系统代理已切换为: %s\n", typeNames[proxyType])
+}

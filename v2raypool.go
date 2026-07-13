@@ -901,3 +901,23 @@ func proxyPoolInit() {
 	}
 	pp.StartV2rayPool()
 }
+
+// GetAvailableNodes 获取可用节点列表
+// maxDelay: 最大延迟阈值，只有测速延迟小于此值的运行中节点才会被返回
+// 复用现有 nodes 和 speedMap 中的测速数据，不做新的测速请求。
+// 返回的节点按速度从快到慢排序。
+func (p *ProxyPool) GetAvailableNodes(maxDelay time.Duration) ProxyNodes {
+	p.lock.Lock()
+	defer p.lock.Unlock()
+	var available ProxyNodes
+	for _, nd := range p.nodes {
+		if nd.IsDelete || !nd.IsRunning() {
+			continue
+		}
+		if nd.Speed < maxDelay {
+			available = append(available, nd)
+		}
+	}
+	available.SortBySpeed()
+	return available
+}

@@ -26,6 +26,7 @@
 
 1. 多个本地监听端口，组成简单的IP代理池。可供爬虫等程序调用。
 2. 选择单个节点设为系统代理，可作为普通的v2ray客户端使用。
+3. **隧道代理池**：对外暴露单一 HTTP 代理端口，每次请求随机切换出口 IP，适合爬虫防反爬。
 
 
 
@@ -146,6 +147,11 @@ v2raypool.exe --updateproxynodes
 
 # 停止所有节点
 v2raypool.exe --stopproxynodes
+
+# 切换系统代理模式：0=无代理，1=固定节点(需配合--activeproxynode)，2=隧道代理(随机IP)
+v2raypool.exe --sysproxy=0
+v2raypool.exe --sysproxy=1 --activeproxynode=3
+v2raypool.exe --sysproxy=2
 ```
 
 
@@ -195,6 +201,57 @@ systemctl start v2raypool
 systemctl stop v2raypool
 ```
 
+## 隧道代理池
+
+隧道代理池对外暴露单一 HTTP 代理端口，每次新请求从测速合格的节点中随机选择一个作为出口 IP，达到 IP 切换效果，适合爬虫防止被反爬。
+
+### 使用方式
+
+**方式一：通过 `.env` 配置文件启用**
+
+```env
+# 启用隧道代理池
+VP_TUNNEL_ENABLE = true
+
+# 隧道代理池监听端口（爬虫通过此端口使用）
+VP_TUNNEL_PORT = 1080
+
+# 最大延迟阈值(毫秒)，只有测速延迟小于此值的节点才会被选用
+VP_TUNNEL_MAX_DELAY = 230
+
+# 节点测速刷新间隔(秒)，默认1200秒(20分钟)
+VP_TUNNEL_REFRESH_INTERVAL = 1200
+```
+
+**方式二：通过 WebUI 面板切换**
+
+在 WebUI 首页工具栏的「系统代理」下拉菜单中选择「隧道」即可一键将系统代理指向隧道端口，选择「无」则取消代理。
+
+### 使用示例
+
+```bash
+# 启动 v2raypool 服务（确保代理池已有可用节点）
+v2raypool.exe
+
+# 启动所有节点并测速
+v2raypool.exe --startproxynodes
+v2raypool.exe --testproxynodes
+
+# 隧道代理已运行在 127.0.0.1:1080
+# 用 curl 测试出口 IP 是否随机切换
+curl --proxy http://127.0.0.1:1080 https://httpbin.org/ip
+curl --proxy http://127.0.0.1:1080 https://httpbin.org/ip
+```
+
+### 工作原理
+
+1. 每隔 `VP_TUNNEL_REFRESH_INTERVAL` 秒（默认 1200 秒/20 分钟）自动对运行中节点重新测速
+2. 测速结果自动写入 ProxyPool.speedMap，全局共享，避免重复测速
+3. 筛选延迟 < `VP_TUNNEL_MAX_DELAY` ms 的节点组成可用池
+4. 每个新的 TCP 连接随机选择一个节点作为出口
+5. 支持 HTTP 和 HTTPS（CONNECT 隧道）两种代理模式
+6. 完全兼容原有代理池，两种模式可同时运行
+
 ## 配置说明
 
 在 `main` 目录编译生成可执行文件，首次运行会生成2个文件:
@@ -234,6 +291,19 @@ VP_HTTP_PROXY = "http://127.0.0.1:30000"
 
 # 节点测速的URL
 VP_TEST_URL = "https://www.google.com"
+
+# 隧道代理池配置
+# 启用隧道代理池（对外暴露单一 HTTP 代理端口，每次请求随机切换出口 IP）
+VP_TUNNEL_ENABLE = false
+
+# 隧道代理池监听端口（爬虫通过此端口使用代理，如 http://127.0.0.1:1080）
+VP_TUNNEL_PORT = 1080
+
+# 隧道代理池最大延迟阈值(毫秒)，只有测速延迟小于此值的节点才会被选用
+VP_TUNNEL_MAX_DELAY = 230
+
+# 隧道代理池节点测速刷新间隔(秒)，默认1200秒(20分钟)
+VP_TUNNEL_REFRESH_INTERVAL = 1200
 ```
 
 

@@ -2,4 +2,7 @@ go.sum
 *.BK
 *.exe
 *.zip
+*.yaml
+*.yml
+.reasonix/
 build_assets/

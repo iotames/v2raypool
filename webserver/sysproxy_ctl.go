@@ -1,0 +1,73 @@
+package webserver
+
+import (
+	"encoding/json"
+
+	vp "github.com/iotames/v2raypool"
+)
+
+// SysProxySwitch 切换系统代理模式
+// req: {"type": 0|1|2, "node_idx": 123}
+// type: 0=无代理, 1=固定节点, 2=隧道代理
+func SysProxySwitch(reqBody []byte) []byte {
+	result := BaseResult{}
+	var req struct {
+		Type    int `json:"type"`
+		NodeIdx int `json:"node_idx"`
+	}
+	if err := json.Unmarshal(reqBody, &req); err != nil {
+		result.Fail("请求参数格式错误: "+err.Error(), 400)
+		return result.Bytes()
+	}
+	if req.Type < 0 || req.Type > 2 {
+		result.Fail("代理类型无效，有效值: 0=无代理, 1=固定节点, 2=隧道代理", 400)
+		return result.Bytes()
+	}
+	if err := vp.SetSysProxy(vp.SysProxyType(req.Type), req.NodeIdx); err != nil {
+		result.Fail(err.Error(), 500)
+		return result.Bytes()
+	}
+	result.Success("系统代理切换成功")
+	return result.Bytes()
+}
+
+// SysProxyStatus 获取当前系统代理状态
+func SysProxyStatus() []byte {
+	status := vp.GetSysProxyStatus()
+	result := NewListData(status, 1)
+	by, _ := json.Marshal(result)
+	return by
+}
+
+// SysProxyCheck 系统代理切换前预检
+// 返回当前环境是否满足切换条件
+func SysProxyCheck() []byte {
+	type CheckResult struct {
+		HasRunningNodes bool `json:"has_running_nodes"`
+		TunnelRunning   bool `json:"tunnel_running"`
+		TunnelAvailable bool `json:"tunnel_available"`
+		TunnelNodeCount int  `json:"tunnel_node_count"`
+		ActiveNodeIdx   int  `json:"active_node_idx"`
+	}
+	check := CheckResult{}
+	pp := vp.GetProxyPool()
+	nds := pp.GetNodes("")
+	for _, nd := range nds {
+		if nd.IsRunning() {
+			check.HasRunningNodes = true
+			if check.ActiveNodeIdx < 0 {
+				check.ActiveNodeIdx = nd.Index
+			}
+		}
+	}
+	tp := vp.GetTunnelPool()
+	if tp != nil {
+		status := tp.GetStatus()
+		check.TunnelRunning = status["running"].(bool)
+		check.TunnelAvailable = check.TunnelRunning && status["node_count"].(int) > 0
+		check.TunnelNodeCount = status["node_count"].(int)
+	}
+	result := NewListData(check, 1)
+	by, _ := json.Marshal(result)
+	return by
+}

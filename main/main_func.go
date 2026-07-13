@@ -24,6 +24,12 @@ func runServer() {
 	}
 	go vp.RunServer()
 	time.Sleep(time.Second * 1)
+	// 初始化隧道代理池（若配置启用）
+	if cf.TunnelEnabled {
+		if err := vp.InitTunnelPool(); err != nil {
+			fmt.Printf("-----隧道代理池启动失败: %v------\n", err)
+		}
+	}
 	s := webserver.NewWebServer(webPort)
 	err := miniutils.StartBrowserByUrl(fmt.Sprintf(`http://127.0.0.1:%d`, webPort))
 	if err != nil {

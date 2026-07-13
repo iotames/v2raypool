@@ -37,8 +37,10 @@ func ActiveNode(remoteAddr string, globalProxy bool) []byte {
 	var err error
 	pp := vp.GetProxyPool()
 	ok := false
+	var targetNode vp.ProxyNode
 	for _, nd := range pp.GetNodes("") {
 		if nd.RemoteAddr == remoteAddr {
+			targetNode = nd
 			err = pp.ActiveNode(nd, globalProxy)
 			ok = true
 			break
@@ -53,6 +55,8 @@ func ActiveNode(remoteAddr string, globalProxy bool) []byte {
 		result.Fail(err.Error(), 500)
 		return result.Bytes()
 	}
+	// 同步更新全局系统代理状态，WebUI 刷新后下拉框才能正确显示
+	vp.UpdateSysProxyNode(targetNode.Index)
 	result.Success("启用成功")
 	return result.Bytes()
 }
@@ -128,13 +132,10 @@ func GetNodes(domain string) []byte {
 		nds = pp.GetNodes("")
 	}
 	nds.SortBySpeed()
-	activeNode := pp.GetActiveNode()
 	var rows []map[string]any
 	for _, n := range nds {
-		isActive := false
-		if activeNode.RemoteAddr == n.RemoteAddr {
-			isActive = true
-		}
+		// 统一使用全局系统代理状态判断，而非 pp.activeNode
+		isActive := vp.IsSysProxyNodeActive(n.Index)
 		data := map[string]any{
 			"index":       n.Index,
 			"id":          n.Id,

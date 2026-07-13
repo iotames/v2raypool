@@ -1,6 +1,7 @@
 package webserver
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -135,6 +136,34 @@ func setRouter(s *web.EasyServer) {
 			return
 		}
 		ctx.Writer.Write(UpdateV2rayRoutingRules(dt))
+	})
+
+	// 隧道代理池 API
+	s.AddHandler("POST", "/api/tunnel/start", func(ctx web.Context) {
+		ctx.Writer.Write(TunnelStart())
+	})
+	s.AddHandler("POST", "/api/tunnel/stop", func(ctx web.Context) {
+		ctx.Writer.Write(TunnelStop())
+	})
+	s.AddHandler("GET", "/api/tunnel/status", func(ctx web.Context) {
+		ctx.Writer.Write(TunnelStatus())
+	})
+
+	// 系统代理切换 API
+	s.AddHandler("GET", "/api/sysproxy/status", func(ctx web.Context) {
+		ctx.Writer.Write(SysProxyStatus())
+	})
+	s.AddHandler("GET", "/api/sysproxy/check", func(ctx web.Context) {
+		ctx.Writer.Write(SysProxyCheck())
+	})
+	s.AddHandler("POST", "/api/sysproxy/switch", func(ctx web.Context) {
+		dt := make(map[string]int)
+		err := getPostJson(ctx, &dt)
+		if err != nil {
+			return
+		}
+		reqBody, _ := json.Marshal(dt)
+		ctx.Writer.Write(SysProxySwitch(reqBody))
 	})
 }
 

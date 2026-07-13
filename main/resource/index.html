@@ -8,6 +8,15 @@
   <link href="/static/layui/css/layui.css" rel="stylesheet">
   <script src="/static/layui/layui.js"></script>
   <script src='/static/js/request.js' type='text/javascript'></script>
+  <script>
+    var VPTestUrl = "<{% .TestUrl %}>"
+    var VPEnvFile = "<{% .EnvFile %}>"
+    var VPTestedDomainList = [];
+    <{% range $i, $d := .TestedDomainList %}>
+    VPTestedDomainList.push('<{% $d %}>');
+    <{% end %}>
+  </script>
+  <script src='/static/js/main.js' type='text/javascript'></script>
 </head>
 
 <style>
@@ -107,31 +116,39 @@
   </div>
 
   <script type="text/html" id="toolbarDemo">
-  <div class="layui-btn-container layui-row">
-
-    <div class="layui-form layui-col-xs3">
-      <select lay-filter="test_domain">
-        <option value="">测速过的域名</option>
-        <{% range .TestedDomainList %}>
-        <option value="<{% . %}>" <{%if strContains $.TestUrl . %}>selected<{%end%}> ><{% . %}></option>
-        <{% end %}>
-      </select>
-    </div>
-  
-    <div class="layui-col-xs8">
-
-      <!-- <i class="itable-top layui-icon" style="color:deeppink" lay-event="testNodes" id="testproxynodes">⚡</i> -->      
-      <!-- <i class="itable-top layui-icon layui-icon-play" style="color: green;" lay-event="startNodes" id="startproxynodes"></i> -->
-      <!-- <i class="itable-top layui-icon layui-icon-refresh-3" style="color: #1E9FFF;" lay-event="refreshData" id="refreshdata"></i> -->
-      
-      <!-- <button class="layui-btn layui-btn-sm" lay-on="v2raylist">v2ray</button> -->
-      <button class="layui-btn layui-btn-sm layui-bg-red" lay-event="testNodes" id="testproxynodes">测速</button>
-      <button class="layui-btn layui-btn-sm layui-bg-purple" lay-event="startNodes" id="startproxynodes">启动</button>
-      <button class="layui-btn layui-btn-sm" lay-on="subscribe">订阅</button>
-      <button class="layui-btn layui-btn-sm layui-bg-blue" lay-on="routingrules">路由规则</button>
-      <!-- <i class="itable-top layui-icon layui-icon-set" style="color: #fc4706e8;" lay-on="settinglayer" id="setting"></i> -->
+  <div>
+    <!-- 状态信息行 -->
+    <div id="statusBar" class="layui-row" style="margin-bottom:8px;padding:6px 10px;background:#f6f6f6;border-radius:4px;font-size:13px;line-height:24px;">
+      <span class="layui-col-xs2"><strong>系统代理:</strong> <span id="statusSysProxy" style="color:#999">查询中...</span></span>
+      <span class="layui-col-xs2"><strong>测速URL:</strong> <span id="statusTestUrl"><{% .TestUrl %}></span></span>
+      <span class="layui-col-xs2"><strong>运行节点:</strong> <span id="statusRunCount" style="color:#1E9FFF">-</span></span>
+      <span class="layui-col-xs2"><strong>隧道池状态:</strong> <span id="statusTunnelState" style="color:#999">-</span></span>
+      <span class="layui-col-xs2"><strong>隧道节点数:</strong> <span id="statusTunnelNodes" style="color:#5FB878">-</span></span>
+      <span class="layui-col-xs2"><strong>隧道端口:</strong> <span id="statusTunnelPort" style="color:#FF5722">-</span></span>
+      <span class="layui-col-xs2"><strong>延迟阈值:</strong> <span id="statusTunnelMaxDelay" style="color:#FFB800">-</span>ms</span>
     </div>
 
+    <!-- 操作按钮行 -->
+    <div class="layui-btn-container layui-row">
+
+      <div class="layui-form layui-col-xs2">
+        <select lay-filter="test_domain">
+          <option value="">测速域名</option>
+          <{% range .TestedDomainList %}>
+          <option value="<{% . %}>" <{%if strContains $.TestUrl . %}>selected<{%end%}> ><{% . %}></option>
+          <{% end %}>
+        </select>
+      </div>
+
+      <div class="layui-col-xs7">
+        <button class="layui-btn layui-btn-sm layui-bg-red" lay-event="testNodes" id="testproxynodes">测速</button>
+        <button class="layui-btn layui-btn-sm layui-bg-purple" lay-event="startNodes" id="startproxynodes">启动</button>
+        <button class="layui-btn layui-btn-sm" lay-on="subscribe">订阅</button>
+        <button class="layui-btn layui-btn-sm layui-bg-blue" lay-on="routingrules">路由规则</button>
+        <button class="layui-btn layui-btn-sm layui-bg-green" lay-event="tunnelToggle" id="tunnelBtn">隧道池: 关</button>
+        <button class="layui-btn layui-btn-sm layui-bg-cyan" lay-event="sysProxyOpen" id="sysProxyBtn">系统代理: 关闭</button>
+      </div>
+    </div>
   </div>
 </script>
 
@@ -143,355 +160,12 @@
 
   <script type="text/html" id="barDemo">
   <div class="layui-clear-space">
-    <!-- <a class="layui-btn layui-btn-xs" lay-event="edit">编辑</a> -->
     <a class="layui-btn layui-btn-xs {{= d.is_active ? 'layui-bg-purple' : 'layui-bg-blue' }}" lay-event="active">
       {{= d.is_active ? '已启用' : '启用' }}
     </a>
-    <!-- layui-icon layui-icon-delete -->
     <a class="layui-btn layui-btn-xs layui-bg-red" lay-event="delete">删除</a>
   </div>
 </script>
-
-  <script>
-    // import { postjson } from "./request.js";
-    // const postjson = require('./request');
-    var showTips = function (msg, ele) {
-      layer.tips(msg, ele);
-    }
-    layui.use(['table', 'dropdown', 'form'], function () {
-      var table = layui.table;
-      var dropdown = layui.dropdown;
-      var layer = layui.layer;
-      var util = layui.util;
-      var form = layui.form;
-      var $ = layui.$;
-      var element = layui.element;
-      // tab 切换事件
-      element.on('tab(v2raytab)', function (data) {
-        if (data.index == 1) {
-          table.reload('v2raylist')
-        }
-      });
-
-      form.on('select(test_domain)', function (data) {
-        // var value = data.value; // 获得被选中的值
-        // var elem = data.elem; // 获得 select 原始 DOM 对象
-        // var othis = data.othis; // 获得 select 元素被替换后的 jQuery 对象
-        // layer.msg(this.innerHTML + ' 的 value: ' + value); // this 为当前选中 <option> 元素对象
-        table.reloadData('nodeslist', { where: { domain: data.value } })
-      });
-
-      // 事件
-      util.on('lay-on', {
-        'routingrules': function () {
-          layer.open({
-            title: '<strong>路由分流规则</strong>(配置文件: default.env -> .env )',
-            type: 1,
-            area: ['80%', '80%'],
-            content: $('#routingruleslayer'),
-            success: (layero, index, that) => {
-              form.render();
-              form.on('submit(routingrules)', function (data) {
-                submitbtn = document.getElementById("routingrulesbtn")
-                var field = data.field;
-                console.log(field.direct_ip_list)
-                console.log(field)
-                postjson("/api/v2ray/routing-rules/update", field, function (dt) {
-                  layer.close(index)
-                  layer.msg(dt.msg);
-                  // table.reload('nodeslist')
-                }, function (dt) {
-                  console.log(field)
-                  layer.alert(dt.msg, { icon: 2, title: dt.code + "错误" });
-                }, submitbtn)
-              })
-            }
-          })
-        },
-        // 'v2raylist': () => {
-        //   layer.open({
-        //     title: 'v2ray服务状态',
-        //     type: 1,
-        //     area: ['80%', '80%'],
-        //     content: $('#v2raylistlayer'),
-        //     success: (layero, index, that) => {
-        //       table.reload('v2raylist')
-        //     }
-        //   })
-        // },
-        'subscribe': function () {
-          layer.open({
-            title: "更新订阅",
-            type: 1,
-            area: ['60%', '230px'],
-            content: $('#subscribelayer'),
-            success: (layero, index, that) => {
-              form.render();
-              form.on('submit(updatesubscribe)', function (data) {
-                submitbtn = document.getElementById("updatesubscribe")
-                var field = data.field;
-                console.log(field)
-                postjson("/api/nodes/subscribe", field, function (dt) {
-                  layer.close(index)
-                  layer.msg(dt.msg);
-                  table.reload('nodeslist')
-                }, function (dt) {
-                  console.log(field)
-                  layer.alert(dt.msg, { icon: 2, title: dt.code + "错误" });
-                }, submitbtn)
-              })
-            }
-          })
-        }
-      })
-
-      // 创建渲染实例
-      table.render({
-        elem: '#nodeslist',
-        url: '/api/nodes', // 此处为静态模拟数据，实际使用时需换成真实接口
-        toolbar: '#toolbarDemo',
-        defaultToolbar: ['filter',
-        {title: '基本设置', layEvent: 'settinglayer', icon: 'layui-icon-set'},
-        {title: '清除缓存', layEvent:'clearlayer', icon:'layui-icon-delete'}
-        ],
-        escape: false,
-        height: 'full-35', // 最大高度减去其他容器已占有的高度差
-        // lineStyle: 'height: 95px;',
-        css: [ // 重设当前表格样式
-          '.layui-table-tool-temp{padding-right: 145px;}'
-        ].join(''),
-        cellMinWidth: 80,
-        // totalRow: true, // 开启合计行
-        // page: true,
-        cols: [[
-          // { type: 'checkbox', fixed: 'left' },
-          { type: "numbers", fixed: 'left' }, // field: "layid",  title: "序号",
-          { field: 'index', width: 100, title: 'Index', sort: true, hide: true }, // , totalRowText: '合计：'
-          // {field:'id', width:120, title: 'ID'},
-          { field: 'protocol', title: '协议', width: 60 },
-          { field: 'local_port', title: '本地端口', width: 110, sort: true, hide: true },
-          { field: 'local_addr', title: '本机地址', width: 190 },
-          { field: 'speed', title: '速度/秒', templet: '<span class="layui-badge {{= d.test_at != "0001-01-01 00:00" ? "layui-bg-green" : ""}}" onclick="showTips(\'{{= d.test_url }}\', this)">{{= d.speed >= 5 ? 100 : d.speed }} s</span>', width: 100, sort: true },
-          { field: 'title', title: '标题', width: 200 },
-          { field: 'remote_addr', title: '节点地址', width: 180 },
-          { field: 'is_running', title: '状态', templet: '<span class="layui-badge {{= d.is_running ? "layui-bg-green" : ""}}">{{= d.is_running ? "运行中" : "已停止"}}</span>', width: 60 },
-          { field: 'test_at', title: '测速时间', width: 180 },
-          { fixed: 'right', title: '操作', width: 80, minWidth: 115, toolbar: '#barDemo' }
-        ]],
-        error: function (res, msg) {
-          console.log(res, msg)
-        }
-      });
-
-      // 工具栏事件
-      table.on('toolbar(nodeslist)', function (obj) {
-        var id = obj.config.id;
-        var checkStatus = table.checkStatus(id);
-        var othis = lay(this);
-        switch (obj.event) {
-          case 'getCheckData':
-            var data = checkStatus.data;
-            layer.alert(layui.util.escape(JSON.stringify(data)));
-            break;
-          case 'testNodes':
-            layer.prompt({ title: '测速地址', value: '<{% .TestUrl %}>', placeholder: "请输入http/https开头的URL网址" }, function (value, index, elem) {
-              if (value === '') return elem.focus();
-              var btn = document.getElementById("testproxynodes")
-              postjson("/api/nodes/test", { TestUrl: util.escape(value) }, function (dt) {
-                layer.msg(dt.msg);
-                var times = 4;
-                interval = setInterval(function () {
-                  console.log("-----setInterval--times:", times)
-                  if (times > 0) {
-                    table.reload('nodeslist')
-                    btn.disabled = true;
-                    btn.innerText = ((times < 10 ? "0" + times : times) + "s测速中");
-                    times--;
-                  } else {
-                    clearInterval(interval);
-                    btn.disabled = false;
-                    btn.innerText = "节点测速";
-                    window.location.reload();
-                  }
-                }, 2000);
-              }, function (dt) {
-                layer.alert(dt.msg, { icon: 2, title: dt.code + "错误" });
-              }, btn)
-              // 关闭 prompt
-              layer.close(index);
-            });
-            break;
-          case 'startNodes':
-            var btn = document.getElementById("startproxynodes")
-            console.log(btn)
-            postjson('/api/nodes/start', {}, function (dt) {
-              layer.msg(dt.msg);
-              var times = 1;
-              interval = setInterval(function () {
-                console.log("-----setInterval--times:", times)
-                if (times > 0) {
-                  table.reloadData('nodeslist')
-                  btn.disabled = true;
-                  // btn.innerText = ((times < 10 ? "0" + times : times) + "s启动中");
-                  times--;
-                } else {
-                  clearInterval(interval);
-                  btn.disabled = false;
-                  // btn.innerText = "启动代理池";
-                }
-              }, 1500);
-            }, function (dt) {
-              layer.alert(dt.msg, { icon: 2, title: dt.code + "错误" });
-            }, btn)
-            break;
-          // case "refreshData": table.reload('nodeslist')
-          //   break;
-          case 'clearlayer':
-            layer.confirm("删除runtime目录内所有文件：包括测速缓存等数据。",{icon:3, title:"确定清除应用缓存?"}, function(index){
-
-              postjson("/api/setting/clearcache", {}, function (dt) {
-                layer.close(index)
-                layer.msg(dt.msg);
-                window.setTimeout(function () {
-                  window.location.reload();
-                }, 1000)
-              }, function (dt) {
-                layer.alert(dt.msg, { icon: 2, title: dt.code + "错误" });
-              })
-
-            })
-            break;
-          case 'settinglayer':
-            layer.open({
-              title: '系统设置(<{% .EnvFile %}>文件)',
-              type: 1,
-              area: ['50%', 'auto'],
-              content: $('#settinglayer'),
-              success: function (layero, index, that) {
-                // 对弹层中的表单进行初始化渲染
-                form.render();
-                // 表单提交事件
-                form.on('submit(setsubmit)', function (data) {
-                  var submitbtn = document.getElementById("setupdatebtn")
-                  // submitbtn.innerText = "提交中"
-                  var field = data.field; // 获取表单字段值
-                  console.log(field)
-                  postjson("/api/setting/update", field, function (dt) {
-                    layer.close(index)
-                    layer.msg(dt.msg);
-                    window.setTimeout(function () {
-                      window.location.reload();
-                    }, 3000)
-
-                  }, function (dt) {
-                    // submitbtn.innerText = "提交失败"
-                    console.log(field)
-                    layer.alert(dt.msg, { icon: 2, title: dt.code + "错误" });
-                  }, submitbtn)
-                  // layer.close(index); // 关闭弹层
-                  return false; // 阻止默认 form 跳转
-
-                });
-              }
-            });
-            break;
-        };
-      });
-
-      // 触发单元格工具事件
-      table.on('tool(nodeslist)', function (obj) { // 双击 toolDouble
-        var data = obj.data; // 获得当前行数据
-        // console.log(obj)
-        switch (obj.event) {
-          // case 'edit':
-          //   layer.open({
-          //     title: '编辑 - id:' + data.id,
-          //     type: 1,
-          //     area: ['80%', '80%'],
-          //     content: '<div style="padding: 16px;">自定义表单元素</div>'
-          //   });
-          //   break;
-          case 'active':
-            console.log(obj)
-            var posturl = "/api/node/active"
-            hintmsg = '激活[' + data.title + ']节点为系统代理吗？'
-            if (data.is_active) {
-              hintmsg = '取消[' + data.title + ']节点为系统代理吗？'
-              posturl = "/api/node/unactive"
-              layer.confirm(hintmsg, function (index) {
-                postjson(posturl, { remote_addr: data.remote_addr }, function (dt) {
-                  layer.msg(dt.msg);
-                  table.reload('nodeslist')
-                }, function (dt) {
-                  layer.alert(dt.msg, { icon: 2, title: dt.code + "错误" });
-                })
-                console.log(data)
-                layer.close(index);
-              });
-
-            } else {
-              layer.open({
-                title: hintmsg,
-                type: 1,
-                area: ['30%', 'auto'],
-                content: $('#activenodelayer'),
-                success: function (layero, index, that) {
-                  // 对弹层中的表单进行初始化渲染
-                  form.render();
-                  // 表单提交事件
-                  form.on('submit(activenode)', function (fdt) {
-                    var submitbtn = document.getElementById("activenode")
-                    // submitbtn.innerText = "提交中"
-                    var field = fdt.field; // 获取表单字段
-                    var postdata = {
-                      remote_addr: data.remote_addr,
-                      global_proxy: true
-                    }
-                    if (field.global_proxy == "0") {
-                      postdata.global_proxy = false
-                    }
-                    console.log(field)
-                    postjson(posturl, postdata, function (dt) {
-                      layer.close(index)
-                      layer.msg(dt.msg);
-                      window.setTimeout(function () {
-                        // window.location.reload();
-                        table.reloadData('nodeslist')
-                      }, 500)
-
-                    }, function (dt) {
-                      // submitbtn.innerText = "提交失败"
-                      console.log(field)
-                      layer.alert(dt.msg, { icon: 2, title: dt.code + "错误" });
-                    }, submitbtn)
-                    // layer.close(index); // 关闭弹层
-                    return false; // 阻止默认 form 跳转
-
-                  });
-                }
-              });
-            }
-
-            break;
-          case 'delete':
-            var posturl = "/api/node/delete"
-
-            layer.confirm("确定删除节点【" + data.title + "】？", function (index) {
-              postjson(posturl, {index: data.index}, function (dt) {
-                  layer.msg(dt.msg);
-                }, function (dt) {
-                  layer.alert(dt.msg, { icon: 2, title: dt.code + "错误" });
-                })
-                table.reload('nodeslist')
-                console.log(data)
-                layer.close(index);
-              });
-            break
-        }
-      });
-    });
-
-  </script>
 
   <div id="settinglayer" style="display: none;">
     <{% tplinclude "setting_form.html" . | println %}>

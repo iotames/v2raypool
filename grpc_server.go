@@ -10,7 +10,6 @@ import (
 	"github.com/iotames/v2raypool/conf"
 	g "github.com/iotames/v2raypool/grpc"
 	"google.golang.org/grpc"
-	// "google.golang.org/grpc/credentials/insecure"
 )
 
 type ProxyPoolServer struct {
@@ -256,6 +255,9 @@ func GetRunningNodes() ProxyNodes {
 	return result
 }
 
+// 全局隧道代理池实例
+var globalTunnelPool *TunnelPool
+
 func RunServer() {
 	wg := sync.WaitGroup{}
 	wg.Add(1)
@@ -268,6 +270,58 @@ func RunServer() {
 	}()
 	wg.Wait()
 	RunProxyPoolGrpcServer()
+}
+
+// InitTunnelPool 初始化并启动隧道代理池（若配置启用）
+// 必须在 proxyPoolInit() 和节点启动完成后调用
+func InitTunnelPool() error {
+	cf := conf.GetConf()
+	if !cf.TunnelEnabled {
+		return nil
+	}
+	tc := TunnelConfig{
+		Enable:     cf.TunnelEnabled,
+		Port:       cf.TunnelPort,
+		MaxDelayMs: cf.TunnelMaxDelay,
+		RefreshInterval: cf.TunnelRefreshInterval,
+	}
+	globalTunnelPool = NewTunnelPool(tc)
+	err := globalTunnelPool.Start()
+	if err != nil {
+		globalTunnelPool = nil
+		cf.GetLogger().Errorf("隧道代理池启动失败: %v", err)
+		return err
+	}
+	return nil
+}
+
+// GetTunnelPool 获取全局隧道代理池实例
+func GetTunnelPool() *TunnelPool {
+	return globalTunnelPool
+}
+
+// StartTunnelPool 手动启动隧道代理池（WebUI 调用）
+func StartTunnelPool() error {
+	cf := conf.GetConf()
+	tc := TunnelConfig{
+		Enable:     true,
+		Port:       cf.TunnelPort,
+		MaxDelayMs: cf.TunnelMaxDelay,
+		RefreshInterval: cf.TunnelRefreshInterval,
+	}
+	if globalTunnelPool != nil && globalTunnelPool.IsRunning() {
+		return fmt.Errorf("隧道代理池已在运行中")
+	}
+	globalTunnelPool = NewTunnelPool(tc)
+	return globalTunnelPool.Start()
+}
+
+// StopTunnelPool 停止隧道代理池（WebUI 调用）
+func StopTunnelPool() error {
+	if globalTunnelPool == nil {
+		return nil
+	}
+	return globalTunnelPool.Stop()
 }
 
 func RunProxyPoolGrpcServer() {
@@ -286,4 +340,115 @@ func RunProxyPoolGrpcServer() {
 	} else {
 		fmt.Printf("SUCCESS: gRPC Server Listening At(%+v)\n", lis.Addr())
 	}
+}
+
+// SysProxyType 系统代理类型
+type SysProxyType int
+
+const (
+	SysProxyNone   SysProxyType = iota // 无代理
+	SysProxyNode                       // 固定节点代理
+	SysProxyTunnel                     // 隧道代理（随机IP）
+)
+
+// 全局系统代理状态
+var (
+	sysProxyType    SysProxyType = SysProxyNone
+	sysProxyNodeIdx int         = -1
+)
+
+// GetSysProxyStatus 获取当前系统代理状态
+func GetSysProxyStatus() map[string]interface{} {
+	return map[string]interface{}{
+		"type":     int(sysProxyType),
+		"node_idx": sysProxyNodeIdx,
+	}
+}
+
+// SetSysProxy 切换系统代理类型
+// proxyType: 0=无代理, 1=固定节点(需传 nodeIdx), 2=隧道代理
+// nodeIdx: 节点索引，仅 SysProxyNode 模式需要
+func SetSysProxy(proxyType SysProxyType, nodeIdx int) error {
+	pp := GetProxyPool()
+	cf := conf.GetConf()
+
+	// 先取消当前代理
+	if sysProxyType != SysProxyNone {
+		if sysProxyType == SysProxyNode {
+			nds := pp.GetNodes("")
+			for _, nd := range nds {
+				if nd.Index == sysProxyNodeIdx {
+					pp.UnActiveNode(nd)
+					break
+				}
+			}
+		}
+	}
+
+	switch proxyType {
+	case SysProxyNone:
+		sysProxyType = SysProxyNone
+		sysProxyNodeIdx = -1
+		return nil
+
+	case SysProxyNode:
+		nds := pp.GetNodes("")
+		var target ProxyNode
+		found := false
+		if nodeIdx >= 0 {
+			for _, nd := range nds {
+				if nd.Index == nodeIdx {
+					target = nd
+					found = true
+					break
+				}
+			}
+			if !found {
+				return fmt.Errorf("节点索引 %d 不存在", nodeIdx)
+			}
+		} else {
+			// 未指定索引时自动选择第一个运行中的节点
+			for _, nd := range nds {
+				if nd.IsRunning() {
+					target = nd
+					found = true
+					break
+				}
+			}
+			if !found {
+				return fmt.Errorf("没有运行中的节点，请先在列表中启动节点")
+			}
+		}
+		if err := pp.ActiveNode(target, true); err != nil {
+			return err
+		}
+		sysProxyType = SysProxyNode
+		sysProxyNodeIdx = target.Index
+
+	case SysProxyTunnel:
+		if globalTunnelPool == nil || !globalTunnelPool.IsRunning() {
+			if err := StartTunnelPool(); err != nil {
+				return fmt.Errorf("隧道代理启动失败: %v", err)
+			}
+		}
+		tunnelAddr := fmt.Sprintf("127.0.0.1:%d", cf.TunnelPort)
+		if err := SetProxy(tunnelAddr); err != nil {
+			return fmt.Errorf("设置隧道代理为系统代理失败: %v", err)
+		}
+		fmt.Printf("设置系统代理为隧道代理: %s 成功!\n", tunnelAddr)
+		sysProxyType = SysProxyTunnel
+		sysProxyNodeIdx = -1
+	}
+	return nil
+}
+
+// UpdateSysProxyNode WebUI 通过旧 ActiveNode 激活节点后，同步更新全局系统代理状态
+func UpdateSysProxyNode(nodeIdx int) {
+	sysProxyType = SysProxyNode
+	sysProxyNodeIdx = nodeIdx
+}
+
+// IsSysProxyNodeActive 判断指定节点是否为当前激活的系统代理节点
+func IsSysProxyNodeActive(nodeIdx int) bool {
+	return sysProxyType == SysProxyNode && sysProxyNodeIdx == nodeIdx
 }
