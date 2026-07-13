@@ -1,50 +1,58 @@
-<div class="layui-form layui-form-pane" lay-filter="filter-test-layer" style="margin: 16px;">
+<div class="form" style="margin:8px 0">
+  <div class="text-muted" style="font-size:12px;margin-bottom:12px;padding:8px 12px;background:#f8f8f8;border-radius:4px;line-height:1.8">
+    每个条目占一行，点击 <strong>＋</strong> 添加，点击 <strong>×</strong> 删除。修改后需重启代理节点方可生效。<br>
+    规则是有顺序的，匹配时从上往下，匹配到即跳出。
+  </div>
 
-  <form enctype='application/json'>
-    <div class="layui-form-item layui-form-text">
-      <label class="layui-form-label">直连域名</label>
-      <div class="layui-input-block">
-        <{% range .DirectDomainList %}>
-          <input type="text" name="direct_domain_list[]" value="<{% . %}>" class="layui-input">
-          <{% end %}>
-            <!-- <textarea placeholder="用半角英文的逗号,隔开每个域名" value="" class="layui-textarea"></textarea> -->
+  <div class="form-group">
+    <label class="form-label">直连域名 <span class="text-muted" style="font-weight:400">(VP_DIRECT_DOMAIN_LIST)</span></label>
+    <div class="routing-list" data-name="direct_domain_list">
+      <{% range $i, $v := .DirectDomainList %}>
+      <div class="routing-item">
+        <input type="text" name="direct_domain_list" value="<{% $v %}>" class="form-control routing-input" placeholder="例: geosite:cn">
+        <button class="btn btn-sm btn-danger routing-item-del" onclick="this.parentElement.remove()" tabindex="-1">×</button>
       </div>
+      <{% end %}>
     </div>
+    <button class="btn btn-sm routing-add-btn" onclick="addRoutingItem(this)">＋ 添加</button>
+  </div>
 
-    <div class="layui-form-item layui-form-text">
-      <label class="layui-form-label">直连IP</label>
-      <div class="layui-input-block">
-        <{% range .DirectIpList %}>
-          <input type="text" name="direct_ip_list[]" value="<{% . %}>" class="layui-input">
-          <{% end %}>
-            <!-- <textarea placeholder="用半角英文的逗号,隔开每个IP" value="" class="layui-textarea"></textarea> -->
+  <div class="form-group">
+    <label class="form-label">直连IP <span class="text-muted" style="font-weight:400">(VP_DIRECT_IP_LIST)</span></label>
+    <div class="routing-list" data-name="direct_ip_list">
+      <{% range $i, $v := .DirectIpList %}>
+      <div class="routing-item">
+        <input type="text" name="direct_ip_list" value="<{% $v %}>" class="form-control routing-input" placeholder="例: geoip:private">
+        <button class="btn btn-sm btn-danger routing-item-del" onclick="this.parentElement.remove()" tabindex="-1">×</button>
       </div>
+      <{% end %}>
     </div>
+    <button class="btn btn-sm routing-add-btn" onclick="addRoutingItem(this)">＋ 添加</button>
+  </div>
 
-    <div class="layui-form-item layui-form-text">
-      <label class="layui-form-label">代理域名</label>
-      <div class="layui-input-block">
-        <{% range .ProxyDomainList %}>
-          <input type="text" name="proxy_domain_list[]" value="<{% . %}>" class="layui-input">
-          <{% end %}>
-            <!-- <textarea placeholder="用半角英文的逗号,隔开每个域名" value="" class="layui-textarea"></textarea> -->
+  <div class="form-group">
+    <label class="form-label">代理域名 <span class="text-muted" style="font-weight:400">(VP_PROXY_DOMAIN_LIST)</span></label>
+    <div class="routing-list" data-name="proxy_domain_list">
+      <{% range $i, $v := .ProxyDomainList %}>
+      <div class="routing-item">
+        <input type="text" name="proxy_domain_list" value="<{% $v %}>" class="form-control routing-input" placeholder="例: geosite:google">
+        <button class="btn btn-sm btn-danger routing-item-del" onclick="this.parentElement.remove()" tabindex="-1">×</button>
       </div>
+      <{% end %}>
     </div>
+    <button class="btn btn-sm routing-add-btn" onclick="addRoutingItem(this)">＋ 添加</button>
+  </div>
 
-    <div class="layui-form-item layui-form-text">
-      <label class="layui-form-label">代理IP</label>
-      <div class="layui-input-block">
-        <{% range .ProxyIpList %}>
-          <input type="text" name="proxy_ip_list[]" value="<{% . %}>" class="layui-input">
-          <{% end %}>
-            <!-- <textarea placeholder="用半角英文的逗号,隔开每个IP" value="" class="layui-textarea"></textarea> -->
+  <div class="form-group">
+    <label class="form-label">代理IP <span class="text-muted" style="font-weight:400">(VP_PROXY_IP_LIST)</span></label>
+    <div class="routing-list" data-name="proxy_ip_list">
+      <{% range $i, $v := .ProxyIpList %}>
+      <div class="routing-item">
+        <input type="text" name="proxy_ip_list" value="<{% $v %}>" class="form-control routing-input" placeholder="例: geoip:!cn">
+        <button class="btn btn-sm btn-danger routing-item-del" onclick="this.parentElement.remove()" tabindex="-1">×</button>
       </div>
+      <{% end %}>
     </div>
-
-    <div class="layui-form-item">
-      <!-- <button id="routingrulesbtn" class="layui-btn" style="float: right;" lay-submit lay-filter="routingrules">提交</button> -->
-    </div>
-
-  </form>
-
+    <button class="btn btn-sm routing-add-btn" onclick="addRoutingItem(this)">＋ 添加</button>
+  </div>
 </div>

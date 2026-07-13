@@ -90,7 +90,7 @@ func StartNodes() []byte {
 	}
 	err := pp.StartAll()
 	if err != nil {
-		result.Fail(err.Error(), 200)
+		result.Fail(err.Error(), 500)
 		return result.Bytes()
 	}
 	result.Success("启动成功")

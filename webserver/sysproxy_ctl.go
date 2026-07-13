@@ -63,9 +63,13 @@ func SysProxyCheck() []byte {
 	tp := vp.GetTunnelPool()
 	if tp != nil {
 		status := tp.GetStatus()
-		check.TunnelRunning = status["running"].(bool)
-		check.TunnelAvailable = check.TunnelRunning && status["node_count"].(int) > 0
-		check.TunnelNodeCount = status["node_count"].(int)
+		if v, ok := status["running"].(bool); ok {
+			check.TunnelRunning = v
+		}
+		if v, ok := status["node_count"].(int); ok {
+			check.TunnelNodeCount = v
+		}
+		check.TunnelAvailable = check.TunnelRunning && check.TunnelNodeCount > 0
 	}
 	result := NewListData(check, 1)
 	by, _ := json.Marshal(result)

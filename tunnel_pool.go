@@ -114,7 +114,11 @@ func (tp *TunnelPool) IsRunning() bool {
 }
 
 // SetMaxDelay 在线更新延迟阈值（毫秒），下次刷新节点时生效
+// ms 必须 > 0，否则不生效
 func (tp *TunnelPool) SetMaxDelay(ms int) {
+	if ms <= 0 {
+		return
+	}
 	tp.mu.Lock()
 	defer tp.mu.Unlock()
 	tp.config.MaxDelayMs = ms

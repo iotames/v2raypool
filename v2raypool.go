@@ -384,7 +384,7 @@ func (p *ProxyPool) UpdateSubscribe(httpProxy string) (total, add int) {
 
 	if p.subscribeUrl == "" {
 		fmt.Printf("---WARNING--subscribeUrl is empty----\n")
-		return
+		return 0, 0
 	}
 	dt, srawdata, err = decode.ParseSubscribeByUrl(p.subscribeUrl, httpProxy)
 	if err != nil && httpProxy == "" {
@@ -406,13 +406,14 @@ func (p *ProxyPool) UpdateSubscribe(httpProxy string) (total, add int) {
 	total = len(vnds)
 	if total == 0 {
 		fmt.Printf("---WARNING--proxy nodes count empty----\n")
-		return
+		return 0, 0
 	}
 
 	if srawdata != "" {
 		err = conf.GetConf().UpdateSubscribeData(srawdata)
 		if err != nil {
-			panic(err)
+			fmt.Printf("---ERROR--UpdateSubscribeData(%v)----\n", err)
+			return total, 0
 		}
 	}
 
@@ -697,6 +698,9 @@ func (p *ProxyPool) StopAll() error {
 
 func (p *ProxyPool) Delete(index int) error {
 	var err error
+	if index < 0 || index >= len(p.nodes) {
+		return fmt.Errorf("节点索引 %d 无效，当前共 %d 个节点", index, len(p.nodes))
+	}
 	// 删除激活节点时同步清理状态
 	if p.activeNode.RemoteAddr != "" && p.nodes[index].GetId() == p.activeNode.GetId() {
 		p.activeNode = ProxyNode{}

@@ -441,6 +441,9 @@ func SetSysProxy(proxyType SysProxyType, nodeIdx int) error {
 		fmt.Printf("设置系统代理为隧道代理: %s 成功!\n", tunnelAddr)
 		sysProxyType = SysProxyTunnel
 		sysProxyNodeIdx = -1
+
+	default:
+		return fmt.Errorf("无效的系统代理类型: %d (有效值: 0=无代理, 1=固定节点, 2=隧道代理)", proxyType)
 	}
 	return nil
 }

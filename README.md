@@ -21,6 +21,10 @@
 
 [项目文档: https://iotames.github.io/v2raypool/](https://iotames.github.io/v2raypool/)
 
+同类项目：
+
+- [https://github.com/iotames/proxypool](https://github.com/iotames/proxypool)：基于 `Clush Verge` 配置文件的代理池
+
 
 ## 用途
 

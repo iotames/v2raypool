@@ -1,4 +1,5 @@
 go.sum
+reasonix.toml
 *.BK
 *.exe
 *.zip

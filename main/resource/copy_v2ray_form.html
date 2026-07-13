@@ -1,51 +1,47 @@
-<div class="layui-form layui-form-pane" lay-filter="copyv2ray" style="margin: 16px;">
-  
-  <div class="layui-form-item">
-    <label class="layui-form-label">原配置文件</label>
-    <div class="layui-input-block">
-      <input type="text" name="old_config_file" disabled value="" class="layui-input">
+<div class="form" style="margin:8px 0">
+
+  <div class="form-row">
+    <label class="form-label-inline" style="width:100px">原配置文件</label>
+    <input type="text" id="copyOldConfig" disabled value="" class="form-control">
+  </div>
+
+  <div class="form-row">
+    <label class="form-label-inline" style="width:100px">新配置文件</label>
+    <input type="text" id="copyNewConfig" name="config_file" placeholder="例: v2ray.config.json" value="" class="form-control">
+  </div>
+
+  <div class="form-row">
+    <label class="form-label-inline" style="width:100px">全局代理</label>
+    <div class="toggle-wrap">
+      <span class="toggle" id="copyGlobalToggle"></span>
+      <span class="toggle-label" id="copyGlobalLabel">关闭</span>
     </div>
   </div>
 
-    <div class="layui-form-item">
-      <label class="layui-form-label">新配置文件</label>
-      <div class="layui-input-block">
-        <input type="text" name="config_file" placeholder="例: v2ray.config.json" value="" class="layui-input">
-      </div>
-    </div>
+  <div class="form-row">
+    <label class="form-label-inline" style="width:100px">新入站协议</label>
+    <select id="copyProtocol" name="inbound_protocol" class="form-control" style="width:160px">
+      <option value="http" <{% if eq "http" .GetHttpProxyProtocol %}>selected<{%end%}>>http</option>
+      <option value="socks" <{% if ne "http" .GetHttpProxyProtocol %}>selected<{%end%}>>socks(socks5)</option>
+    </select>
+  </div>
 
-    <div class="layui-form-item">
-      <label class="layui-form-label">全局代理</label>
-      <!-- <label class="layui-form-label">分流模式</label> -->
-      <div class="layui-input-block">
-        <input type="checkbox" name="global_proxy" title="开启|关闭" lay-skin="switch" >
-        <!-- <select name="global_proxy" >
-          <option value=false selected>路由分流</option>
-          <option value=true>全局代理</option>
-        </select> -->
-      </div>
-    </div>
-
-    <div class="layui-form-item">
-      <label class="layui-form-label">新入站协议</label>
-      <div class="layui-input-block">
-        <select name="inbound_protocol" >
-          <option value="http" <{% if eq "http" .GetHttpProxyProtocol %}>selected<{%end%}> >http</option>
-          <option value="socks" <{% if ne "http" .GetHttpProxyProtocol %}>selected<{%end%}> >socks(socks5)</option>
-        </select>
-        <!-- <input type="text" name="inbound_protocol" placeholder="新入站端口协议" value="<{% .GetHttpProxyProtocol %}>" class="layui-input"> -->
-      </div>
-    </div>
-
-    <div class="layui-form-item">
-      <label class="layui-form-label">新入站端口</label>
-      <div class="layui-input-block">
-        <input type="text" name="local_port" placeholder="填写新的本地端口号，不可与原有的冲突" value="" class="layui-input">
-      </div>
-    </div>
-
-    <div class="layui-form-item">
-      <button id="copyv2ray" class="layui-btn" style="float: right;" lay-submit lay-filter="copyv2ray">启动</button>
-    </div>
+  <div class="form-row">
+    <label class="form-label-inline" style="width:100px">新入站端口</label>
+    <input type="text" id="copyPort" name="local_port" placeholder="填写新的本地端口号，不可与原有的冲突" value="" class="form-control" style="width:200px">
+  </div>
 
 </div>
+
+<script>
+(function(){
+  var toggle = document.getElementById('copyGlobalToggle');
+  var label = document.getElementById('copyGlobalLabel');
+  if (toggle && label) {
+    toggle.addEventListener('click', function() {
+      this.classList.toggle('active');
+      label.textContent = this.classList.contains('active') ? '开启' : '关闭';
+    });
+  }
+})();
+</script>
