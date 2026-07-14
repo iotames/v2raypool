@@ -1,6 +1,7 @@
 package webserver
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -98,6 +99,10 @@ func UpdateConf(dt map[string]string, fpath string) []byte {
 			cf.TunnelMaxDelay = n
 			// 同步更新运行中的隧道池
 			if tp := vp.GetTunnelPool(); tp != nil && tp.IsRunning() {
+				if n < 50 {
+					result.Fail("VP_TUNNEL_MAX_DELAY 更新失败: 延迟阈值不可小于50 ms", 400)
+					return result.Bytes()
+				}
 				tp.SetMaxDelay(n)
 			}
 		}
@@ -106,6 +111,10 @@ func UpdateConf(dt map[string]string, fpath string) []byte {
 		if n, err2 := strconv.Atoi(v); err2 == nil && n >= 10 {
 			cf.TunnelRefreshInterval = n
 			if tp := vp.GetTunnelPool(); tp != nil && tp.IsRunning() {
+				if n < conf.MIN_REFRESH_INTERVAL {
+					result.Fail(fmt.Sprintf("VP_TUNNEL_REFRESH_INTERVAL 更新失败: 测速间隔不可小于%d s", conf.MIN_REFRESH_INTERVAL), 400)
+					return result.Bytes()
+				}
 				tp.SetRefreshInterval(n)
 			}
 		}
@@ -115,6 +124,7 @@ func UpdateConf(dt map[string]string, fpath string) []byte {
 			cf.TunnelPort = n
 			// 端口变更需要重启隧道池生效
 			if tp := vp.GetTunnelPool(); tp != nil && tp.IsRunning() {
+				tp.SetPort(n)
 				tp.Stop()
 				tp.Start()
 			}

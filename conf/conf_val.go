@@ -28,6 +28,8 @@ const DEFAULT_DIRECT_IP_LIST = "geoip:private,geoip:cn"
 const DEFAULT_PROXY_DOMAIN_LIST = "geosite:google"
 const DEFAULT_PROXY_IP_LIST = "geoip:!cn"
 
+const MIN_REFRESH_INTERVAL = 300
+
 type Conf struct {
 	TestUrl                               string
 	EnvFile                               string
@@ -42,9 +44,9 @@ type Conf struct {
 	DirectDomainList, DirectIpList []string
 	ProxyDomainList, ProxyIpList   []string
 	// 隧道代理池配置
-	TunnelEnabled  bool
-	TunnelPort     int
-	TunnelMaxDelay int
+	TunnelEnabled         bool
+	TunnelPort            int
+	TunnelMaxDelay        int
 	TunnelRefreshInterval int
 }
 

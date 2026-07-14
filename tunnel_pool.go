@@ -22,23 +22,24 @@ import (
 // 达到 IP 切换效果，防止爬虫被目标网站的反爬策略封锁。
 //
 // 使用方式：
-//   curl --proxy http://127.0.0.1:1080 https://httpbin.org/ip
-//   每次请求，httpbin 返回的 IP 会随机变化（如果隧道池中有多个可用节点）。
+//
+//	curl --proxy http://127.0.0.1:1080 https://httpbin.org/ip
+//	每次请求，httpbin 返回的 IP 会随机变化（如果隧道池中有多个可用节点）。
 //
 // 设计原则：
 //   - 完全复用现有代理池的节点管理、订阅解析、测速等基础设施
 //   - 不修改原有 ProxyPool 的核心逻辑，仅新增隧道层
 //   - 与原有代理池（多端口模式）可同时运行
 type TunnelPool struct {
-	mu       sync.RWMutex
-	server   *http.Server
-	pool     *ProxyPool       // 复用现有代理池
-	config   TunnelConfig     // 隧道配置
-	ctx      context.Context
-	cancel   context.CancelFunc
-	running  bool
-	nodeList ProxyNodes       // 当前可用的节点快照
-	refreshCh chan struct{}   // 配置变更触发立即刷新
+	mu        sync.RWMutex
+	server    *http.Server
+	pool      *ProxyPool   // 复用现有代理池
+	config    TunnelConfig // 隧道配置
+	ctx       context.Context
+	cancel    context.CancelFunc
+	running   bool
+	nodeList  ProxyNodes    // 当前可用的节点快照
+	refreshCh chan struct{} // 配置变更触发立即刷新
 }
 
 // NewTunnelPool 创建隧道代理池实例
@@ -118,6 +119,16 @@ func (tp *TunnelPool) IsRunning() bool {
 	return tp.running
 }
 
+// SetPort 在线设置监听端口，配合 Stop/Start 生效
+func (tp *TunnelPool) SetPort(port int) {
+	if port <= 0 || port > 65535 {
+		return
+	}
+	tp.mu.Lock()
+	tp.config.Port = port
+	tp.mu.Unlock()
+}
+
 // SetMaxDelay 在线更新延迟阈值（毫秒），立即触发刷新以即时生效
 // ms 必须 > 0，否则不生效
 func (tp *TunnelPool) SetMaxDelay(ms int) {
@@ -135,9 +146,9 @@ func (tp *TunnelPool) SetMaxDelay(ms int) {
 }
 
 // SetRefreshInterval 在线更新测速间隔（秒），立即触发刷新并重置定时器
-// secs 必须 ≥ 10，否则不生效
+// secs 必须 ≥ 300，否则不生效
 func (tp *TunnelPool) SetRefreshInterval(secs int) {
-	if secs < 10 {
+	if secs < conf.MIN_REFRESH_INTERVAL {
 		return
 	}
 	tp.mu.Lock()

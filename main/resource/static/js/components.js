@@ -82,7 +82,7 @@ const VPUI = (() => {
       okBtn.focus();
       function close() { overlay.remove(); document.removeEventListener('keydown', onKeyEscape); resolve(); }
       okBtn.addEventListener('click', close);
-      overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
+      overlay.addEventListener('mousedown', e => { if (e.target === overlay) close(); });
       document.addEventListener('keydown', function handler(e) { if (e.key === 'Escape') { document.removeEventListener('keydown', handler); close(); } });
     });
   }
@@ -109,7 +109,7 @@ const VPUI = (() => {
       function close(result) { overlay.remove(); resolve(result); }
       yesBtn.addEventListener('click', () => close(true));
       noBtn.addEventListener('click', () => close(false));
-      overlay.addEventListener('click', e => { if (e.target === overlay) close(false); });
+      overlay.addEventListener('mousedown', e => { if (e.target === overlay) close(false); });
       document.addEventListener('keydown', function handler(e) {
         if (e.key === 'Escape') { document.removeEventListener('keydown', handler); close(false); }
         if (e.key === 'Enter') { document.removeEventListener('keydown', handler); close(true); }
@@ -141,7 +141,7 @@ const VPUI = (() => {
       function close(result) { overlay.remove(); resolve(result); }
       okBtn.addEventListener('click', () => close(input.value));
       cancelBtn.addEventListener('click', () => close(null));
-      overlay.addEventListener('click', e => { if (e.target === overlay) close(null); });
+      overlay.addEventListener('mousedown', e => { if (e.target === overlay) close(null); });
       input.addEventListener('keydown', function handler(e) {
         if (e.key === 'Enter') { close(input.value); }
         if (e.key === 'Escape') { close(null); }
@@ -195,7 +195,7 @@ const VPUI = (() => {
 
     function close() { overlay.remove(); opts.onClose && opts.onClose(); }
     closeBtn.addEventListener('click', close);
-    overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
+    overlay.addEventListener('mousedown', e => { if (e.target === overlay) close(); });
     document.addEventListener('keydown', function handler(e) { if (e.key === 'Escape') { document.removeEventListener('keydown', handler); close(); } });
 
     if (opts.onOpen) opts.onOpen(modal, bodyEl, footerEl);
