@@ -2,6 +2,7 @@ package webserver
 
 import (
 	"fmt"
+	"net"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -50,14 +51,9 @@ func UpdateV2rayRoutingRules(dt RequestRoutingRules) []byte {
 
 // UpdateConf 更改.env配置文件
 func UpdateConf(dt map[string]string, fpath string) []byte {
-	err := conf.UpdateConf(dt, fpath)
 	result := BaseResult{}
-	if err != nil {
-		result.Fail("更新失败:"+err.Error(), 500)
-		return result.Bytes()
-	}
-	// fmt.Printf("-----cf(%+v)---\n", dt)
 	cf := conf.GetConf()
+	var err error
 	if v, ok := dt["VP_V2RAY_API_PORT"]; ok && v != "" {
 		cf.V2rayApiPort, err = strconv.Atoi(v)
 		if err != nil {
@@ -96,37 +92,45 @@ func UpdateConf(dt map[string]string, fpath string) []byte {
 	}
 	if v, ok := dt["VP_TUNNEL_MAX_DELAY"]; ok {
 		if n, err2 := strconv.Atoi(v); err2 == nil && n > 0 {
+			if n < 50 {
+				result.Fail("VP_TUNNEL_MAX_DELAY 更新失败: 延迟阈值不可小于50 ms", 400)
+				return result.Bytes()
+			}
 			cf.TunnelMaxDelay = n
-			// 同步更新运行中的隧道池
 			if tp := vp.GetTunnelPool(); tp != nil && tp.IsRunning() {
-				if n < 50 {
-					result.Fail("VP_TUNNEL_MAX_DELAY 更新失败: 延迟阈值不可小于50 ms", 400)
-					return result.Bytes()
-				}
 				tp.SetMaxDelay(n)
 			}
 		}
 	}
 	if v, ok := dt["VP_TUNNEL_REFRESH_INTERVAL"]; ok {
-		if n, err2 := strconv.Atoi(v); err2 == nil && n >= 10 {
+		if n, err2 := strconv.Atoi(v); err2 == nil {
+			if n < conf.MIN_REFRESH_INTERVAL {
+				result.Fail(fmt.Sprintf("VP_TUNNEL_REFRESH_INTERVAL 更新失败: 测速间隔不可小于%d s", conf.MIN_REFRESH_INTERVAL), 400)
+				return result.Bytes()
+			}
 			cf.TunnelRefreshInterval = n
 			if tp := vp.GetTunnelPool(); tp != nil && tp.IsRunning() {
-				if n < conf.MIN_REFRESH_INTERVAL {
-					result.Fail(fmt.Sprintf("VP_TUNNEL_REFRESH_INTERVAL 更新失败: 测速间隔不可小于%d s", conf.MIN_REFRESH_INTERVAL), 400)
-					return result.Bytes()
-				}
 				tp.SetRefreshInterval(n)
 			}
 		}
 	}
 	if v, ok := dt["VP_TUNNEL_PORT"]; ok {
 		if n, err2 := strconv.Atoi(v); err2 == nil && n > 0 && n <= 65535 {
-			cf.TunnelPort = n
 			// 端口变更需要重启隧道池生效
 			if tp := vp.GetTunnelPool(); tp != nil && tp.IsRunning() {
+				// 先探测新端口是否可用，避免 Stop 后无法重启
+				probeLn, probeErr := net.Listen("tcp", fmt.Sprintf(":%d", n))
+				if probeErr != nil {
+					result.Fail(fmt.Sprintf("VP_TUNNEL_PORT 更新失败: 端口 %d 被占用", n), 500)
+					return result.Bytes()
+				}
+				probeLn.Close()
+				cf.TunnelPort = n
 				tp.SetPort(n)
 				tp.Stop()
 				tp.Start()
+			} else {
+				cf.TunnelPort = n
 			}
 		}
 	}
@@ -137,6 +141,17 @@ func UpdateConf(dt map[string]string, fpath string) []byte {
 	}
 	if _, ok := dt["VP_SUBSCRIBE_URL"]; ok {
 		pp.SetSubscribeUrl(cf.SubscribeUrl)
+	}
+	// 延迟阈值变更后，同步刷新隧道池节点列表，确保前端的节点数实时联动
+	if _, ok := dt["VP_TUNNEL_MAX_DELAY"]; ok {
+		if tp := vp.GetTunnelPool(); tp != nil && tp.IsRunning() {
+			tp.RefreshNodes()
+		}
+	}
+	// 所有校验通过后，写入 .env 文件
+	if err := conf.UpdateConf(dt, fpath); err != nil {
+		result.Fail("写入文件失败:"+err.Error(), 500)
+		return result.Bytes()
 	}
 	result.Success("设置成功，已即时生效。")
 	return result.Bytes()

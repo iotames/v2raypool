@@ -46,6 +46,10 @@ type TunnelPool struct {
 // 复用 GetProxyPool() 单例，从现有代理池中获取测速合格的节点
 func NewTunnelPool(cfg TunnelConfig) *TunnelPool {
 	ctx, cancel := context.WithCancel(context.Background())
+	// 统一约束 RefreshInterval 最小值，与 SetRefreshInterval 的行为保持一致
+	if cfg.RefreshInterval < conf.MIN_REFRESH_INTERVAL {
+		cfg.RefreshInterval = conf.MIN_REFRESH_INTERVAL
+	}
 	return &TunnelPool{
 		pool:      GetProxyPool(),
 		config:    cfg,
