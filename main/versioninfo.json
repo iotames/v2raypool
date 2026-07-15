@@ -20,14 +20,14 @@
         "Comments": "",
         "CompanyName": "",
         "FileDescription": "简单易用的v2ray客户端和代理池服务",
-        "FileVersion": "v1.9.2",
+        "FileVersion": "1.9.2",
         "InternalName": "",
         "LegalCopyright": "",
         "LegalTrademarks": "",
         "OriginalFilename": "",
         "PrivateBuild": "",
         "ProductName": "V2rayPool",
-        "ProductVersion": "v1.9.2",
+        "ProductVersion": "1.9.2",
         "SpecialBuild": ""
     },
     "VarFileInfo": {

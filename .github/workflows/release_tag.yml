@@ -92,10 +92,12 @@ jobs:
     
       - name: Build
         run: |
+          BUILD_TIME=$(date '+%Y-%m-%d %H:%M:%S')
           echo 'hello.ref=${{ github.ref }}'
           echo 'hello.ref_name=${{ github.ref_name }}'
+          echo "build_time=$BUILD_TIME"
           mkdir -p build_assets
-          go build -v -o build_assets/v2raypool -trimpath -ldflags "-s -w -linkmode internal -buildid= -X 'main.AppVersion=${{ github.ref_name }}' -X 'main.GoVersion=`go version`'" ./main
+          go build -v -o build_assets/v2raypool -trimpath -ldflags "-s -w -linkmode internal -buildid= -X 'main.AppVersion=${{ github.ref_name }}' -X 'main.GoVersion=`go version`' -X 'main.BuildTime=${BUILD_TIME}'" ./main
       
       - name: Rename Windows File
         if: matrix.goos == 'windows'

@@ -5,8 +5,9 @@ import (
 	"fmt"
 )
 
-var AppVersion = "v1.9.2"
-var GoVersion = "go version go1.19.4 windows/amd64"
+var AppVersion = "unknown"
+var GoVersion = "unknown"
+var BuildTime = "unknown"
 
 func main() {
 	var version bool
@@ -29,7 +30,7 @@ func main() {
 	flag.Parse()
 
 	if version {
-		fmt.Printf("AppVersion:%s\nGoVersion:%s\n", AppVersion, GoVersion)
+		fmt.Printf("AppVersion:%s\nGoVersion:%s\nBuildTime:%s\n", AppVersion, GoVersion, BuildTime)
 		return
 	}
 	if setproxytesturl != "" {
