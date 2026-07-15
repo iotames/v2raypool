@@ -68,15 +68,23 @@
   function refreshStatusBar() {
     // SysProxy status
     API.sysProxyStatus(dt => {
-      const names = {0: '关闭', 1: '单节点', 2: '隧道'};
+      const typeNames = {
+        0: '关闭',
+        1: function(g) { return g ? '单节点全局' : '单节点智能分流'; },
+        2: '隧道全局'
+      };
       const el = document.getElementById('statusSysProxy');
       const btn = document.getElementById('sysProxyBtn');
       if (dt.data) {
-        el.textContent = names[dt.data.type] || '未知';
-        el.style.color = dt.data.type === 0 ? '#999' : '#5FB878';
+        var stype = dt.data.type;
+        var sname = typeof typeNames[stype] === 'function'
+          ? typeNames[stype](dt.data.global !== false)
+          : (typeNames[stype] || '未知');
+        el.textContent = sname;
+        el.style.color = stype === 0 ? '#999' : '#5FB878';
         if (btn) {
-          btn.textContent = '系统代理: ' + (names[dt.data.type] || '未知');
-          btn.className = dt.data.type === 0 ? 'btn btn-sm' : 'btn btn-sm btn-cyan';
+          btn.textContent = '系统代理: ' + sname;
+          btn.className = stype === 0 ? 'btn btn-sm' : 'btn btn-sm btn-cyan';
         }
       }
     }, function() {
@@ -205,6 +213,10 @@
     const d = document.createElement('div');
     d.textContent = s;
     return d.innerHTML;
+  }
+  function escAttr(s) {
+    if (!s) return '';
+    return escHtml(s).replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   }
 
   /* ===== Routing Rules: Add item helper ===== */
@@ -693,33 +705,47 @@
           '</div>';
         return;
       }
-      let html = '<div class="table-wrap"><table class="vp-table"><thead><tr>' +
-        '<th style="width:40px">#</th>' +
-        '<th>PID</th>' +
+      let html = '<div class="table-wrap"><table class="vp-table v2ray-table"><thead><tr>' +
+        '<th style="width:44px">#</th>' +
+        '<th>进程</th>' +
         '<th>类型</th>' +
         '<th>本地端口</th>' +
         '<th>配置文件</th>' +
-        '<th style="width:160px">操作</th>' +
+        '<th style="width:200px">操作</th>' +
         '</tr></thead><tbody>';
 
       dt.data.forEach((row, idx) => {
         const isCustom = row.run_mode === '个性配置';
-        html += '<tr>' +
+        const isSysProxy = row.run_mode === '系统代理';
+        const isPool = row.run_mode === '动态代理池';
+        const hasPid = row.pid && row.pid !== 0;
+        // 类型徽标样式
+        let badgeClass = 'badge-blue', badgeIcon = '⚙';
+        if (isSysProxy) { badgeClass = 'badge-orange'; badgeIcon = '🖥'; }
+        else if (isPool) { badgeClass = 'badge-purple'; badgeIcon = '🔁'; }
+
+        html += '<tr class="vp-row">' +
           '<td class="col-num">' + (idx + 1) + '</td>' +
-          '<td>' + escHtml(row.pid || '-') + '</td>' +
-          '<td><span class="badge ' + (isCustom ? 'badge-blue' : 'badge-green') + '">' + escHtml(row.run_mode || '-') + '</span></td>' +
-          '<td>' + escHtml(row.local_ports || '-') + '</td>' +
-          '<td style="font-size:12px">' + escHtml(row.config_file || '-') + '</td>' +
-          '<td><span class="vp-table-actions">' +
-            '<button class="btn btn-sm" onclick="handleViewConf(' + idx + ')" title="查看配置">&#9881;</button>' +
+          '<td class="col-pid"><span class="pid-dot ' + (hasPid ? 'pid-alive' : 'pid-dead') + '"></span>' +
+            escHtml(hasPid ? row.pid : '-') + '</td>' +
+          '<td><span class="badge ' + badgeClass + ' v2ray-badge">' + badgeIcon + ' ' + escHtml(row.run_mode || '-') + '</span></td>' +
+          '<td class="col-ports">' + escHtml(row.local_ports || '-') + '</td>' +
+          '<td class="col-config">' +
+            '<span class="config-path" title="' + escAttr(row.config_file || '') + '">' + escHtml(row.config_file || '-') + '</span></td>' +
+          '<td><span class="vp-table-actions v2ray-actions">' +
+            '<button class="btn btn-sm btn-outline" onclick="handleViewConf(' + idx + ')" title="查看配置"><span class="act-icon">📄</span></button>' +
+            // 复制：个性配置 + 系统代理可用
+            (!isPool
+              ? '<button class="btn btn-sm btn-outline" onclick="handleCopyRun(' + idx + ')" title="复制并运行"><span class="act-icon">📋</span></button>'
+              : '<button class="btn btn-sm btn-outline" disabled title="管理进程不可复制"><span class="act-icon">📋</span></button>') +
+            // 重启：个性配置 + 系统代理可用
+            (isCustom || isSysProxy
+              ? '<button class="btn btn-sm btn-outline" onclick="handleRestart(' + idx + ')" title="重启"><span class="act-icon">🔄</span></button>'
+              : '<button class="btn btn-sm btn-outline" disabled title="系统/管理进程不可重启"><span class="act-icon">🔄</span></button>') +
+            // 删除：仅个性配置可用
             (isCustom
-              ? '<button class="btn btn-sm" onclick="handleCopyRun(' + idx + ')" title="复制并运行">&#128206;</button>' +
-                '<button class="btn btn-sm" onclick="handleRestart(' + idx + ')" title="重启">&#8635;</button>' +
-                '<button class="btn btn-sm btn-danger" onclick="handleDeleteV2ray(' + idx + ')" title="删除">&#10005;</button>'
-              : '<button class="btn btn-sm" disabled title="系统进程不可操作">&#9881;</button>' +
-                '<button class="btn btn-sm" disabled title="系统进程不可复制">&#128206;</button>' +
-                '<button class="btn btn-sm" disabled title="系统进程不可重启">&#8635;</button>' +
-                '<button class="btn btn-sm" disabled title="系统进程不可删除">&#10005;</button>') +
+              ? '<button class="btn btn-sm btn-outline btn-outline-danger" onclick="handleDeleteV2ray(' + idx + ')" title="删除"><span class="act-icon">🗑</span></button>'
+              : '<button class="btn btn-sm btn-outline" disabled title="系统/管理进程不可删除"><span class="act-icon">🗑</span></button>') +
           '</span></td>' +
           '</tr>';
       });
@@ -753,39 +779,10 @@
     const oldConfigFile = (row.config_file || '').replace('routing.rules.json -> ', '').trim();
 
     VPUI.openModal({
-      title: '复制配置文件并运行',
+      title: '复制配置文件并启动',
       width: '50%',
       maxWidth: '600px',
-      content: `
-        <div class="form">
-          <div class="form-group">
-            <label class="form-label">原配置文件</label>
-            <input type="text" class="form-control" id="copyOldConfig" disabled value="${escHtml(oldConfigFile)}">
-          </div>
-          <div class="form-group">
-            <label class="form-label">新配置文件</label>
-            <input type="text" class="form-control" id="copyNewConfig" placeholder="例: v2ray.config.json" value="">
-          </div>
-          <div class="form-group">
-            <label class="form-label">全局代理</label>
-            <div class="toggle-wrap">
-              <span class="toggle" id="copyGlobalToggle"></span>
-              <span class="toggle-label" id="copyGlobalLabel">关闭</span>
-            </div>
-          </div>
-          <div class="form-group">
-            <label class="form-label">新入站协议</label>
-            <select class="form-control" id="copyProtocol">
-              <option value="http">http</option>
-              <option value="socks">socks(socks5)</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label class="form-label">新入站端口</label>
-            <input type="text" class="form-control" id="copyPort" placeholder="填写新的本地端口号" value="">
-          </div>
-        </div>
-      `,
+      content: document.getElementById('copyV2rayFormContent')?.innerHTML || '<div class="table-empty">加载失败</div>',
       buttons: [
         { text: '取消', action: () => {} },
         { text: '启动', primary: true, action: (m) => {
@@ -799,18 +796,24 @@
           };
           if (!data.config_file) { VPUI.toast.warning('请输入新配置文件名称'); return false; }
           API.copyRunV2ray(data, d => {
-            VPUI.toast.success(d.msg || '启动成功');
+            VPUI.toast.success(d.msg || '复制启动成功');
             setTimeout(() => refreshV2rayTable(), 1000);
           }, d => VPUI.toast.error(d.msg || '启动失败'));
         }}
       ],
       onOpen: (m) => {
+        // 设置原配置文件路径
+        const oldInput = m.querySelector('#copyOldConfig');
+        if (oldInput) oldInput.value = oldConfigFile;
+        // 绑定切换开关
         const toggle = m.querySelector('#copyGlobalToggle');
         const label = m.querySelector('#copyGlobalLabel');
-        toggle.addEventListener('click', () => {
-          toggle.classList.toggle('active');
-          label.textContent = toggle.classList.contains('active') ? '开启' : '关闭';
-        });
+        if (toggle && label) {
+          toggle.addEventListener('click', () => {
+            toggle.classList.toggle('active');
+            label.textContent = toggle.classList.contains('active') ? '开启' : '关闭';
+          });
+        }
       }
     });
   };
@@ -818,7 +821,9 @@
   window.handleRestart = function(idx) {
     if (!v2rayDataCache || !v2rayDataCache.data || !v2rayDataCache.data[idx]) return;
     const row = v2rayDataCache.data[idx];
-    API.restartV2ray({ pid: row.pid, config_file: row.config_file }, d => {
+    // 系统代理的 config_file 带有 "routing.rules.json -> " 前缀，需剥离
+    const configFile = (row.config_file || '').replace('routing.rules.json -> ', '').trim();
+    API.restartV2ray({ pid: row.pid, config_file: configFile }, d => {
       VPUI.toast.success(d.msg || '重启成功');
       refreshV2rayTable();
     }, d => VPUI.toast.error(d.msg || '重启失败'));

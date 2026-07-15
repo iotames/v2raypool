@@ -270,6 +270,74 @@ table.vp-table td:last-child { white-space: nowrap; }
 .vp-table-actions { display: inline-flex; gap: 4px; align-items: center; }
 .vp-table-actions .btn-sm { padding: 3px 7px; min-width: 34px; }
 
+/* --- V2ray Table: Enhanced styling --- */
+.v2ray-table th {
+  background: #f0f4f8;
+  color: #1a2a3a;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}
+.v2ray-table .vp-row td {
+  padding: 10px 12px;
+  transition: background 0.15s ease;
+}
+.v2ray-table .vp-row:hover td { background: #eef5ff; }
+.col-pid { font-family: var(--font-mono); font-size: 12px; white-space: nowrap; }
+.pid-dot {
+  display: inline-block;
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  margin-right: 6px;
+  vertical-align: middle;
+  position: relative;
+  top: -1px;
+}
+.pid-alive { background: #5FB878; box-shadow: 0 0 4px rgba(95,184,120,0.4); }
+.pid-dead { background: #d0d0d0; }
+.v2ray-badge { font-size: 11px; padding: 3px 10px; border-radius: 3px; letter-spacing: 0.3px; }
+.col-ports { font-family: var(--font-mono); font-size: 12px; }
+.col-config { max-width: 220px; overflow: hidden; }
+.config-path {
+  display: inline-block;
+  font-size: 11px;
+  font-family: var(--font-mono);
+  color: var(--text-secondary);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: middle;
+  cursor: default;
+}
+.v2ray-actions { gap: 3px; }
+.v2ray-actions .btn-sm { min-width: 30px; padding: 4px 6px; }
+.btn-outline {
+  background: transparent;
+  border: 1px solid #ddd;
+  color: #666;
+  border-radius: 4px;
+  transition: all 0.18s ease;
+}
+.btn-outline:hover:not(:disabled) {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: #f0f7ff;
+  box-shadow: 0 1px 4px rgba(30,159,255,0.12);
+}
+.btn-outline:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  border-color: #eee;
+  color: #bbb;
+}
+.btn-outline-danger:hover:not(:disabled) {
+  border-color: var(--danger);
+  color: var(--danger);
+  background: #fff5f2;
+}
+.btn-outline .act-icon { font-size: 13px; line-height: 1; display: inline-block; }
+
 table.vp-table th[data-sort]:hover {
   color: var(--primary);
   background: #eef5ff;

@@ -3,6 +3,7 @@ package v2raypool
 import (
 	"fmt"
 	"net"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
@@ -137,6 +138,15 @@ func (p *ProxyPool) DeleteV2rayServer(pid int) error {
 		return err
 	}
 	delete(p.serverMap, pid)
+
+	// 如果被删除的进程是活跃的系统代理进程，同步清理活跃状态
+	if p.activeCmd != nil && p.activeCmd.Process.Pid == pid {
+		p.activeCmd = nil
+		p.activeNode = ProxyNode{}
+		sysProxyType = SysProxyNone
+		sysProxyNodeIdx = -1
+		sysProxyGlobal = true
+	}
 	return nil
 }
 
@@ -217,22 +227,14 @@ func (p *ProxyPool) SetV2rayPath(path string) *ProxyPool {
 	return p
 }
 
-func (p *ProxyPool) AddNode(n ProxyNode) {
+func (p *ProxyPool) AddNode(n ProxyNode) error {
 	// fmt.Printf("----Begin---AddNode(%+v)---\n", n)
 	p.lock.Lock()
+	defer p.lock.Unlock()
 	ok := true
-	// hasPid, killStat := n.KillPidByLocalPort()
-	// if hasPid > 0 {
-	// 	fmt.Printf("----AddNode----Find--LocalPort(%d)---HasPID(%d)---\n", n.LocalPort, hasPid)
-	// }
-	// if killStat != nil {
-	// 	panic(fmt.Errorf("---AddNode---killPidErr(%v)-----LocalPort(%d)----HasPID(%d)---", killStat, n.LocalPort, hasPid))
-	// }
 	for _, nd := range p.nodes {
-		// kill 端口占用进程
 		if nd.LocalPort == n.LocalPort {
-			err := fmt.Errorf("---AddNode--端口冲突--LocalPort(%d)--", n.LocalPort)
-			panic(err)
+			return fmt.Errorf("---AddNode--端口冲突--LocalPort(%d)--", n.LocalPort)
 		}
 		if nd.GetId() == n.GetId() {
 			ok = false
@@ -241,8 +243,7 @@ func (p *ProxyPool) AddNode(n ProxyNode) {
 	if ok {
 		p.nodes = append(p.nodes, n)
 	}
-	p.lock.Unlock()
-	// fmt.Printf("----End---AddNode(%+v)---\n", n)
+	return nil
 }
 func (p *ProxyPool) RemoveNode(n ProxyNode) {
 	p.lock.Lock()
@@ -361,7 +362,9 @@ func (p *ProxyPool) addNodeList(vnds []V2rayNode) {
 	for i, vnd := range vnds {
 		pnd := p.getNodeByV2rayNode(vnd, i)
 		p.SetLocalAddr(&pnd, 0)
-		p.AddNode(pnd)
+		if err := p.AddNode(pnd); err != nil {
+			fmt.Printf("---addNodeList--skip--err(%v)--title(%s)---\n", err, pnd.Title)
+		}
 	}
 }
 
@@ -432,9 +435,12 @@ func (p *ProxyPool) UpdateSubscribe(httpProxy string) (total, add int) {
 		if !ok {
 			newNode.Index = newIndex
 			p.SetLocalAddr(&newNode, 0)
-			p.AddNode(newNode)
-			newIndex++
-			add++
+			if err := p.AddNode(newNode); err != nil {
+				fmt.Printf("---InitSubscribeData--skip--err(%v)--title(%s)---\n", err, newNode.Title)
+			} else {
+				newIndex++
+				add++
+			}
 		}
 	}
 	// TODO 更新订阅后，代理池节点总数可能会增加。getRoutingRules 函数中，对 v2raypool.config.json 文件配置的 rules路由规则数量可能不够用,
@@ -708,6 +714,7 @@ func (p *ProxyPool) Delete(index int) error {
 		p.activeNode = ProxyNode{}
 		sysProxyType = SysProxyNone
 		sysProxyNodeIdx = -1
+		sysProxyGlobal = true
 		p.activeCmd = nil
 	}
 	n := p.nodes[index]
@@ -758,6 +765,7 @@ func (p *ProxyPool) KillAllNodes() (total, runport, kill, fail int) {
 	p.activeNode = ProxyNode{}
 	sysProxyType = SysProxyNone
 	sysProxyNodeIdx = -1
+	sysProxyGlobal = true
 	return
 }
 
@@ -777,6 +785,7 @@ func (p *ProxyPool) UnActiveNode(n ProxyNode) error {
 	p.activeNode = ProxyNode{}
 	sysProxyType = SysProxyNone
 	sysProxyNodeIdx = -1
+	sysProxyGlobal = true
 	return err
 }
 
@@ -875,7 +884,7 @@ func (p *ProxyPool) ActiveNode(n ProxyNode, globalProxy bool) error {
 	}
 
 	p.activeNode = n
-	UpdateSysProxyNode(n.Index)
+	UpdateSysProxyNode(n.Index, globalProxy)
 	return err
 }
 
@@ -898,7 +907,19 @@ func proxyPoolInit() {
 		SetTestMaxDuration(MAX_TEST_DURATION)
 
 	if cf.SubscribeUrl == "" {
-		fmt.Println("---WARNING---订阅地址(VP_SUBSCRIBE_URL)未设置, 跳过订阅数据初始化. 可通过WebUI设置---")
+		// SubscribeUrl 为空时，检查 SubscribeDataFile 是否有内容
+		sdata, err := os.ReadFile(cf.SubscribeDataFile)
+		if err != nil || len(strings.TrimSpace(string(sdata))) == 0 {
+			fmt.Println("---WARNING---订阅地址(VP_SUBSCRIBE_URL)和订阅数据文件(VP_SUBSCRIBE_DATA_FILE)均未设置或无内容, 跳过订阅数据初始化. 可通过WebUI设置---")
+		} else {
+			// SubscribeUrl 为空但 SubscribeDataFile 有内容，直接用数据文件初始化
+			sformat := ""
+			if strings.Contains(cf.SubscribeDataFile, ".yml") || strings.Contains(cf.SubscribeDataFile, ".yaml") {
+				sformat = decode.FILE_FORMAT_YAML
+			}
+			pp.SetSubscribeRawData(cf.GetSubscribeData(), sformat).
+				InitSubscribeData()
+		}
 	} else {
 		// 订阅地址支持一个文件路径
 		extList := []string{
@@ -967,7 +988,18 @@ func InitProxyPool() error {
 		SetTestMaxDuration(MAX_TEST_DURATION)
 
 	if cf.SubscribeUrl == "" {
-		fmt.Println("---WARNING---订阅地址(VP_SUBSCRIBE_URL)未设置, 跳过订阅数据初始化. 可通过WebUI设置---")
+		// SubscribeUrl 为空时，检查 SubscribeDataFile 是否有内容
+		sdata, err := os.ReadFile(cf.SubscribeDataFile)
+		if err != nil || len(strings.TrimSpace(string(sdata))) == 0 {
+			fmt.Println("---WARNING---订阅地址(VP_SUBSCRIBE_URL)和订阅数据文件(VP_SUBSCRIBE_DATA_FILE)均未设置或无内容, 跳过订阅数据初始化. 可通过WebUI设置---")
+		} else {
+			sformat := ""
+			if strings.Contains(cf.SubscribeDataFile, ".yml") || strings.Contains(cf.SubscribeDataFile, ".yaml") {
+				sformat = decode.FILE_FORMAT_YAML
+			}
+			pp.SetSubscribeRawData(cf.GetSubscribeData(), sformat).
+				InitSubscribeData()
+		}
 	} else {
 		extList := []string{".yml", ".yaml"}
 		fext := filepath.Ext(cf.SubscribeUrl)

@@ -7,13 +7,15 @@ import (
 )
 
 // SysProxySwitch 切换系统代理模式
-// req: {"type": 0|1|2, "node_idx": 123}
+// req: {"type": 0|1|2, "node_idx": 123, "global": true}
 // type: 0=无代理, 1=固定节点, 2=隧道代理
+// global: 单节点模式下是否全局代理（true=全局/false=智能分流），仅 type=1 有效，默认 true
 func SysProxySwitch(reqBody []byte) []byte {
 	result := BaseResult{}
 	var req struct {
-		Type    int `json:"type"`
-		NodeIdx int `json:"node_idx"`
+		Type    int  `json:"type"`
+		NodeIdx int  `json:"node_idx"`
+		Global  *bool `json:"global"` // nil = 默认全局
 	}
 	if err := json.Unmarshal(reqBody, &req); err != nil {
 		result.Fail("请求参数格式错误: "+err.Error(), 400)
@@ -23,7 +25,11 @@ func SysProxySwitch(reqBody []byte) []byte {
 		result.Fail("代理类型无效，有效值: 0=无代理, 1=固定节点, 2=隧道代理", 400)
 		return result.Bytes()
 	}
-	if err := vp.SetSysProxy(vp.SysProxyType(req.Type), req.NodeIdx); err != nil {
+	isGlobal := true
+	if req.Global != nil {
+		isGlobal = *req.Global
+	}
+	if err := vp.SetSysProxy(vp.SysProxyType(req.Type), req.NodeIdx, isGlobal); err != nil {
 		result.Fail(err.Error(), 500)
 		return result.Bytes()
 	}

@@ -358,6 +358,7 @@ const (
 var (
 	sysProxyType    SysProxyType = SysProxyNone
 	sysProxyNodeIdx int         = -1
+	sysProxyGlobal  bool        = true // 单节点模式下是否全局代理（true=全局/false=智能分流）
 )
 
 // GetSysProxyStatus 获取当前系统代理状态
@@ -365,15 +366,23 @@ func GetSysProxyStatus() map[string]interface{} {
 	return map[string]interface{}{
 		"type":     int(sysProxyType),
 		"node_idx": sysProxyNodeIdx,
+		"global":   sysProxyGlobal,
 	}
 }
 
 // SetSysProxy 切换系统代理类型
 // proxyType: 0=无代理, 1=固定节点(需传 nodeIdx), 2=隧道代理
 // nodeIdx: 节点索引，仅 SysProxyNode 模式需要
-func SetSysProxy(proxyType SysProxyType, nodeIdx int) error {
+// global: 单节点模式下是否全局代理（true=全局/false=智能分流），仅 SysProxyNode 模式有效
+func SetSysProxy(proxyType SysProxyType, nodeIdx int, global ...bool) error {
 	pp := GetProxyPool()
 	cf := conf.GetConf()
+
+	// 确定 global 参数
+	isGlobal := true
+	if len(global) > 0 {
+		isGlobal = global[0]
+	}
 
 	// 先取消当前代理
 	if sysProxyType != SysProxyNone {
@@ -392,6 +401,7 @@ func SetSysProxy(proxyType SysProxyType, nodeIdx int) error {
 	case SysProxyNone:
 		sysProxyType = SysProxyNone
 		sysProxyNodeIdx = -1
+		sysProxyGlobal = true
 		return nil
 
 	case SysProxyNode:
@@ -422,11 +432,12 @@ func SetSysProxy(proxyType SysProxyType, nodeIdx int) error {
 				return fmt.Errorf("没有运行中的节点，请先在列表中启动节点")
 			}
 		}
-		if err := pp.ActiveNode(target, true); err != nil {
+		if err := pp.ActiveNode(target, isGlobal); err != nil {
 			return err
 		}
 		sysProxyType = SysProxyNode
 		sysProxyNodeIdx = target.Index
+		sysProxyGlobal = isGlobal
 
 	case SysProxyTunnel:
 		if globalTunnelPool == nil || !globalTunnelPool.IsRunning() {
@@ -441,6 +452,7 @@ func SetSysProxy(proxyType SysProxyType, nodeIdx int) error {
 		fmt.Printf("设置系统代理为隧道代理: %s 成功!\n", tunnelAddr)
 		sysProxyType = SysProxyTunnel
 		sysProxyNodeIdx = -1
+		sysProxyGlobal = true
 
 	default:
 		return fmt.Errorf("无效的系统代理类型: %d (有效值: 0=无代理, 1=固定节点, 2=隧道代理)", proxyType)
@@ -449,9 +461,10 @@ func SetSysProxy(proxyType SysProxyType, nodeIdx int) error {
 }
 
 // UpdateSysProxyNode WebUI 通过旧 ActiveNode 激活节点后，同步更新全局系统代理状态
-func UpdateSysProxyNode(nodeIdx int) {
+func UpdateSysProxyNode(nodeIdx int, global bool) {
 	sysProxyType = SysProxyNode
 	sysProxyNodeIdx = nodeIdx
+	sysProxyGlobal = global
 }
 
 // IsSysProxyNodeActive 判断指定节点是否为当前激活的系统代理节点

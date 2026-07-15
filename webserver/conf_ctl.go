@@ -199,11 +199,17 @@ func CheckConfig() []byte {
 		})
 	}
 
-	// 检查订阅地址
-	if cf.SubscribeUrl == "" {
+	// 检查订阅地址和订阅数据文件，二者必填其一
+	hasSubData := false
+	if cf.SubscribeUrl != "" {
+		hasSubData = true
+	} else if data, err := os.ReadFile(cf.SubscribeDataFile); err == nil && len(strings.TrimSpace(string(data))) > 0 {
+		hasSubData = true
+	}
+	if !hasSubData {
 		items = append(items, ConfigCheckItem{
 			Field: "VP_SUBSCRIBE_URL", Label: "订阅地址",
-			Status: "warning", Message: "订阅地址未配置，无法自动获取代理节点（可手动添加v2ray服务）",
+			Status: "warning", Message: "订阅地址(VP_SUBSCRIBE_URL)和订阅数据文件(VP_SUBSCRIBE_DATA_FILE)均未配置或无内容，无法自动获取代理节点（可手动添加v2ray服务）",
 		})
 	}
 
