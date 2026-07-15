@@ -70,7 +70,7 @@
     API.sysProxyStatus(dt => {
       const typeNames = {
         0: '关闭',
-        1: function(g) { return g ? '单节点全局' : '单节点智能分流'; },
+        1: function(g) { return g ? '单节点全局' : '单节点分流'; },
         2: '隧道全局'
       };
       const el = document.getElementById('statusSysProxy');

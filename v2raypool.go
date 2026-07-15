@@ -135,7 +135,7 @@ func (p *ProxyPool) DeleteV2rayServer(pid int) error {
 	}
 	err := v.GetExeCmd().Process.Kill()
 	if err != nil {
-		return err
+		fmt.Printf("-----DeleteV2rayServer--Kill(%d)--err(%v)--但继续清理引用---\n", pid, err)
 	}
 	delete(p.serverMap, pid)
 
@@ -794,8 +794,10 @@ func (p *ProxyPool) killActiveNode() error {
 	if p.activeCmd != nil {
 		err = p.activeCmd.Process.Kill()
 		fmt.Printf("-----killActiveNode--AfterKill--err(%v)--p.activeCmd(%v)--PID(%d)--ProcessState(%+v)---\n", err, p.activeCmd, p.activeCmd.Process.Pid, p.activeCmd.ProcessState)
+		// Windows 上进程已退出后再调用 TerminateProcess 会返回 "Access is denied"。
+		// 这不影响清理，继续执行后续逻辑。
 		if err != nil {
-			return err
+			fmt.Printf("-----killActiveNode--Kill FAILED but continuing cleanup: %v\n", err)
 		}
 		delete(p.serverMap, p.activeCmd.Process.Pid)
 		p.activeCmd = nil
