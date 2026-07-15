@@ -8,8 +8,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/iotames/easyconf"
 	"github.com/iotames/miniutils"
-	"github.com/joho/godotenv"
 )
 
 const DEFAULT_ENV_FILE = "default.env"
@@ -122,6 +122,14 @@ func (cf Conf) GetLogger() *miniutils.Logger {
 }
 
 var vconf Conf
+var easyconfInst *easyconf.Conf
+
+func SetEasyconf(ecf *easyconf.Conf) {
+	easyconfInst = ecf
+}
+func GetEasyconf() *easyconf.Conf {
+	return easyconfInst
+}
 
 func SetConf(v Conf) {
 	vconf = v
@@ -131,20 +139,9 @@ func GetConf() Conf {
 }
 
 func UpdateConf(mp map[string]string, fpath string) error {
-	// Load 和 Read 文件顺序对配置值的影响不一致
-	oldData, err := godotenv.Read(DEFAULT_ENV_FILE, fpath)
-	if err != nil {
-		return err
+	ecf := GetEasyconf()
+	if ecf == nil {
+		return fmt.Errorf("easyconf not initialized")
 	}
-	for k, v := range mp {
-		vv, ok := oldData[k]
-		if ok {
-			oldData[k] = v
-			os.Setenv(k, v)
-			if vv != v {
-				fmt.Printf("------UpdateConf--%s--(%v)-to(%v)--\n", k, vv, v)
-			}
-		}
-	}
-	return godotenv.Write(oldData, fpath)
+	return ecf.UpdateByMap(mp, fpath)
 }

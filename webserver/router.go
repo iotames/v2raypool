@@ -1,6 +1,7 @@
 package webserver
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -17,10 +18,43 @@ func setRouter(s *web.EasyServer) {
 		dt := HomePageData{Conf: conf.GetConf()}
 		pp := vp.GetProxyPool()
 		dt.TestedDomainList = pp.GetTestedDomainList()
-		err := tpl.SetDataByTplFile("index.html", dt, ctx.Writer)
+		// 先渲染模板到缓冲区
+		var tplBuf bytes.Buffer
+		err := tpl.SetDataByTplFile("index.html", dt, &tplBuf)
 		if err != nil {
 			fmt.Printf("------err(%v)----\n", err)
 		}
+		// 服务端检查配置，有问题则写入可见横幅 + 弹窗脚本（纯 Go 字符串，无模板转义）
+		raw := CheckConfig()
+		var result struct {
+			Data []ConfigCheckItem `json:"data"`
+		}
+		if e := json.Unmarshal(raw, &result); e == nil && len(result.Data) > 0 {
+			var bHTML strings.Builder
+			bHTML.WriteString(`<div id="startupAlert" style="margin:8px 16px;padding:14px 18px;border-radius:4px;background:#fff3f0;border:2px solid #ff4d4f;color:#cf1322;font-size:14px;line-height:1.8;font-weight:600">`)
+			bHTML.WriteString(`⚠ 配置问题：<br>`)
+			var alertLines []string
+			for _, item := range result.Data {
+				icon := "🟡"
+				if item.Status == "missing" {
+					icon = "🔴"
+				} else if item.Status == "error" {
+					icon = "🟠"
+				}
+				bHTML.WriteString(fmt.Sprintf(`%s <strong>%s</strong>：%s<br>`, icon, item.Label, item.Message))
+				alertLines = append(alertLines, icon+" "+item.Label+"："+item.Message)
+			}
+			bHTML.WriteString(`<div style="margin-top:8px">请先配置必要参数，然后点击「▶ 启动」按钮，程序会自动初始化并启动节点。</div>`)
+			bHTML.WriteString(`</div>`)
+			// 横幅写在模板前面（页面最顶部）
+			ctx.Writer.Write([]byte(bHTML.String()))
+			// 内联 alert 脚本，JSON.Marshal 转义 JS 字符串，绝对安全
+			alertLines = append(alertLines, "请先配置必要参数，然后点击「启动」按钮，程序会自动初始化并启动节点。")
+			alertJSON, _ := json.Marshal(append([]string{"⚠ 配置检查"}, alertLines...))
+			ctx.Writer.Write([]byte(fmt.Sprintf(`<script>(function(){var a=%s;if(a.length>1){window.alert(a.join("\n"));}})();</script>`, string(alertJSON))))
+		}
+		// 最后写模板内容
+		ctx.Writer.Write(tplBuf.Bytes())
 	})
 	s.AddHandler("GET", "/api/nodes", func(ctx web.Context) {
 		domain := ctx.Request.URL.Query().Get("domain")
@@ -123,6 +157,18 @@ func setRouter(s *web.EasyServer) {
 		ctx.Writer.Write(UnActiveNode(dt.RemoteAddr))
 	})
 
+	// 代理池初始化 API
+	s.AddHandler("GET", "/api/pool/init-status", func(ctx web.Context) {
+		ctx.Writer.Write(PoolInitStatus())
+	})
+	s.AddHandler("POST", "/api/pool/init", func(ctx web.Context) {
+		ctx.Writer.Write(PoolInit())
+	})
+
+	s.AddHandler("GET", "/api/setting/check", func(ctx web.Context) {
+		ctx.Writer.Write(CheckConfig())
+	})
+
 	s.AddHandler("POST", "/api/setting/clearcache", func(ctx web.Context) {
 		ctx.Writer.Write(ClearCache())
 	})
@@ -179,6 +225,7 @@ func setRouter(s *web.EasyServer) {
 type HomePageData struct {
 	conf.Conf
 	TestedDomainList []string
+	ConfigIssueLines []string
 }
 
 type RequestNode struct {

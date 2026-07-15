@@ -222,6 +222,10 @@
   };
 
   /* ===== Nodes Table Actions (exposed globally) ===== */
+  window.handleToolbarAction = function(action) {
+    if (typeof toolbarActions[action] === 'function') toolbarActions[action]();
+  };
+
   window.handleActive = async function(serverIdx) {
     const dt = await getNodesData();
     if (!dt || !dt.data) return;
@@ -438,6 +442,25 @@
         width: '50%',
         maxWidth: '600px',
         content: document.getElementById('settingFormContent')?.innerHTML || '加载中...',
+        onOpen: function(m) {
+          // 检查配置，高亮缺失字段
+          API.checkConfig(function(dt) {
+            if (!dt.data || dt.data.length === 0) return;
+            dt.data.forEach(function(item) {
+              var input = m.querySelector('[name="' + item.field + '"]');
+              if (!input) return;
+              input.style.borderColor = '#ff4d4f';
+              input.style.boxShadow = '0 0 0 2px rgba(255,77,79,0.2)';
+              // 在输入框下方添加错误提示
+              var errEl = document.createElement('div');
+              errEl.style.color = '#cf1322';
+              errEl.style.fontSize = '12px';
+              errEl.style.marginTop = '2px';
+              errEl.textContent = '⚠ ' + item.message;
+              input.parentNode.appendChild(errEl);
+            });
+          });
+        },
         buttons: [
           { text: '取消', action: () => {} },
           { text: '提交', primary: true, action: (m) => {
@@ -472,6 +495,72 @@
       VPUI.toast.info(showExtraCols ? '已显示全部列' : '已隐藏节点地址/测速时间列');
     }
   };
+
+  /* ===== Config Check ===== */
+  /* ===== Config Check ===== */
+  function checkConfigAndShowBanner() {
+    var banner = document.getElementById('configAlertBanner');
+    if (!banner) return;
+
+    var issues = [];
+    var popupShown = false;
+
+    function renderAll() {
+      if (issues.length === 0) {
+        banner.style.display = 'none';
+        return;
+      }
+      var html = '<strong>⚠ 待处理事项：</strong>';
+      issues.forEach(function(item, i) {
+        html += '<div style="margin-top:' + (i > 0 ? '4px' : '4px') + '">' + item.icon + ' <strong>' + item.label + '</strong>：' + item.msg + '</div>';
+      });
+      html += '<div style="margin-top:6px"><button class="btn btn-sm" onclick="handleToolbarAction(\'settinglayer\')" style="background:#cf1322;color:#fff;border:none;padding:2px 12px;border-radius:3px;cursor:pointer">⚙ 立即设置</button></div>';
+      banner.innerHTML = html;
+      banner.style.display = 'block';
+
+      if (!popupShown) {
+        popupShown = true;
+        // 构建纯文本提示（给原生 alert 用）
+        var popupLines = [];
+        issues.forEach(function(item) {
+          popupLines.push(item.icon + ' ' + item.label + '：' + item.msg);
+        });
+        popupLines.push('请先配置必要参数，然后点击「▶ 启动」按钮，程序会自动初始化并启动节点。');
+        var popupText = popupLines.join('\n');
+
+        // 先记录到控制台方便调试
+        console.log('--- 配置检查发现 ' + issues.length + ' 个问题 ---');
+        console.log(popupText);
+
+        // 1) 原生 alert 确保一定能弹出来
+        window.alert('⚠ 配置检查\n\n' + popupText + '\n\n（点击确定后，顶部横幅会显示详细待办事项）');
+
+        // 2) 再显示 VPUI 风格的弹层（更美观）
+        var popupHtml = '<div style="color:#cf1322;font-size:14px;line-height:1.8">';
+        issues.forEach(function(item) {
+          popupHtml += '<div>' + item.icon + ' <strong>' + item.label + '</strong>：' + item.msg + '</div>';
+        });
+        popupHtml += '</div><div style="margin-top:12px;font-size:13px;color:#666">请先配置必要参数，然后点击「启动」按钮，程序会自动初始化并启动节点。</div>';
+        VPUI.alert(popupHtml, {title: '⚠ 配置检查'});
+      }
+    }
+
+    // 直接调用 API 检查配置，不依赖服务端模板注入
+    API.checkConfig(function(dt) {
+      if (dt.data && dt.data.length > 0) {
+        dt.data.forEach(function(item) {
+          var icon = '🟡';
+          if (item.status === 'missing') icon = '🔴';
+          else if (item.status === 'error') icon = '🟠';
+          issues.push({ icon: icon, label: item.label, msg: item.message });
+        });
+        renderAll();
+      }
+    }, function() {
+      // API 请求失败（如后端未运行），静默处理
+      console.warn('配置检查 API 请求失败，跳过弹窗');
+    });
+  }
 
   /* ===== Node Table Sort ===== */
   let nodesDataCache = null;
@@ -809,12 +898,14 @@
 
   /* ===== INIT ===== */
   document.addEventListener('DOMContentLoaded', function() {
+    console.log('V2rayPool WebUI loaded');
     initTabs();
     initToolbar();
     initDomainSelect();
     initTableSort();
     renderNodesTable();
     refreshStatusBar();
+    checkConfigAndShowBanner();
 
     // Auto-refresh status bar every 30s
     setInterval(refreshStatusBar, 30000);

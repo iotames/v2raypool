@@ -88,6 +88,13 @@ func StartNodes() []byte {
 		result.Fail("系统繁忙，请稍候", 500)
 		return result.Bytes()
 	}
+	// 未初始化则先初始化
+	if !pp.IsInitSuccess() {
+		if err := vp.InitProxyPool(); err != nil {
+			result.Fail("启动失败(初始化):"+err.Error(), 500)
+			return result.Bytes()
+		}
+	}
 	err := pp.StartAll()
 	if err != nil {
 		result.Fail(err.Error(), 500)
@@ -174,4 +181,25 @@ func GetNodes(domain string) []byte {
 		Msg:  err.Error(),
 	}
 	return res.Bytes()
+}
+
+func PoolInitStatus() []byte {
+	pp := vp.GetProxyPool()
+	result := BaseResult{}
+	if pp.IsInitSuccess() {
+		result.Success("已初始化")
+		return result.Bytes()
+	}
+	result.Fail("未初始化", 400)
+	return result.Bytes()
+}
+
+func PoolInit() []byte {
+	result := BaseResult{}
+	if err := vp.InitProxyPool(); err != nil {
+		result.Fail("初始化失败:"+err.Error(), 500)
+		return result.Bytes()
+	}
+	result.Success("代理池初始化成功")
+	return result.Bytes()
 }

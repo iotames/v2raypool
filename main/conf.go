@@ -62,6 +62,7 @@ func getConfByEnv() error {
 	ecf.IntVar(&cf.TunnelMaxDelay, "VP_TUNNEL_MAX_DELAY", 230, "隧道代理池最大延迟阈值(毫秒)", "只有测速延迟小于此值的节点才会加入隧道代理池")
 	ecf.IntVar(&cf.TunnelRefreshInterval, "VP_TUNNEL_REFRESH_INTERVAL", 1200, "隧道代理池节点测速刷新间隔(秒)", "隧道池每隔此时间对运行中节点重新测速并更新可用列表，默认1200秒即20分钟")
 	ecf.Parse(false)
+	conf.SetEasyconf(ecf)
 	conf.SetConf(cf)
 	vconf = cf
 
@@ -88,9 +89,9 @@ func getConfByEnv() error {
 	if err != nil {
 		hitmsg += "VP_V2RAY_PATH 配置项错误，找不到可执行文件。\n"
 		hitmsg += "请下载v2ray核心文件(https://github.com/v2fly/v2ray-core/releases)\n"
-		// hitmsg += "下载后，请【删除或改名】默认配置文件(config.json)，防止错误读取"
 		logger.Error(hitmsg)
-		return err
+		fmt.Println(hitmsg)
+		// 不返回错误，允许程序启动显示WebUI，让用户在UI上配置
 	}
 
 	if !miniutils.IsPathExists(cf.RuntimeDir) {

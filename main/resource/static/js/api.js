@@ -135,6 +135,19 @@ const API = (() => {
     postJson('/api/setting/clearcache', {}, success, fail);
   }
 
+  function checkConfig(success, fail) {
+    getJson('/api/setting/check', success, fail);
+  }
+
+  /* ===== Pool Init APIs ===== */
+  function poolInitStatus(success, fail) {
+    getJson('/api/pool/init-status', success, fail);
+  }
+
+  function poolInit(success, fail) {
+    postJson('/api/pool/init', {}, success, fail);
+  }
+
   return {
     getJson, postJson,
     getNodes, testNodes, setTestUrl, startNodes,
@@ -143,6 +156,8 @@ const API = (() => {
     updateRoutingRules,
     tunnelStart, tunnelStop, tunnelStatus,
     sysProxyStatus, sysProxySwitch,
-    updateSetting, clearCache
+    updateSetting, clearCache,
+    checkConfig,
+    poolInitStatus, poolInit
   };
 })();

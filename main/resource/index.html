@@ -50,6 +50,9 @@
       <span class="status-item"><strong>运行节点:</strong> <span class="status-value primary" id="statusRunCount">-</span></span>
     </div>
 
+    <!-- ===== Config Alert Banner ===== -->
+    <div id="configAlertBanner" style="display:none; margin:8px 0; padding:10px 16px; border-radius:4px; background:#fff3f0; border:1px solid #ffccc7; color:#cf1322; font-size:13px; line-height:1.6;"></div>
+
     <!-- ===== Cards Row ===== -->
     <div class="cards-row">
 
@@ -91,9 +94,9 @@
         </div>
         <div class="card-body">
           <div class="settings-btn-group">
+            <button class="btn btn-sm" data-action="settinglayer">⚙ 系统设置</button>
             <button class="btn btn-sm" data-action="subscribe">📥 订阅</button>
             <button class="btn btn-sm" data-action="routingrules">🔀 路由规则</button>
-            <button class="btn btn-sm" data-action="settinglayer">⚙ 系统设置</button>
             <button class="btn btn-sm" data-action="clearlayer" title="清除缓存">🗑 清除缓存</button>
             <button class="btn btn-sm" data-action="toggleCols" title="显示/隐藏列">👁 列切换</button>
           </div>
@@ -161,9 +164,10 @@
   </div>
 
   <!-- ===== Scripts ===== -->
-  <script src="/static/js/api.js"></script>
-  <script src="/static/js/components.js"></script>
-  <script src="/static/js/app.js"></script>
+  <!-- 配置检查已移至 app.js 的 checkConfigAndShowBanner，通过 API 调用实现 -->
+  <script src="/static/js/api.js?v=2"></script>
+  <script src="/static/js/components.js?v=2"></script>
+  <script src="/static/js/app.js?v=2"></script>
 
 </body>
 </html>

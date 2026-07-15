@@ -179,7 +179,7 @@ build: build-current
 
 build-current:
 	go build -C $(MAIN_DIR) $(GO_FLAGS) -o $(APP_NAME)$(if $(filter windows,$(GOOS_CURR)),.exe) .
-	@echo "编译完成: $(MAIN_DIR)/$(APP_NAME)$(if $(filter windows,$(GOOS_CURR)),.exe)"
+	@echo "Build done: $(MAIN_DIR)/$(APP_NAME)$(if $(filter windows,$(GOOS_CURR)),.exe)"
 
 build-all:
 	$(call build_one,linux,amd64)

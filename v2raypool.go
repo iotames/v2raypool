@@ -46,10 +46,11 @@ type ProxyPool struct {
 	lock                   *sync.Mutex
 	IsLock                 bool
 	speedMap               map[string]ProxyNodes
+	initSuccess            bool
 }
 
 func NewProxyPool() *ProxyPool {
-	return &ProxyPool{lock: &sync.Mutex{}, speedMap: make(map[string]ProxyNodes), serverMap: make(map[int]*V2rayServer, 2)}
+	return &ProxyPool{lock: &sync.Mutex{}, speedMap: make(map[string]ProxyNodes), serverMap: make(map[int]*V2rayServer, 2), initSuccess: false}
 }
 
 func (p ProxyPool) GetLocalPortRange() string {
@@ -209,9 +210,10 @@ func (p *ProxyPool) SetTestUrl(turl string) *ProxyPool {
 }
 func (p *ProxyPool) SetV2rayPath(path string) *ProxyPool {
 	if !miniutils.IsPathExists(path) {
-		panic(fmt.Errorf("v2ray path %s not found", path))
+		fmt.Printf("---WARNING---v2ray路径不存在(%s), 请先下载v2ray核心文件. 可通过WebUI设置正确路径---\n", path)
+	} else {
+		p.v2rayPath = path
 	}
-	p.v2rayPath = path
 	return p
 }
 
@@ -886,45 +888,112 @@ func getConf() conf.Conf {
 // https://cloud.tencent.com/developer/article/1564128
 func proxyPoolInit() {
 	cf := getConf()
-	if cf.SubscribeUrl == "" {
-		panic("SubscribeUrl can not be empty.订阅地址VP_SUBSCRIBE_URL的值不能为空")
-	}
-	// 订阅地址支持一个文件路径
-	extList := []string{
-		".yml",
-		".yaml",
-	}
-	// 获取订阅地址的后缀名。
-	fext := filepath.Ext(cf.SubscribeUrl)
-	if slices.Contains(extList, fext) {
-		// 如果订阅的URL地址是个受支持的文件路径，但订阅数据文件未指定。则以此订阅的URL地址为订阅数据文件路径。
-		if cf.SubscribeDataFile == "" {
-			cf.SubscribeDataFile = cf.SubscribeUrl
-		}
-		// 如果订阅的URL地址是个受支持的文件路径，但订阅数据文件又不为空。这让人无法抉择。
-		if cf.SubscribeDataFile != cf.SubscribeUrl {
-			panic(fmt.Errorf("订阅文件地址VP_SUBSCRIBE_DATA_FILE（%s）和订阅URL地址VP_SUBSCRIBE_URL（%s）冲突", cf.SubscribeDataFile, cf.SubscribeUrl))
-		}
-	}
-	sformat := ""
-	if strings.Contains(cf.SubscribeDataFile, ".yml") || strings.Contains(cf.SubscribeDataFile, ".yaml") {
-		sformat = decode.FILE_FORMAT_YAML
-	}
 
 	pp := GetProxyPool()
 	port := cf.GetHttpProxyPort()
 	pp.SetV2rayPath(cf.V2rayPath).
 		SetTestUrl(cf.TestUrl).
-		SetSubscribeRawData(cf.GetSubscribeData(), sformat).
 		SetSubscribeUrl(cf.SubscribeUrl).
 		SetLocalPortStart(port + 1).
-		SetTestMaxDuration(MAX_TEST_DURATION).
-		InitSubscribeData()
+		SetTestMaxDuration(MAX_TEST_DURATION)
+
+	if cf.SubscribeUrl == "" {
+		fmt.Println("---WARNING---订阅地址(VP_SUBSCRIBE_URL)未设置, 跳过订阅数据初始化. 可通过WebUI设置---")
+	} else {
+		// 订阅地址支持一个文件路径
+		extList := []string{
+			".yml",
+			".yaml",
+		}
+		// 获取订阅地址的后缀名。
+		fext := filepath.Ext(cf.SubscribeUrl)
+		if slices.Contains(extList, fext) {
+			// 如果订阅的URL地址是个受支持的文件路径，但订阅数据文件未指定。则以此订阅的URL地址为订阅数据文件路径。
+			if cf.SubscribeDataFile == "" {
+				cf.SubscribeDataFile = cf.SubscribeUrl
+			}
+			// 如果订阅的URL地址是个受支持的文件路径，但订阅数据文件又不为空。这让人无法抉择。
+			if cf.SubscribeDataFile != cf.SubscribeUrl {
+				panic(fmt.Errorf("订阅文件地址VP_SUBSCRIBE_DATA_FILE（%s）和订阅URL地址VP_SUBSCRIBE_URL（%s）冲突", cf.SubscribeDataFile, cf.SubscribeUrl))
+			}
+		}
+		sformat := ""
+		if strings.Contains(cf.SubscribeDataFile, ".yml") || strings.Contains(cf.SubscribeDataFile, ".yaml") {
+			sformat = decode.FILE_FORMAT_YAML
+		}
+
+		pp.SetSubscribeRawData(cf.GetSubscribeData(), sformat).
+			InitSubscribeData()
+	}
+
 	nds := pp.GetNodes("")
 	for i, n := range nds {
 		fmt.Printf("---[%d]--Lport(%d)--Speed(%.3f)--Run(%v)--TestAt(%s)--Remote(%s)--T(%s)--index(%d)\n", i, n.LocalPort, n.Speed.Seconds(), n.IsRunning(), n.TestAt.Format("2006-01-02 15:04"), n.RemoteAddr, n.Title, n.Index)
 	}
 	pp.StartV2rayPool()
+}
+
+// IsInitSuccess 代理池是否已成功初始化
+func (p *ProxyPool) IsInitSuccess() bool {
+	return p.initSuccess
+}
+
+// InitProxyPool 手动触发代理池初始化（通过WebUI按钮调用）
+// 与 proxyPoolInit 逻辑相同，但返回 error 而非 panic，且检查 initSuccess 防止重复初始化
+func InitProxyPool() error {
+	pp := GetProxyPool()
+	if pp.IsInitSuccess() {
+		return fmt.Errorf("代理池已初始化，不可重复操作")
+	}
+
+	cf := getConf()
+
+	// 校验必要配置
+	if cf.V2rayPath == "" {
+		return fmt.Errorf("v2ray核心文件路径未配置")
+	}
+	if !miniutils.IsPathExists(cf.V2rayPath) {
+		return fmt.Errorf("v2ray核心文件不存在(%s)，请先在系统设置中配置正确的v2ray路径", cf.V2rayPath)
+	}
+	if cf.TestUrl == "" {
+		return fmt.Errorf("测速地址(VP_TEST_URL)未配置")
+	}
+
+	port := cf.GetHttpProxyPort()
+	pp.v2rayPath = cf.V2rayPath
+	pp.SetTestUrl(cf.TestUrl).
+		SetSubscribeUrl(cf.SubscribeUrl).
+		SetLocalPortStart(port + 1).
+		SetTestMaxDuration(MAX_TEST_DURATION)
+
+	if cf.SubscribeUrl == "" {
+		fmt.Println("---WARNING---订阅地址(VP_SUBSCRIBE_URL)未设置, 跳过订阅数据初始化. 可通过WebUI设置---")
+	} else {
+		extList := []string{".yml", ".yaml"}
+		fext := filepath.Ext(cf.SubscribeUrl)
+		if slices.Contains(extList, fext) {
+			if cf.SubscribeDataFile == "" {
+				cf.SubscribeDataFile = cf.SubscribeUrl
+			}
+			if cf.SubscribeDataFile != cf.SubscribeUrl {
+				return fmt.Errorf("订阅文件地址VP_SUBSCRIBE_DATA_FILE（%s）和订阅URL地址VP_SUBSCRIBE_URL（%s）冲突", cf.SubscribeDataFile, cf.SubscribeUrl)
+			}
+		}
+		sformat := ""
+		if strings.Contains(cf.SubscribeDataFile, ".yml") || strings.Contains(cf.SubscribeDataFile, ".yaml") {
+			sformat = decode.FILE_FORMAT_YAML
+		}
+		pp.SetSubscribeRawData(cf.GetSubscribeData(), sformat).
+			InitSubscribeData()
+	}
+
+	nds := pp.GetNodes("")
+	for i, n := range nds {
+		fmt.Printf("---[%d]--Lport(%d)--Speed(%.3f)--Run(%v)--TestAt(%s)--Remote(%s)--T(%s)--index(%d)\n", i, n.LocalPort, n.Speed.Seconds(), n.IsRunning(), n.TestAt.Format("2006-01-02 15:04"), n.RemoteAddr, n.Title, n.Index)
+	}
+	pp.StartV2rayPool()
+	pp.initSuccess = true
+	return nil
 }
 
 // GetAvailableNodes 获取可用节点列表

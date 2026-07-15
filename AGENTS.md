@@ -200,6 +200,21 @@ go test ./...
 | POST | /api/tunnel/stop | 停止隧道代理池 |
 | GET | /api/tunnel/status | 获取隧道代理池状态（running/port/node_count 等）|
 
+### 设置 API
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| POST | /api/setting/update | 更新 .env 配置 |
+| POST | /api/setting/clearcache | 清除 runtime 缓存 |
+| GET | /api/setting/check | 检查配置问题，返回缺失/错误的配置项列表 |
+
+### 代理池初始化 API
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| GET | /api/pool/init-status | 查询代理池是否已初始化（200=已初始化，400=未初始化）|
+| POST | /api/pool/init | 手动触发代理池初始化（根据当前配置解析订阅、启动v2ray核心）|
+
 ### 系统代理切换 API
 
 | 方法 | 路径 | 说明 |
@@ -230,6 +245,10 @@ go test ./...
 - 代理池节点端口从系统代理端口 +1 开始递增
 - 每个节点同时开 http + socks 两个 inbound（端口 n 和 n-1）
 - `checkInitPorts` 在启动时 panic 检查 6 个端口的占用
+
+### 配置不阻塞启动
+- **SubscribeUrl 和 V2rayPath 不再是启动必填项**：程序即使没有订阅地址或 v2ray 核心文件也能启动，用户可通过 WebUI 配置后再使用
+- `GET /api/setting/check` 返回所有配置问题，WebUI 首页红色横幅显示缺失项，设置弹窗中缺失字段红框高亮 + 错误提示
 
 ### 配置 V4 vs V5
 - **默认使用 V4 JSON 配置格式**（`v2ray.ConfigV4`）

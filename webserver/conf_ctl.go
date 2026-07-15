@@ -84,6 +84,22 @@ func UpdateConf(dt map[string]string, fpath string) []byte {
 	if v, ok := dt["VP_SUBSCRIBE_DATA_FILE"]; ok && v != "" {
 		cf.SubscribeDataFile = v
 	}
+	// 校验：当订阅地址是本地文件路径（非 http/https 网络地址）时，
+	// 订阅地址(VP_SUBSCRIBE_URL) 和 订阅数据文件(VP_SUBSCRIBE_DATA_FILE) 的值必须一致
+	if _, ok := dt["VP_SUBSCRIBE_URL"]; ok {
+		subUrl := cf.SubscribeUrl
+		subFile := cf.SubscribeDataFile
+		if subUrl != "" && !strings.HasPrefix(subUrl, "http://") && !strings.HasPrefix(subUrl, "https://") {
+			if subFile == "" {
+				result.Fail("订阅地址(VP_SUBSCRIBE_URL)是文件路径时，订阅数据文件(VP_SUBSCRIBE_DATA_FILE)不能为空", 400)
+				return result.Bytes()
+			}
+			if subFile != subUrl {
+				result.Fail("订阅地址(VP_SUBSCRIBE_URL)是文件路径时，必须与订阅数据文件(VP_SUBSCRIBE_DATA_FILE)的值一致", 400)
+				return result.Bytes()
+			}
+		}
+	}
 	if v, ok := dt["VP_V2RAY_PATH"]; ok && v != "" {
 		cf.V2rayPath = v
 	}
@@ -154,6 +170,82 @@ func UpdateConf(dt map[string]string, fpath string) []byte {
 		return result.Bytes()
 	}
 	result.Success("设置成功，已即时生效。")
+	return result.Bytes()
+}
+
+// ConfigCheckItem 配置检查项
+type ConfigCheckItem struct {
+	Field   string `json:"field"`
+	Label   string `json:"label"`
+	Status  string `json:"status"` // missing / error / warning
+	Message string `json:"message"`
+}
+
+// CheckConfig 检查当前配置，返回所有问题项
+func CheckConfig() []byte {
+	cf := conf.GetConf()
+	var items []ConfigCheckItem
+
+	// 检查 v2ray 路径
+	if cf.V2rayPath == "" {
+		items = append(items, ConfigCheckItem{
+			Field: "VP_V2RAY_PATH", Label: "v2ray核心文件",
+			Status: "missing", Message: "v2ray核心文件路径未配置",
+		})
+	} else if !miniutils.IsPathExists(cf.V2rayPath) {
+		items = append(items, ConfigCheckItem{
+			Field: "VP_V2RAY_PATH", Label: "v2ray核心文件",
+			Status: "missing", Message: "v2ray核心文件不存在，请下载v2ray核心文件",
+		})
+	}
+
+	// 检查订阅地址
+	if cf.SubscribeUrl == "" {
+		items = append(items, ConfigCheckItem{
+			Field: "VP_SUBSCRIBE_URL", Label: "订阅地址",
+			Status: "warning", Message: "订阅地址未配置，无法自动获取代理节点（可手动添加v2ray服务）",
+		})
+	}
+
+	// 检查测速地址
+	if cf.TestUrl == "" {
+		items = append(items, ConfigCheckItem{
+			Field: "VP_TEST_URL", Label: "测速地址",
+			Status: "missing", Message: "测速地址未配置",
+		})
+	}
+
+	// 检查 HttpProxy 格式
+	if cf.HttpProxy != "" {
+		protcls := cf.GetOkInboundProtocols()
+		spt := strings.Split(cf.HttpProxy, ":")
+		if len(spt) != 3 {
+			items = append(items, ConfigCheckItem{
+				Field: "VP_HTTP_PROXY", Label: "系统代理地址",
+				Status: "error", Message: "系统代理地址格式不正确，应为 protocol:host:port 格式",
+			})
+		} else if miniutils.GetIndexOf(spt[0], protcls) == -1 {
+			items = append(items, ConfigCheckItem{
+				Field: "VP_HTTP_PROXY", Label: "系统代理地址",
+				Status: "error", Message: "系统代理协议仅支持 http/socks/socks5",
+			})
+		}
+	}
+
+	// 检查运行时目录
+	if cf.RuntimeDir == "" {
+		items = append(items, ConfigCheckItem{
+			Field: "VP_RUNTIME_DIR", Label: "运行时目录",
+			Status: "error", Message: "运行时目录未配置",
+		})
+	} else if !miniutils.IsPathExists(cf.RuntimeDir) {
+		items = append(items, ConfigCheckItem{
+			Field: "VP_RUNTIME_DIR", Label: "运行时目录",
+			Status: "warning", Message: "运行时目录不存在，启动时将自动创建",
+		})
+	}
+
+	result := NewListData(items, len(items))
 	return result.Bytes()
 }
 

@@ -4,10 +4,9 @@ go 1.22.1
 
 require (
 	github.com/golang/protobuf v1.5.4
-	github.com/iotames/easyconf v1.2.3
+	github.com/iotames/easyconf v1.2.5
 	github.com/iotames/glayui v1.1.2
 	github.com/iotames/miniutils v1.0.11
-	github.com/joho/godotenv v1.5.1
 	github.com/v2fly/v2ray-core/v5 v5.15.1
 	google.golang.org/grpc v1.63.2
 	google.golang.org/protobuf v1.33.0
