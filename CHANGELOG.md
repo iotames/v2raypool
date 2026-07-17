@@ -1,5 +1,23 @@
 ## 升级日志
 
+### v1.9.3
+
+- Makefile 支持全平台交叉编译（Linux/macOS/Windows），简化 CI 构建流程
+- 升级 easyconf v1.2.2 → v1.2.3，提升配置读写兼容性
+- **配置缺失不阻塞启动**：v2ray 路径/订阅地址缺失不再 panic，允许通过 WebUI 配置后再使用
+- 新增 `GET /api/setting/check` 检查配置问题，WebUI 首页红色横幅 + 弹窗提示缺失项
+- 新增 `GET /api/pool/init-status` + `POST /api/pool/init` 手动初始化代理池
+- 设置弹窗中缺失字段红框高亮，前端即时反馈
+- 替换 `godotenv` 为 `easyconf.UpdateByMap` 写入 .env，提升一致性
+- **系统代理状态追踪重构**：新增 `sysProxyGlobal` 变量，状态栏显示4种状态（关闭/单节点全局/单节点智能分流/隧道全局），系统代理切换 API 支持 `global` 参数
+- 修复 `DeleteV2rayServer` 未清理 `p.activeCmd` 导致后续 `killActiveNode` 报 `Access is denied`
+- 修复 `AddNode` 端口冲突时 `panic` 导致前端无法收到错误提示
+- 修复 `SubscribeUrl` 为空时未检查 `SubscribeDataFile` 兜底逻辑
+- 修复 Windows 上已退出进程 `TerminateProcess` 返回 `Access is denied` 导致无法切换代理模式
+- v2ray 列表 UI 按钮按角色（个性配置/系统代理/动态代理池）分粒度控制
+- **修复 `/api/v2ray/list` 出现重复系统代理条目**：提取 `cleanServerMapSysPort()` 方法，在 `Delete()`、`ActiveNode()`、`KillAllNodes()` 中统一清理 `serverMap` 中残留的系统代理进程记录
+- README 更新隧道池架构图，配置说明明确订阅方式二选一
+
 ### v1.9.2
 
 - 前端重构：移除 layui 依赖，纯原生 JS/CSS/HTML 重写，加载更快、体积更小

@@ -102,9 +102,9 @@ func getConfByEnv() error {
 			return err
 		}
 	}
-	if !miniutils.IsPathExists(cf.SubscribeDataFile) {
-		fmt.Printf("------创建SubscribeDataFile文件(%s)--\n", cf.SubscribeDataFile)
-		err = cf.UpdateSubscribeData("")
-	}
+	// if !miniutils.IsPathExists(cf.SubscribeDataFile) {
+	// 	fmt.Printf("------创建SubscribeDataFile文件(%s)--\n", cf.SubscribeDataFile)
+	// 	err = cf.UpdateSubscribeData("")
+	// }
 	return err
 }

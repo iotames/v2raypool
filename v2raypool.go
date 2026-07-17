@@ -716,6 +716,7 @@ func (p *ProxyPool) Delete(index int) error {
 		sysProxyNodeIdx = -1
 		sysProxyGlobal = true
 		p.activeCmd = nil
+		p.cleanServerMapSysPort()
 	}
 	n := p.nodes[index]
 	if n.IsRunning() {
@@ -766,6 +767,7 @@ func (p *ProxyPool) KillAllNodes() (total, runport, kill, fail int) {
 	sysProxyType = SysProxyNone
 	sysProxyNodeIdx = -1
 	sysProxyGlobal = true
+	p.serverMap = make(map[int]*V2rayServer, 2)
 	return
 }
 
@@ -789,6 +791,22 @@ func (p *ProxyPool) UnActiveNode(n ProxyNode) error {
 	return err
 }
 
+// cleanServerMapSysPort 清理 serverMap 中系统代理端口的残留条目，避免出现 2 个系统代理
+func (p *ProxyPool) cleanServerMapSysPort() {
+	sysport := conf.GetConf().GetHttpProxyPort()
+	for pid, vs := range p.serverMap {
+		if vs == nil {
+			continue
+		}
+		for _, inbd := range vs.GetV2rayConfigV4().Inbounds {
+			if inbd.Port == sysport {
+				delete(p.serverMap, pid)
+				break
+			}
+		}
+	}
+}
+
 func (p *ProxyPool) killActiveNode() error {
 	var err error
 	if p.activeCmd != nil {
@@ -810,6 +828,9 @@ func (p *ProxyPool) killActiveNode() error {
 func (p *ProxyPool) ActiveNode(n ProxyNode, globalProxy bool) error {
 	var err error
 	activePort := p.localPortStart - 1
+
+	p.cleanServerMapSysPort()
+
 	if p.activeNode.RemoteAddr != "" {
 		err = p.UnActiveNode(p.activeNode)
 		if err != nil {

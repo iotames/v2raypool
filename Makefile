@@ -32,10 +32,13 @@ ifeq ($(OS),Windows_NT)
 SHELL = cmd.exe
 .SHELLFLAGS = /c
 
-BUILD_TIME := $(shell powershell -NoProfile "Get-Date -Format 'yyyy-MM-dd HH:mm:ss'")
+BUILD_TIME := $(shell powershell -NoProfile "Get-Date -Format 'yyyy-MM-ddTHH:mm:ss'")
+GO_VERSION  := $(shell powershell -NoProfile "go version | ForEach-Object { $$_.Split()[2] }")
+EXE_SUFFIX := .exe
 
-GO_LDFLAGS  := -s -w -buildid= -X 'main.AppVersion=$(APP_VERSION)' -X 'main.GoVersion=$(GO_VERSION)' -X 'main.BuildTime=$(BUILD_TIME)'
+GO_LDFLAGS  := -s -w -buildid= -X main.AppVersion=$(APP_VERSION) -X main.GoVersion=$(GO_VERSION) -X main.BuildTime=$(BUILD_TIME)
 GO_FLAGS    := -trimpath -ldflags "$(GO_LDFLAGS)"
+GO_BUILD    := set GOOS=windows&& go build
 
 define MKDIR
 mkdir $(subst /,\,$(1)) 2>nul || ver>nul
@@ -66,9 +69,11 @@ SHELL = /bin/sh
 .SHELLFLAGS = -c
 
 BUILD_TIME := $(shell date '+%Y-%m-%d %H:%M:%S')
+EXE_SUFFIX :=
 
-GO_LDFLAGS  := -s -w -buildid= -X 'main.AppVersion=$(APP_VERSION)' -X 'main.GoVersion=$(GO_VERSION)' -X 'main.BuildTime=$(BUILD_TIME)'
+GO_LDFLAGS  := -s -w -buildid= -X main.AppVersion=$(APP_VERSION) -X main.GoVersion=$(GO_VERSION) -X main.BuildTime=$(BUILD_TIME)
 GO_FLAGS    := -trimpath -ldflags "$(GO_LDFLAGS)"
+GO_BUILD    := go build
 
 define MKDIR
 mkdir -p $(1)
@@ -178,8 +183,8 @@ versioninfo:
 build: build-current
 
 build-current:
-	go build -C $(MAIN_DIR) $(GO_FLAGS) -o $(APP_NAME)$(if $(filter windows,$(GOOS_CURR)),.exe) .
-	@echo "Build done: $(MAIN_DIR)/$(APP_NAME)$(if $(filter windows,$(GOOS_CURR)),.exe)"
+	$(GO_BUILD) -C $(MAIN_DIR) $(GO_FLAGS) -o $(APP_NAME)$(EXE_SUFFIX) .
+	@echo "Build done: $(MAIN_DIR)/$(APP_NAME)$(EXE_SUFFIX)"
 
 build-all:
 	$(call build_one,linux,amd64)
@@ -220,6 +225,6 @@ release: test build-all geo-files package
 clean:
 	$(call RM_RF,$(BUILD_DIR))
 	$(call RMF,*.tar.gz)
-	$(call RMF,$(MAIN_DIR)/$(APP_NAME)$(if $(filter windows,$(GOOS_CURR)),.exe))
+	$(call RMF,$(MAIN_DIR)/$(APP_NAME)$(EXE_SUFFIX))
 	$(call RMF,$(MAIN_DIR)/$(APP_NAME)-*)
 	@echo 已清理
